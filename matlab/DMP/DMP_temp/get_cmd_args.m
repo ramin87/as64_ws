@@ -13,9 +13,11 @@ cmd_args.N_kernels = 100;
 
 cmd_args.std_K = 0.92;
 
+cmd_args.DMP_TYPE = 'DMP-bio'; % 'DMP', 'DMP-bio', 'DMP-plus'
+
 cmd_args.train_method = 'LWR'; % 'LWR', 'LS'
 
-cmd_args.CAN_SYS_TYPE = 'lin'; % 'lin', exp', 'spring-damper'
+cmd_args.CAN_SYS_TYPE = 'exp'; % 'lin', exp', 'spring-damper'
 
 
 cmd_args.USE_GOAL_FILT = false;

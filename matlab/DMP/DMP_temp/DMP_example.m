@@ -46,7 +46,17 @@ end
 
 dmp = cell(D,1);
 for i=1:D
-    dmp{i} = DMP(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
+    
+    if (strcmpi(cmd_args.DMP_TYPE,'DMP'))
+       dmp{i} = DMP(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
+    elseif (strcmpi(cmd_args.DMP_TYPE,'DMP-bio'))
+        dmp{i} = DMP_bio(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
+    elseif (strcmpi(cmd_args.DMP_TYPE,'DMP-plus'))
+        dmp{i} = DMP_plus(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
+    else
+        error('Unsupported DMP type ''%s''', cmd_args.DMP_TYPE);
+    end
+    
 end
 
 
