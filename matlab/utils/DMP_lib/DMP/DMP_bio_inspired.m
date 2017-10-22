@@ -38,7 +38,7 @@
 %   is, the faster the convergence).
 %
 
-classdef DMP < handle
+classdef DMP_bio_inspired < handle
    properties
        N_kernels % number of kernels (basis functions)
        
@@ -83,7 +83,25 @@ classdef DMP < handle
       %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
       function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
           
-          DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K);
+          dmp.zero_tol = realmin;
+          
+          if (nargin < 5), std_K = 1; end
+          
+          dmp.N_kernels = N_kernels;
+          dmp.a_z = a_z;
+          dmp.b_z = b_z;
+          dmp.can_sys_ptr = can_sys_ptr;
+          
+          tau = dmp.get_tau();
+          if (tau > 1)
+              dmp.a_s = 1 / (dmp.can_sys_ptr.tau^2);
+          else
+              dmp.a_s = (dmp.can_sys_ptr.tau^2);
+          end
+          
+          dmp.w = zeros(dmp.N_kernels,1); %rand(dmp.N_kernels,1);
+          dmp.set_centers();
+          dmp.set_stds(std_K);
           
       end
 
@@ -339,12 +357,9 @@ classdef DMP < handle
       
       %% Returns a column vector with the values of the activation functions of the DMP
       %  @param[in] x: phase variable
-      %  @param[out] psi: column vector with the values of the activation functions of the DMP
       function psi = activation_function(dmp,x)
           
-          psi = DMP_gaussian_kernel(dmp,x);
-          
-          %psi = exp(-dmp.h.*((x-dmp.c).^2));
+          psi = exp(-dmp.h.*((x-dmp.c).^2));
           
       end
      
