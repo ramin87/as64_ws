@@ -75,6 +75,7 @@ classdef DMP < handle
 
       end
       
+      
       %% Initializes the DMP
       %  @param[in] N_kernels: the number of kernels
       %  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
@@ -86,120 +87,38 @@ classdef DMP < handle
           DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K);
           
       end
+      
 
       %% Sets the centers for the activation functions of the DMP according to the partition method specified
       %  @param[in] part_type: Partitioning method for the kernel centers.
       function set_centers(dmp, part_type)
-
-        t = ((1:dmp.N_kernels)-1)/(dmp.N_kernels-1);
-        
-        if (nargin < 2)
-            % Partitions the centers according to the canonical system type
-            % so that the centers are equally spaced in time.
-            part_type = 'can_sys_like';
-        end
-        
-        if (strcmpi(part_type,'lin'))
-            dmp.c = t';
-        elseif (strcmpi(part_type,'can_sys_like'))
-            x0 = 1;
-            x = dmp.can_sys_ptr.get_continuous_output(t*dmp.can_sys_ptr.tau, x0);
-            dmp.c = x(1,:)';
-        else
-            error('Unsupported partition type %s',part_type);
-        end
+          
+          if (nargin < 2)
+              DMP_set_centers(dmp);
+          else
+              DMP_set_centers(dmp, part_type);
+          end
         
       end
+      
       
       %% Sets the kernels of the DMP using the EM algorithm
       function set_kernels_with_EM(dmp, Time, yd_data)
           
-          error('Function ''set_kernels_with_EM'' is not supported yet...');
-          
-%           ts = Time(end) - Time(1);
-%           
-%           x = exp(-dmp.ax*Time/ts);
-%           
-%           Data = [x; yd_data];
-%           
-%           disp('EM_init_kmeans');
-%           tic
-%           [Priors, Mu, Sigma] = EM_init_kmeans(Data, dmp.N_kernels);
-%           toc
-%           
-%           disp('EM');
-%           tic
-%           [Priors, Mu, Sigma] = EM(Data, Priors, Mu, Sigma);
-%           toc
-% 
-%           dmp.c = Mu(1,:)';
-%           for k=1:dmp.N_kernels
-%               dmp.h(k) = 1/(2*Sigma(1,1,k));
-%           end
+          DMP_set_kernels_with_EM(dmp, Time, yd_data)
+
       end
+      
       
       %% Sets the standard deviations for the activation functions  of the DMP
       %  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
       %  @param[in] s: Scales the variance of each kernel by 's' (optional, default = 1).
       function set_stds(dmp, s)
 
-        if (nargin < 2), s=1; end
-        
-        dmp.h = 1./(s*(dmp.c(2:end)-dmp.c(1:end-1))).^2;
-        dmp.h = [dmp.h; dmp.h(end)];
+          DMP_set_stds(dmp, s)
 
       end
       
-      %% Trains the DMP weights using LWR (Locally Weighted Regression)
-      %  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s), 
-      %  where Psi = exp(-h(k)*(x-c(k)).^2)
-      %  @param[in] x: Row vector with the values of the phase variable.
-      %  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
-      %  @param[in] Fd: Row vector with the desired values of the shape attractor.
-      function LWR_train(dmp, x, s, Fd)
-          
-          s = s(:);
-          
-          for k=1:dmp.N_kernels
-              Psi = exp(-dmp.h(k)*(x-dmp.c(k)).^2);
-              temp = s'.*Psi;
-              dmp.w(k) = (temp*Fd(:)) / (temp*s + dmp.zero_tol);
-
-              %Psi = diag( exp(-dmp.h(k)*(x-dmp.c(k)).^2) );
-              %dmp.w(k) = (s'*Psi*Fd(:)) / (s'*Psi*s + dmp.zero_tol);
-          end
-          
-      end
-      
-      %% Trains the DMP weights using LS (Least Squares)
-      %  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s), 
-      %  where Psi = exp(-h(k)*(x-c(k)).^2)
-      %  @param[in] x: Row vector with the values of the phase variable.
-      %  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
-      %  @param[in] Fd: Row vector with the desired values of the shape attractor.
-      function LS_train(dmp, x, s, Fd)
-          
-          s = s(:);
-          
-          n_data = length(x);
-          
-          H = zeros(dmp.N_kernels, n_data);
-
-          for k=1:dmp.N_kernels
-              Psi = exp(-dmp.h(k)*(x-dmp.c(k)).^2);
-              H(k,:) = Psi; 
-          end
-          H = H.*repmat(s',size(H,1),1) ./ (repmat(sum(H,1),size(H,1),1) + dmp.zero_tol);
-
-%               for i=1:n_data
-%                   Psi = exp(-dmp.h.*(x(i)-dmp.c).^2);
-%                   Psi = s(i)*Psi / (sum(Psi) + dmp.zero_tol);                 
-%                   H(:,i) = Psi(:);
-%               end
-
-          dmp.w = (Fd/H)';
-          
-      end
 
       %% Trains the DMP
       %  @param[in] yd_data: Row vector with the desired potition.
@@ -250,18 +169,17 @@ classdef DMP < handle
           end
           
           v_scale = dmp.get_v_scale();
-          
           ddzd_data = ddyd_data*v_scale^2;
           g_attr_data = - dmp.a_z*(dmp.b_z*(g-yd_data)-dyd_data*v_scale);
           Fd = (ddzd_data + g_attr_data);
           
           if (strcmpi(train_method,'LWR'))
               
-              dmp.LWR_train(x, s, Fd);
+              LWR_train(dmp,x, s, Fd);
 
           elseif (strcmpi(train_method,'LS'))
               
-              dmp.LS_train(x, s, Fd);
+              LS_train(dmp,x, s, Fd);
 
           else    
               error('Unsopported training method ''%s''', train_method);
@@ -276,38 +194,16 @@ classdef DMP < handle
           
       end
       
-%       %% Returns the shape-attractor of the DMP
-%       function s_attr = shape_attractor(dmp,x,u,g0,y0)
-%           
-%           f = dmp.forcing_term(x);
-%           s_attr = f*u*(g0-y0);
-%           
-%       end
-      
-%       %% Returns the goal-attractor of the DMP
-%       function g_attr = goal_attractor(dmp,y,dy,g)
-%           
-%           v_scale = dmp.get_v_scale();
-%           g_attr = dmp.a_z*(dmp.b_z*(g-y)-dy*v_scale);
-%           
-%       end
-      
-%       %% Returns the output of the DMP
-%       function dmp_out = get_output(dmp,y,dy,g,y0,x)
-%           
-%           v_scale = dmp.get_v_scale();
-%           dmp_out = ( dmp.goal_attractor(y,dy,g) + dmp.shape_attractor(x,dmp.g0,y0) ) / v_scale^2;
-%       end
-      
+            
       %% Returns the forcing term of the DMP
       %  @param[in] x: The phase variable.
       %  @param[out] f: The normalized weighted sum of Gaussians.
       function f = forcing_term(dmp,x)
           
-          Psi = dmp.activation_function(x);
-          f = dot(Psi,dmp.w) / (sum(Psi)+dmp.zero_tol); % add 'zero_tol' to avoid numerical issues
-          
+          f = DMP_forcing_term(dmp,x);
+
       end
+      
       
       %% Returns the derivatives of the DMP states
       %  @param[in] y: 'y' state of the DMP
@@ -337,6 +233,7 @@ classdef DMP < handle
         
       end
       
+      
       %% Returns a column vector with the values of the activation functions of the DMP
       %  @param[in] x: phase variable
       %  @param[out] psi: column vector with the values of the activation functions of the DMP
@@ -344,23 +241,26 @@ classdef DMP < handle
           
           psi = DMP_gaussian_kernel(dmp,x);
           
-          %psi = exp(-dmp.h.*((x-dmp.c).^2));
-          
       end
+      
      
       %% Returns the scaling factor of the DMP
       %  @param[out] v_scale: The scaling factor of the DMP.
       function v_scale = get_v_scale(dmp)
-          v_scale = dmp.get_tau() * dmp.a_s;
+          
+          v_scale = DMP_get_v_scale(dmp);
+          
       end
+      
       
       %% Returns the time cycle of the DMP
       %  @param[out] tau: The time cycle of the DMP.
       function tau = get_tau(dmp)
           
-          tau = dmp.can_sys_ptr.get_tau();
+          tau = DMP_get_tau(dmp);
           
       end
+      
       
    end
 end
