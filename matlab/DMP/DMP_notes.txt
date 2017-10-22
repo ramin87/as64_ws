@@ -1,0 +1,79 @@
+(1) When preprocessing the data, make sure that at the beginning and end of the motion the velocity and accelaration are zero.
+    This is more important at end of the motion since if the phase variable is still acitve (e.g. the 'ax' constant is small so the
+    phase variable decreases slower) near the end of the motion, so will be the forcing term as well. If the forcing term is trained
+    with non-zero velocity/accelaration at the end of the motion, the forcing term may cause the motion to deviate at the end of the
+    motion from the final target. This will cause an overshoot at the end, and only when the phase variable will become zero (negating
+    the forcing term), the goal-attractor will bring the motion back to the target.
+    Such problems can be alleviated setting high values for 'a_z' and 'b_z' (impose quicker convergence at the target). This should take effect
+    only when the phase variable fades out. During the rest of the motion, the reproduction should not be affected by the values of 'a' and 'b'
+    since those values are taking into account during the DMP training. However, high values for 'a_z' and 'b_z' could cause numerical instability
+    issues with integration.
+    To avoid such issues, one can append several copies of the final position at the end of the vector containing the path before applying
+    numerical differentiation. This will ensure that the motion at the end has zero velocities/accelarations.
+
+(2) Setting 'ax' to a low value will result in the forcing term to be active even at the end of the motion. Actually the value of the last kenrel
+    will be higher than the value of the previous kernels so the weighted sum will be equal to the value of the last kenrel weight. However if the
+    number of kernels is large therefore their variance will be smaller, so even the last kernel can result in a value that is so small that due to 
+    finite numerical representation is zero and since there is the dmp.zero_tol term the division will be 0/(0+dmp.zero_tol) = 0. So in this case
+    the weighted sum will be zero.
+    This is not desirable since we want at t=tau the forcing term to be zero and let the linear part take the movement to the goal. Setting 'ax' to
+    a high value should not affect the DMP's movement, since the value of the phase variable 'x' is considered in the LWR optimization. However it
+    was observed that setting 'ax' to a very high value (therefore xend will be very small) causes some issues at the end of the motion. This is due
+    to the fact that a high 'ax' results in numerical issues when integrating the canonical system, causing x to become negative and producing
+    undesired motions.
+
+
+(3) When taking the sum(Psi), the result may be zero in some cases. So take special care (e.g. by adding a small constant at the demominator)
+    to avoid numerical issues.
+
+(4) At some point, despite increasing the number of kernels, the accuracy does not get better...
+    In some cases, it even gets worse...???
+    In this case, make sure that there are enough training points. For example, if the number of kernels is higher than the number of training
+    points, the reproduction accuracy might be poor.
+    If that's the case, decrease the sampling rate to acquire more training points or add another demonstration.
+    
+    
+(5) In LWR each weight is learned locally and independently of other weights. The number of points that are considered in the training of w_i are
+    determined by the kernel's psi_i width, 1/h_i. The bigger the width the more points are considered in the training of w_i. However if the desired 
+    trajectory is highly non-linear at the part of the motion covered by psi_i,  then this will result in a smooothed version of the trajectory from w_i. 
+    However, a small value of kernel width will result in very little overlapping between the kernels thus producing non-smooth motions. 
+    In conclusion the following points should be considered in setting the kernels:
+    - Keeping the width of the kernels relatively small (so that each kernels affects a small local region)
+    - but not too small so that there is sufficient overlapping between adjucent kernels (ensuring smooth transitions)
+    - increase the number of kernels in highly non-linear segments of the desired trajectory
+    
+    
+(6) A DMP tends to excibit poorer reproduction accuracy at the beginning and end of a motion. This is attributed to the fact that DMP learns the
+    accelaration (or desired force). At the beginning and end of a motion the accelaration excibits usually higher degree of non-linearity thus 
+    the weighted sum of Gaussian cannot approximate very well these parts of the motion. And in general, if the are highly non-linear parts in
+    segments of a trajectory, the weighted sum of Gaussians cannot approximate that part very well. In that case, the increase of the number of
+    basis functions can help alleviate this issue.
+    Note that when LWR is used for training, even if there was a large number of kernels, if the kernels have big width, the produced trajectory
+    will not be accurate (since each weight is learned independently).
+    
+(7) There was an issue with the DMP when using tau*y=z instead of dy/tau=z. If used consistently in the entire DMP framework, both should produce
+	similar results in terms of accuracy reproduction. However using dy/tau=z yielded better training and simulation results. This was caused by the
+	fact that tau was greater than 1. So when using tau*y=z the accelaration dz=tau^2*ddy was multiplied by a number greater than one, so any non-linear 
+	parts of the accelaration became even steeper. So Fd = dz + g_attr becomes also steep. Thus the training was worse in this case and consequently 
+	the simulation results were not as accurate. The same problem can occur with dy/tau=z if tau<1. To overcome this problem, one can use an extra 
+	scaling factor:
+	a_s*tau*dy = z
+	where a_s is a constant that can be set as a_s = a_k/tau, where a_k >= 1
+	In this case the accelaration will be dz= ddy/a_k^2
+	
+	
+(8) The movements total duration is tau. This because tau is in the canical system tau*dx=-a_x*x. The time constant a_x is choosen such that x=x_end
+	when t=Tend, where Tend is the total duration of the movement. So setting tau=Tend, when t=tau the movements duration is reached and x=x_end (where
+	x_end is typically a small value, e.g. 0.005). At that point the forcing term's effect is negligible since it is mutliplied by x (which at that point
+	has reached a small value, x_end). So the path of the trajectory must have been complited. To ensure the convergence to the goal state, the linear part
+	takes the preceding role (since the forcing term is close to zero).
+	
+
+***  Conclusions  ***
+For low 'ax', the forcing term will remain longer. So it must be learned with very good accuracy, since its effect will be long-lasting.
+Especially at the end of the motion (to avoid divergence from the target).
+The divergence from the target can be alleviated setting high values for 'a' and 'b' (not too high though since this can cause numerical instabilities)
+
+
+
+

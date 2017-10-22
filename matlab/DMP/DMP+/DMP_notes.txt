@@ -1,0 +1,32 @@
+(1) When preprocessing the data, make sure that at the beginning and end of the motion the velocity and accelaration are zero.
+    This is more important at end of the motion since if the phase variable is still acitve (e.g. the 'ax' constant is small so the
+    phase variable decreases slower) near the end of the motion, so will be the forcing term as well. If the forcing term is trained
+    with non-zero velocity/accelaration at the end of the motion, the forcing term may cause the motion to deviate at the end of the
+    motion from the final target. This will cause an overshoot at the end, and only when the phase variable will become zero (negating
+    the forcing term), the goal-attractor will bring the motion back to the target.
+    Such problems can be alleviated setting high values for 'a' and 'b' (impose quicker convergence at the target). This should take effect
+    only when the phase variable fades out. During the rest of the motion, the reproduction should not be affected by the values of 'a' and 'b'
+    since those values are taking into account during the DMP training. However, high values for 'a' and 'b' could cause numerical instability
+    issues with integration.
+    To avoid such issues, one can append several copies of the final position at the end of the vector containing the path before applying
+    numerical differentiation. This will ensure that the motion at the end has zero velocities/accelarations.
+
+(2) Avoid using a high value for 'ax', since this will cause the forcing term to die out very quickly, failing to imitate the desired motion
+    after that point. It will just converge to the target according to the goal attractor.
+    A low value for ax should not be problematic, as long as issue (1) is solved and the forcing term can on each own (i.e. even without the
+    goal attractor) replicate and converge to the target position.
+
+(3) When taking the sum(Psi), the result may be zero in some cases. So take special care (e.g. by adding a small constant at the demominator)
+    to avoid numerical issues.
+
+(4) At some point, despite increasing the number of kernels, the accuracy does not get better...
+    In some cases, it even gets worse...???
+
+***  Conclusions  ***
+For low 'ax', the forcing term will remain longer. So it must be learned with very good accuracy, since its effect will be long-lasting.
+Especially at the end of the motion (to avoid divergence from the target).
+The divergence from the target can be alleviated setting high values for 'a' and 'b' (not too high though since this can cause numerical instabilities)
+
+
+
+

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package>
+  <name>dmp_test</name>
+  <version>0.0.0</version>
+  <description>DMP_test_node</description>
+
+  <maintainer email="antosidi646@gmail.com">Slifer64</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>roscpp</build_depend>
+  
+  <build_depend>dmp_lib</build_depend>
+  
+  <run_depend>roscpp</run_depend>
+  
+  <run_depend>dmp_lib</run_depend>
+
+</package>

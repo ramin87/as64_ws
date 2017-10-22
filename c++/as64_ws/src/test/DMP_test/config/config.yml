@@ -1,0 +1,42 @@
+# ====  Set up DMP params  ====
+a_z: 50
+b_z: 12.5 #set to a_z/4 
+x0: 1
+x_end: 0.005
+N_kernels: 100
+std_K: 1.05
+train_method: "LWR"
+CAN_SYS_TYPE: "spring-damper" # "exp", "lin", "spring-damper"
+
+USE_GOAL_FILT: true
+a_g: 10
+USE_PHASE_STOP: true
+a_px: 100
+a_py: 12.5 # set to b_z
+
+# ====  demos preprocess params ====
+add_points_percent: 0.01
+smooth_points_percent: 0.03
+
+# ====  Set up DMP params  ====
+Kd: 150
+Dd: 2
+
+# ====  Set up DMP params  ====
+APPLY_DISTURBANCE: true
+Fdist_min: 5
+Fdist_max: 80
+t1_fdist: 0.4
+t2_fdist: 2.2
+     
+# ====  Simulation params  ====
+sim_time_step: 0.002
+sim_tol_stop: 0.001
+sim_max_iters: 6000
+tau_sim_scale: 1
+
+data_input_path: "/home/slifer/Dropbox/64631466/lib/matlab/DMP/DMP_temp/"
+data_output_path: "/home/slifer/Dropbox/64631466/lib/matlab/DMP/DMP_temp/"
+
+in_data_filename: "data.txt"
+out_data_filename: "data_out.txt"

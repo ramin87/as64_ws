@@ -1,0 +1,13 @@
+<launch>
+    <arg name="node_name" default="DMP_test_node" />
+
+    <node pkg="dmp_test"
+          type="DMP_test_node"
+          name="$(arg node_name)"
+          output="screen">
+
+        <rosparam command="load"
+                  file="$(find dmp_test)/config/config.yml" />
+
+    </node>
+</launch>
