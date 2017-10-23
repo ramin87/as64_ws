@@ -181,7 +181,7 @@ classdef DMP < handle
               
               LS_train(dmp,x, s, Fd);
 
-          else    
+          else    DMP_get_v_scale
               error('Unsopported training method ''%s''', train_method);
           end
           
@@ -224,7 +224,7 @@ classdef DMP < handle
           %if (nargin < 8), g=g0; end
           
           v_scale = dmp.get_v_scale();
-          
+
           force_term = dmp.forcing_term(x)*u*(g0-y0);
           
           dz = ( dmp.a_z*(dmp.b_z*(g-y)-z) + force_term + z_c) / v_scale;
