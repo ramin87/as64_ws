@@ -3,7 +3,7 @@ function cmd_args = get_cmd_args()
 cmd_args = struct();
 
 %% Set up DMP params
-cmd_args.a_z = 60; %40   10 50 80 120 160
+cmd_args.a_z = 90; %40   10 50 80 120 160
 cmd_args.b_z = cmd_args.a_z/4;
 
 cmd_args.x0 = 1;
@@ -13,14 +13,14 @@ cmd_args.N_kernels = 100;
 
 cmd_args.std_K = 0.92;
 
-cmd_args.DMP_TYPE = 'DMP-plus'; % 'DMP', 'DMP-bio', 'DMP-plus'
+cmd_args.DMP_TYPE = 'DMP'; % 'DMP', 'DMP-bio', 'DMP-plus'
 
 cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS'
 
-cmd_args.CAN_SYS_TYPE = 'lin'; % 'lin', exp', 'spring-damper'
+cmd_args.CAN_SYS_TYPE = 'spring-damper'; % 'lin', exp', 'spring-damper'
 
 
-cmd_args.USE_GOAL_FILT = false;
+cmd_args.USE_GOAL_FILT = true;
 cmd_args.a_g = 10;
 cmd_args.USE_PHASE_STOP = true;
 cmd_args.a_px = 100; 

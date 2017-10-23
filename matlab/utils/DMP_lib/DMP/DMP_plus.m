@@ -213,7 +213,7 @@ classdef DMP_plus < handle
       %  @param[in] x: The phase variable.
       %  @param[out] f: The normalized weighted sum of Gaussians.
       function f = forcing_term(dmp,x)
-          
+
           Psi = dmp.activation_function(x);
           f = dot(Psi,dmp.w*x+dmp.b) / (sum(Psi)+dmp.zero_tol); % add 'zero_tol' to avoid numerical issues
 
@@ -241,7 +241,7 @@ classdef DMP_plus < handle
           v_scale = dmp.get_v_scale();
           
           force_term = dmp.forcing_term(x)*(g0-y0);
-
+          
           dz = ( dmp.a_z*(dmp.b_z*(g-y)-z) + force_term + z_c) / v_scale;
         
           dy = ( z + y_c) / v_scale;
@@ -260,7 +260,7 @@ classdef DMP_plus < handle
           for j=1:n
               t = dmp.h.*((x(j)-dmp.c).^2);
               psi = exp(-t);
-              psi(t<2*dmp.k_trunc_kernel^2) = 0;
+              psi(t>2*dmp.k_trunc_kernel^2) = 0;
               Psi(:,j) = psi;
           end
           
