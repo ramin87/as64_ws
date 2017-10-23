@@ -1,4 +1,4 @@
-%% DMP class
+%% DMP plus class
 %  Implements an 1-D DMP.
 %  The DMP is driven by a canonical system. An example of an exponential
 %  canonical system is:
@@ -38,7 +38,7 @@
 %   is, the faster the convergence).
 %
 
-classdef DMP < handle
+classdef DMP_plus < handle
    properties
        N_kernels % number of kernels (basis functions)
        
@@ -48,8 +48,11 @@ classdef DMP < handle
        can_sys_ptr % handle (pointer) to the canonical system
     
        w % N_kernelsx1 vector with the weights of the DMP
+       b % N_kernelsx1 vector with the bias term for each weight of the DMP
        c % N_kernelsx1 vector with the kernel centers of the DMP
        h % N_kernelsx1 vector with the kernel stds of the DMP
+       
+       k_trunc_kernel % gain multiplied by the std of each kernel to define the truncated kernels width
     
        zero_tol % tolerance value used to avoid divisions with very small numbers
        
@@ -63,7 +66,7 @@ classdef DMP < handle
       %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
       %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
       %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
-      function dmp = DMP(N_kernels, a_z, b_z, can_sys_ptr, std_K)
+      function dmp = DMP_plus(N_kernels, a_z, b_z, can_sys_ptr, std_K)
           
           if (nargin < 4)
               return;
@@ -85,7 +88,9 @@ classdef DMP < handle
       function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
           
           DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K);
+          dmp.k_trunc_kernel = 3; % set width of truncated kernels to k_trunc_kernel*std
           
+          dmp.b = zeros(dmp.N_kernels, 1);
       end
       
 
@@ -135,21 +140,12 @@ classdef DMP < handle
           Time = (0:n_data-1)*Ts;  
           tau = Time(end);
           
-          istart = 1;
-          iend = length(Time)-0;
-          
-          Time = Time(istart:iend);
-          yd_data = yd_data(istart:iend);
-          dyd_data = dyd_data(istart:iend);
-          ddyd_data = ddyd_data(istart:iend);
-          
           dmp.can_sys_ptr.tau = tau;
           g = yd_data(end);
           y0 = yd_data(1);
           x0 = 1;
           g0 = g;
           tau = dmp.can_sys_ptr.tau;
-          
           
           X = dmp.can_sys_ptr.get_continuous_output(Time, x0);
           
@@ -171,15 +167,33 @@ classdef DMP < handle
           v_scale = dmp.get_v_scale();
           ddzd_data = ddyd_data*v_scale^2;
           g_attr_data = - dmp.a_z*(dmp.b_z*(g-yd_data)-dyd_data*v_scale);
-          Fd = (ddzd_data + g_attr_data);
+          Fd = (ddzd_data + g_attr_data) / (g0-y0);
           
           if (strcmpi(train_method,'LWR'))
               
-              LWR_train(dmp,x, s, Fd);
+              Psi = activation_function(dmp,x);
+              
+              for k=1:dmp.N_kernels
+                  
+                  psi = Psi(k,:);
+                  Sw = sum(psi); % + dmp.zero_tol?
+                  Sx = dot(psi,x);
+                  Sx2 = dot(psi,x.^2);
+                  Sxy = dot(psi,x.*Fd);
+                  Sy = dot(psi,Fd);
+                  A = [Sx2 Sx; Sx Sw];
+                  b = [Sxy; Sy];
+                  W = A\b;
+                  dmp.w(k) = W(1);
+                  dmp.b(k) = W(2);
+
+              end
+              %LWR_train(dmp,x, s, Fd);
 
           elseif (strcmpi(train_method,'LS'))
               
-              LS_train(dmp,x, s, Fd);
+              error('Unsopported training method ''%s'' for DMP_plus', train_method);
+              %LS_train(dmp,x, s, Fd);
 
           else    
               error('Unsopported training method ''%s''', train_method);
@@ -187,7 +201,7 @@ classdef DMP < handle
           
           F = zeros(size(Fd));
           for i=1:size(F,2)
-              F(i) = dmp.forcing_term(x(i))*u(i)*(g0-y0);
+              F(i) = dmp.forcing_term(x(i));
           end
 
           train_error = norm(F-Fd)/length(F);
@@ -200,7 +214,8 @@ classdef DMP < handle
       %  @param[out] f: The normalized weighted sum of Gaussians.
       function f = forcing_term(dmp,x)
           
-          f = DMP_forcing_term(dmp,x);
+          Psi = dmp.activation_function(x);
+          f = dot(Psi,dmp.w*x+dmp.b) / (sum(Psi)+dmp.zero_tol); % add 'zero_tol' to avoid numerical issues
 
       end
       
@@ -225,8 +240,8 @@ classdef DMP < handle
           
           v_scale = dmp.get_v_scale();
           
-          force_term = dmp.forcing_term(x)*u*(g0-y0);
-          
+          force_term = dmp.forcing_term(x)*(g0-y0);
+
           dz = ( dmp.a_z*(dmp.b_z*(g-y)-z) + force_term + z_c) / v_scale;
         
           dy = ( z + y_c) / v_scale;
@@ -237,9 +252,17 @@ classdef DMP < handle
       %% Returns a column vector with the values of the activation functions of the DMP
       %  @param[in] x: phase variable
       %  @param[out] psi: column vector with the values of the activation functions of the DMP
-      function psi = activation_function(dmp,x)
+      function Psi = activation_function(dmp,x)
           
-          psi = DMP_gaussian_kernel(dmp,x);
+          n = length(x);
+          Psi = zeros(dmp.N_kernels, n);
+          
+          for j=1:n
+              t = dmp.h.*((x(j)-dmp.c).^2);
+              psi = exp(-t);
+              psi(t<2*dmp.k_trunc_kernel^2) = 0;
+              Psi(:,j) = psi;
+          end
           
       end
       

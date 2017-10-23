@@ -116,6 +116,7 @@ Fdist = 0;
 
 log_data = get_logData_struct();   
 
+log_data.dmp = dmp;
 log_data.Time_demo = Time_demo;
 log_data.yd_data = yd_data;
 log_data.dyd_data = dyd_data;
@@ -187,8 +188,8 @@ while (true)
         %dz(i) = ( dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i))-z(i)) + force_term(i) ) / v_scale;
         %dy(i) = ( z(i) - cmd_args.a_py*(y_robot(i)-y(i)) ) / v_scale;
         
-        y_c = 0;
-        z_c = - cmd_args.a_py*(y_robot(i)-y(i));
+        y_c = - cmd_args.a_py*(y_robot(i)-y(i));
+        z_c = 0;
         
         [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x(i), u(i), y0(i), g0(i), g(i), y_c, z_c);
         

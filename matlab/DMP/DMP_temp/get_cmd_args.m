@@ -13,11 +13,11 @@ cmd_args.N_kernels = 100;
 
 cmd_args.std_K = 0.92;
 
-cmd_args.DMP_TYPE = 'DMP-bio'; % 'DMP', 'DMP-bio', 'DMP-plus'
+cmd_args.DMP_TYPE = 'DMP-plus'; % 'DMP', 'DMP-bio', 'DMP-plus'
 
-cmd_args.train_method = 'LWR'; % 'LWR', 'LS'
+cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS'
 
-cmd_args.CAN_SYS_TYPE = 'exp'; % 'lin', exp', 'spring-damper'
+cmd_args.CAN_SYS_TYPE = 'lin'; % 'lin', exp', 'spring-damper'
 
 
 cmd_args.USE_GOAL_FILT = false;
@@ -42,7 +42,7 @@ cmd_args.Dd = 2;
 %% Simulation params
 cmd_args.dt = 0.002; %simulation time_step;
 cmd_args.tol_stop = 1e-3;
-cmd_args.max_iters = 6000;
+cmd_args.max_iters = 3000;
 cmd_args.tau_sim_scale = 1;
 
 

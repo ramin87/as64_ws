@@ -1,4 +1,4 @@
-clc; 
+%clc; 
 %close all;
 clear;
 
@@ -6,6 +6,7 @@ load dmp_results.mat
 
 fontsize = cmd_args.fontsize;
 
+dmp = log_data.dmp;
 Time_demo = log_data.Time_demo;
 yd_data = log_data.yd_data;
 dyd_data = log_data.dyd_data;
@@ -145,11 +146,11 @@ plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Pos
 
 
 %% Plot psi activations with respect to phase variable
-% for i=1:D
-%     plot_psi_activations_and_psiWeightedSum(x_data,Psi_data{i}, f_data{i}, dmp{i}.c, dmp{i}.w);
-% end
+for i=1:D
+    plot_psi_activations_and_psiWeightedSum(x_data,Psi_data{i}, Force_term_data(i,:), dmp{i}.c, dmp{i}.w);
+end
 % 
-% % Plot psi activations with respect to time
+%% Plot psi activations with respect to time
 % for i=1:D
 %     figure
 %     plot(Time, Psi_data{i});
