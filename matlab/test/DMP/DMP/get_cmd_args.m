@@ -17,10 +17,10 @@ cmd_args.DMP_TYPE = 'DMP'; % 'DMP', 'DMP-bio', 'DMP-plus'
 
 cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS'
 
-cmd_args.CAN_SYS_TYPE = 'spring-damper'; % 'lin', exp', 'spring-damper'
+cmd_args.CAN_SYS_TYPE = 'lin'; % 'lin', exp', 'spring-damper'
 
 
-cmd_args.USE_GOAL_FILT = true;
+cmd_args.USE_GOAL_FILT = false;
 cmd_args.a_g = 10;
 cmd_args.USE_PHASE_STOP = true;
 cmd_args.a_px = 100; 
@@ -42,7 +42,7 @@ cmd_args.Dd = 2;
 %% Simulation params
 cmd_args.dt = 0.002; %simulation time_step;
 cmd_args.tol_stop = 1e-3;
-cmd_args.max_iters = 3000;
+cmd_args.max_iters = 6000;
 cmd_args.tau_sim_scale = 1;
 
 

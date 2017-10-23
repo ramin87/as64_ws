@@ -48,7 +48,7 @@ dmp = cell(D,1);
 for i=1:D
     
     if (strcmpi(cmd_args.DMP_TYPE,'DMP'))
-       dmp{i} = DMP(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
+       dmp{i} = DMP(cmd_ara_pygs.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
     elseif (strcmpi(cmd_args.DMP_TYPE,'DMP-bio'))
         dmp{i} = DMP_bio(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
     elseif (strcmpi(cmd_args.DMP_TYPE,'DMP-plus'))
@@ -174,7 +174,7 @@ while (true)
     
     for i=1:D
         
-        v_scale = dmp{i}.get_v_scale();% 1 / (tau*dmp{i}.a_s);
+        %v_scale = dmp{i}.get_v_scale();% 1 / (tau*dmp{i}.a_s);
         
         Psi = dmp{i}.activation_function(x);
         log_data.Psi_data{i} = [log_data.Psi_data{i} Psi(:)];
@@ -191,7 +191,7 @@ while (true)
         y_c = - cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
         
-        [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x(i), u(i), y0(i), g0(i), g(i), y_c, z_c);
+        [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, u, y0(i), g0(i), g(i), y_c, z_c);
         
         dy_robot(i) = dy(i) - (cmd_args.Kd/cmd_args.Dd)*(y_robot(i)-y(i)) + Fdist/cmd_args.Dd; 
       
@@ -264,14 +264,6 @@ end
 toc
 
 save dmp_results.mat log_data cmd_args;
-...
-%     Time_demo yd_data dyd_data ddyd_data ...
-%     D Ts ...
-%     Time y_data dy_data z_data dz_data x_data u_data Force_term_data ...
-%     Fdist_data ...
-%     g0 g_data ...
-%     y_robot_data dy_robot_data ...
-%     Time_train F_train_data Fd_train_data
     
 
 %% Find mean square error between the signals
