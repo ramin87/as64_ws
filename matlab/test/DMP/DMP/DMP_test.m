@@ -66,19 +66,25 @@ Fd_train_data = [];
 %% Train the DMP
 disp('DMP training...')
 tic
-train_mse = zeros(D,1);   
+train_mse = zeros(D,1); 
+n_data = length(yd_data(i,:));
+Time = (0:n_data-1)*Ts;
 for i=1:D
+    
+    y0 = yd_data(i,1);
+    g0 = yd_data(i,end);
+    
+    ind = 1:n_data;
+%     ind = randperm(n_data);
+    T = Time(ind);
+    yd = yd_data(i,ind);
+    dyd = dyd_data(i,ind);
+    ddyd = ddyd_data(i,ind);
 
-    [train_mse(i), F_train, Fd_train] = dmp{i}.train(yd_data(i,:), dyd_data(i,:), ddyd_data(i,:), Ts, cmd_args.train_method, cmd_args.USE_GOAL_FILT, cmd_args.a_g);      
+    [train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method, cmd_args.USE_GOAL_FILT, cmd_args.a_g);      
 
     F_train_data = [F_train_data; F_train];
     Fd_train_data = [Fd_train_data; Fd_train];
-    
-%     c =  dmp{i}.c'
-%     
-%     h =  dmp{i}.h'
-%     
-%     w =  dmp{i}.w'
     
 end
 Time_train = (0:(size(F_train_data,2)-1))*Ts;

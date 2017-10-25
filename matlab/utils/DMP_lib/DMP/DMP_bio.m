@@ -233,7 +233,7 @@ classdef DMP_bio < handle
           
           force_term = dmp.forcing_term(x)*u*K;
           
-          dz = ( K*(g-y) - D*z - K*(g-y0)*u + force_term + z_c) / v_scale;
+          dz = ( K*(g-y) - D*z - K*(g0-y0)*u + force_term + z_c) / v_scale;
         
           dy = ( z + y_c) / v_scale;
         
