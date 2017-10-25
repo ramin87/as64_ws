@@ -210,6 +210,44 @@ classdef DMP_plus < handle
           f = dot(Psi,dmp.w*x+dmp.b) / (sum(Psi)+dmp.zero_tol); % add 'zero_tol' to avoid numerical issues
 
       end
+
+      
+      %% Returns the scaling factor of the forcing term.
+      %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+      %  @param[in] y0: initial position.
+      %  @param[in] g0: final goal.
+      %  @param[out] f_scale: The scaling factor of the forcing term.
+      function f_scale = forcing_term_scaling(dmp, u, y0, g0)
+          
+          f_scale = (g0-y0);
+          
+      end
+      
+      %% Returns the goal attractor of the DMP.
+      %  @param[in] y: \a y state of the DMP.
+      %  @param[in] z: \a z state of the DMP.
+      %  @param[in] g: Goal position.
+      %  @param[out] goal_attr: The goal attractor of the DMP.
+      function goal_attr = goal_attractor(dmp, y, z, g)
+          
+          goal_attr = dmp.a_z*(dmp.b_z*(g-y)-z);
+          
+      end
+      
+      
+      %% Returns the shape attractor of the DMP.
+      %  @param[in] x: The phase variable.
+      %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+      %  @param[in] y0: initial position.
+      %  @param[in] g0: final goal.
+      %  @param[out] shape_attr: The shape_attr of the DMP.
+      function shape_attr = shape_attractor(dmp, x, u, y0, g0)
+          
+          f = dmp.forcing_term(x);
+          f_scale = dmp.forcing_term_scaling(u, y0, g0);  
+          shape_attr = f * f_scale;
+          
+      end
       
       
       %% Returns the derivatives of the DMP states
@@ -234,7 +272,10 @@ classdef DMP_plus < handle
           
           force_term = dmp.forcing_term(x)*(g0-y0);
           
-          dz = ( dmp.a_z*(dmp.b_z*(g-y)-z) + force_term + z_c) / v_scale;
+          shape_attr = dmp.shape_attractor(x, u, y0, g0);
+          goal_attr = dmp.goal_attractor(y, z, g);
+          
+          dz = ( goal_attr + shape_attr + z_c) / v_scale;
         
           dy = ( z + y_c) / v_scale;
         

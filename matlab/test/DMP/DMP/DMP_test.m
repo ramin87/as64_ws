@@ -188,7 +188,7 @@ while (true)
         %shape_attr(i) = dmp{i}.shape_attractor(x,u,g0(i),y0(i));
         %goal_attr(i) = dmp{i}.goal_attractor(y(i),dy(i),g(i));
 
-        scaled_forcing_term(i) = dmp{i}.forcing_term(x);%*dmp{i}.forcing_term_scaling(u, y0(i), g0(i));
+        scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(u, y0(i), g0(i));
         
         %dz(i) = ( dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i))-z(i)) + force_term(i) ) / v_scale;
         %dy(i) = ( z(i) - cmd_args.a_py*(y_robot(i)-y(i)) ) / v_scale;

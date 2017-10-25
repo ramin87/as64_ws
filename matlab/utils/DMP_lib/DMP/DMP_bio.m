@@ -193,7 +193,7 @@ classdef DMP_bio < handle
       %  @param[out] shape_attr: The shape_attr of the DMP.
       function shape_attr = shape_attractor(dmp, x, u, y0, g0)
           
-          f = DMP_forcing_term(dmp,x);
+          f = dmp.forcing_term(x);
           f_scale = dmp.forcing_term_scaling(u, y0, g0);  
           K = dmp.a_z * dmp.b_z;
           shape_attr = f * f_scale - K*(g0-y0)*u;
@@ -224,21 +224,6 @@ classdef DMP_bio < handle
           
           dz = ( goal_attr + shape_attr + z_c) / v_scale;
           dy = ( z + y_c) / v_scale;
-        
-%           if (nargin < 10), z_c=0; end
-%           if (nargin < 9), y_c=0; end
-%           %if (nargin < 8), g=g0; end
-%           
-%           v_scale = dmp.get_v_scale();
-%           
-%           K = dmp.a_z*dmp.b_z;
-%           D = dmp.a_z;
-%           
-%           force_term = dmp.forcing_term(x)*u*K;
-%           
-%           dz = ( K*(g-y) - D*z - K*(g0-y0)*u + force_term + z_c) / v_scale;
-%         
-%           dy = ( z + y_c) / v_scale;
           
       end
       

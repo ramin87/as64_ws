@@ -197,7 +197,7 @@ classdef DMP < handle
       %  @param[out] shape_attr: The shape_attr of the DMP.
       function shape_attr = shape_attractor(dmp, x, u, y0, g0)
           
-          f = DMP_forcing_term(dmp,x);
+          f = dmp.forcing_term(x);
           f_scale = dmp.forcing_term_scaling(u, y0, g0);  
           shape_attr = f * f_scale;
           
