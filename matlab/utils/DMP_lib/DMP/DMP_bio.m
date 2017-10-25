@@ -128,72 +128,26 @@ classdef DMP_bio < handle
       %  @param[in] train_method: Method used to train the DMP weights.
       %  @param[in] USE_GOAL_FILT: flag indicating whether to use filtered goal (optional, default = false).
       %  @param[in] a_g: Parameter of the goal filter.
-      function [train_error, F, Fd] = train(dmp, yd_data, dyd_data, ddyd_data, Ts, train_method, USE_GOAL_FILT, a_g)
+      function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method, USE_GOAL_FILT, a_g)
           
-          n_data = size(yd_data,2);
-
-          Time = (0:n_data-1)*Ts;  
-          tau = Time(end);
+          [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method, USE_GOAL_FILT, a_g);
           
-          istart = 1;
-          iend = length(Time)-0;
-          
-          Time = Time(istart:iend);
-          yd_data = yd_data(istart:iend);
-          dyd_data = dyd_data(istart:iend);
-          ddyd_data = ddyd_data(istart:iend);
-          
-          dmp.can_sys_ptr.tau = tau;
-          g = yd_data(end);
-          y0 = yd_data(1);
-          x0 = 1;
-          g0 = g;
-          tau = dmp.can_sys_ptr.tau;
-          
-          
-          X = dmp.can_sys_ptr.get_continuous_output(Time, x0);
-          
-          if (size(X,1) == 1)
-              x = X;
-              u = x;
-          else
-              x = X(1,:);
-              u = X(2,:);
-          end
-
-          K = dmp.a_z*dmp.b_z;
-          D = dmp.a_z;
-          
-          s = u*K;
-          
-          g = g * ones(size(x));
-          if (USE_GOAL_FILT)
-          	g = y0*exp(-a_g*Time/tau) + g0*(1 - exp(-a_g*Time/tau));
-          end
+      end
+      
+      %% Calculates the desired values of the scaled forcing term.
+      %  @param[in] y: Position.
+      %  @param[in] dy: Velocity.
+      %  @param[in] ddy: Acceleration.
+      %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+      %  @param[in] y0: initial position.
+      %  @param[in] g0: final goal.
+      %  @param[in] g: current goal (if for instance the transition from y0 to g0 is done using a filter).
+      %  @param[out] Fd: Desired value of the scaled forcing term.
+      function Fd = calc_Fd(dmp, y, dy, ddy, u, y0, g0, g)
           
           v_scale = dmp.get_v_scale();
-          ddzd_data = ddyd_data*v_scale^2;
-          g_attr_data = -K*(g-yd_data) + D*dyd_data*v_scale + K*(g-y0).*u;
-          Fd = (ddzd_data + g_attr_data);
-          
-          if (strcmpi(train_method,'LWR'))
-              
-              LWR_train(dmp,x, s, Fd);
-
-          elseif (strcmpi(train_method,'LS'))
-              
-              LS_train(dmp,x, s, Fd);
-
-          else    
-              error('Unsopported training method ''%s''', train_method);
-          end
-          
-          F = zeros(size(Fd));
-          for i=1:size(F,2)
-              F(i) = dmp.forcing_term(x(i))*u(i)*K;
-          end
-
-          train_error = norm(F-Fd)/length(F);
+          K = dmp.a_z * dmp.b_z;
+          Fd = (ddy*v_scale^2 - dmp.goal_attractor(y, v_scale*dy, g) + K*(g0-y0)*u);
           
       end
       
@@ -207,6 +161,44 @@ classdef DMP_bio < handle
 
       end
       
+      %% Returns the scaling factor of the forcing term.
+      %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+      %  @param[in] y0: initial position.
+      %  @param[in] g0: final goal.
+      %  @param[out] f_scale: The scaling factor of the forcing term.
+      function f_scale = forcing_term_scaling(dmp, u, y0, g0)
+          
+          K = dmp.a_z*dmp.b_z;
+          f_scale = u*K;
+          
+      end
+      
+      %% Returns the goal attractor of the DMP.
+      %  @param[in] y: \a y state of the DMP.
+      %  @param[in] z: \a z state of the DMP.
+      %  @param[in] g: Goal position.
+      %  @param[out] goal_attr: The goal attractor of the DMP.
+      function goal_attr = goal_attractor(dmp, y, z, g)
+          
+          goal_attr = dmp.a_z*(dmp.b_z*(g-y)-z);
+          
+      end
+      
+      
+      %% Returns the shape attractor of the DMP.
+      %  @param[in] x: The phase variable.
+      %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+      %  @param[in] y0: initial position.
+      %  @param[in] g0: final goal.
+      %  @param[out] shape_attr: The shape_attr of the DMP.
+      function shape_attr = shape_attractor(dmp, x, u, y0, g0)
+          
+          f = DMP_forcing_term(dmp,x);
+          f_scale = dmp.forcing_term_scaling(u, y0, g0);  
+          K = dmp.a_z * dmp.b_z;
+          shape_attr = f * f_scale - K*(g0-y0)*u;
+          
+      end
       
       %% Returns the derivatives of the DMP states
       %  @param[in] y: 'y' state of the DMP
@@ -227,16 +219,27 @@ classdef DMP_bio < handle
           %if (nargin < 8), g=g0; end
           
           v_scale = dmp.get_v_scale();
+          shape_attr = dmp.shape_attractor(x, u, y0, g0);
+          goal_attr = dmp.goal_attractor(y, z, g);
           
-          K = dmp.a_z*dmp.b_z;
-          D = dmp.a_z;
-          
-          force_term = dmp.forcing_term(x)*u*K;
-          
-          dz = ( K*(g-y) - D*z - K*(g0-y0)*u + force_term + z_c) / v_scale;
-        
+          dz = ( goal_attr + shape_attr + z_c) / v_scale;
           dy = ( z + y_c) / v_scale;
         
+%           if (nargin < 10), z_c=0; end
+%           if (nargin < 9), y_c=0; end
+%           %if (nargin < 8), g=g0; end
+%           
+%           v_scale = dmp.get_v_scale();
+%           
+%           K = dmp.a_z*dmp.b_z;
+%           D = dmp.a_z;
+%           
+%           force_term = dmp.forcing_term(x)*u*K;
+%           
+%           dz = ( K*(g-y) - D*z - K*(g0-y0)*u + force_term + z_c) / v_scale;
+%         
+%           dy = ( z + y_c) / v_scale;
+          
       end
       
       

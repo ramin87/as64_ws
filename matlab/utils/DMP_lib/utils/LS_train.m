@@ -6,7 +6,7 @@
 %  @param[in] Fd: Row vector with the desired values of the shape attractor.
 function LS_train(dmp, x, s, Fd)
   
-  s = s(:);
+  s = s(:);   
   
   n_data = length(x);
   

@@ -147,7 +147,8 @@ plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Pos
 
 %% Plot psi activations with respect to phase variable
 for i=1:D
-    plot_psi_activations_and_psiWeightedSum(x_data,Psi_data{i}, Force_term_data(i,:), dmp{i}.c, dmp{i}.w);
+    f_data = Force_term_data(i,:);
+    plot_psi_activations_and_psiWeightedSum(x_data,Psi_data{i}, f_data, dmp{i}.c, dmp{i}.w);
 end
 % 
 %% Plot psi activations with respect to time

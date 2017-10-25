@@ -133,18 +133,10 @@ classdef DMP_plus < handle
       %  @param[in] train_method: Method used to train the DMP weights.
       %  @param[in] USE_GOAL_FILT: flag indicating whether to use filtered goal (optional, default = false).
       %  @param[in] a_g: Parameter of the goal filter.
-      function [train_error, F, Fd] = train(dmp, yd_data, dyd_data, ddyd_data, Ts, train_method, USE_GOAL_FILT, a_g)
-          
-          n_data = size(yd_data,2);
+      function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method, USE_GOAL_FILT, a_g)
 
-          Time = (0:n_data-1)*Ts;  
-          tau = Time(end);
-          
-          dmp.can_sys_ptr.tau = tau;
-          g = yd_data(end);
-          y0 = yd_data(1);
+          g = g0;
           x0 = 1;
-          g0 = g;
           tau = dmp.can_sys_ptr.tau;
           
           X = dmp.can_sys_ptr.get_continuous_output(Time, x0);

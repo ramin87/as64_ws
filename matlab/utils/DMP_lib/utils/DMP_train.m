@@ -35,11 +35,12 @@ function [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_dat
     end
 
     s = dmp.forcing_term_scaling(u, y0, g0);
+    if (length(s) == 1), s = ones(size(x))*s(1); end
 
     Fd = dmp.calc_Fd(yd_data, dyd_data, ddyd_data, u, y0, g0, g);
 
     if (strcmpi(train_method,'LWR'))
-
+  
       LWR_train(dmp,x, s, Fd);
 
     elseif (strcmpi(train_method,'LS'))

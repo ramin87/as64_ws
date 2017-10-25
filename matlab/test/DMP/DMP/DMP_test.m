@@ -114,7 +114,7 @@ y_robot = y0;
 dy_robot = zeros(D,1);
 dz = zeros(D,1);
 z = tau*dy + cmd_args.a_py*(y_robot-y);
-force_term = zeros(D,1);
+scaled_forcing_term = zeros(D,1);
 shape_attr = zeros(D,1);
 goal_attr = zeros(D,1);
 
@@ -169,7 +169,7 @@ while (true)
     
     log_data.Fdist_data = [log_data.Fdist_data Fdist];
     
-    log_data.Force_term_data = [log_data.Force_term_data force_term];
+    log_data.Force_term_data = [log_data.Force_term_data scaled_forcing_term];
     
     log_data.g_data = [log_data.g_data g];
     
@@ -188,8 +188,7 @@ while (true)
         %shape_attr(i) = dmp{i}.shape_attractor(x,u,g0(i),y0(i));
         %goal_attr(i) = dmp{i}.goal_attractor(y(i),dy(i),g(i));
 
-        
-        force_term(i) = dmp{i}.forcing_term(x)*u*(g0(i)-y0(i));
+        scaled_forcing_term(i) = dmp{i}.forcing_term(x);%*dmp{i}.forcing_term_scaling(u, y0(i), g0(i));
         
         %dz(i) = ( dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i))-z(i)) + force_term(i) ) / v_scale;
         %dy(i) = ( z(i) - cmd_args.a_py*(y_robot(i)-y(i)) ) / v_scale;
