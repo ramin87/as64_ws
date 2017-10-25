@@ -175,6 +175,7 @@ classdef DMP < handle
           
           f_scale = u*(g0-y0);
           
+<<<<<<< HEAD
       end
       
       %% Returns the goal attractor of the DMP.
@@ -183,6 +184,19 @@ classdef DMP < handle
       %  @param[in] g: Goal position.
       %  @param[out] goal_attr: The goal attractor of the DMP.
       function goal_attr = goal_attractor(dmp, y, z, g)
+=======
+          if (strcmpi(train_method,'LWR'))
+              
+              LWR_train(dmp,x, s, Fd);
+
+          elseif (strcmpi(train_method,'LS'))
+              
+              LS_train(dmp,x, s, Fd);
+
+          else    DMP_get_v_scale
+              error('Unsopported training method ''%s''', train_method);
+          end
+>>>>>>> 55523b2ca1692ae5396e5d396a251d9973da6348
           
           goal_attr = dmp.a_z*(dmp.b_z*(g-y)-z);
           
@@ -223,10 +237,18 @@ classdef DMP < handle
           %if (nargin < 8), g=g0; end
           
           v_scale = dmp.get_v_scale();
+<<<<<<< HEAD
           shape_attr = dmp.shape_attractor(x, u, y0, g0);
           goal_attr = dmp.goal_attractor(y, z, g);
           
           dz = ( goal_attr + shape_attr + z_c) / v_scale;
+=======
+
+          force_term = dmp.forcing_term(x)*u*(g0-y0);
+          
+          dz = ( dmp.a_z*(dmp.b_z*(g-y)-z) + force_term + z_c) / v_scale;
+        
+>>>>>>> 55523b2ca1692ae5396e5d396a251d9973da6348
           dy = ( z + y_c) / v_scale;
         
       end

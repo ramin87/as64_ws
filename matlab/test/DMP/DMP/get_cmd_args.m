@@ -42,7 +42,7 @@ cmd_args.Dd = 2;
 %% Simulation params
 cmd_args.dt = 0.002; %simulation time_step;
 cmd_args.tol_stop = 1e-3;
-cmd_args.max_iters = 3000;
+cmd_args.max_iters = 6000;
 cmd_args.tau_sim_scale = 1;
 
 
