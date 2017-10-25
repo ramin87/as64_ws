@@ -1,6 +1,7 @@
 function set_matlab_utils_path()
 
-MATLAB_PATH = '/home/leonidas/Documents/workspaces/ros_ws/as64_ws/matlab/utils/';
+MATLAB_PATH = '/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
+%MATLAB_PATH = 'C:/Users/Slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
 
 addpath([MATLAB_PATH 'math_lib/']);
 addpath([MATLAB_PATH 'filter_lib/']);
