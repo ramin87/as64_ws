@@ -196,6 +196,26 @@ while (true)
         y_c = - cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
         
+%         
+%         if (x == 1)
+%            f = dmp{i}.forcing_term(x);
+%            f_s = dmp{i}.forcing_term_scaling(u, y0(i), g0(i));
+%            s_attr = f*f_s;
+%            
+%            psi = dmp{i}.activation_function(x);
+%            ind = [1];
+%            f2 = dot(psi(ind),dmp{i}.w(ind)) / (sum(psi(ind))+dmp{i}.zero_tol);
+%            s_attr2 = f2*f_s;
+%            
+%            s_attr
+%            s_attr2
+%            s_attr_d = Fd_train_data(1,1)
+%            e_attr = abs(s_attr - s_attr_d)
+%            e_attr2 = abs(s_attr2 - s_attr_d)
+%            pause
+%         end
+        
+        
         [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x(i), u(i), y0(i), g0(i), g(i), y_c, z_c);
         
         dy_robot(i) = dy(i) - (cmd_args.Kd/cmd_args.Dd)*(y_robot(i)-y(i)) + Fdist/cmd_args.Dd; 
