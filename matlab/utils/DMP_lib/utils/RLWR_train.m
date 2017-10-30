@@ -48,16 +48,16 @@ function RLWR_train(dmp, x, s, Fd)
   s = s(:);   
   n = length(Fd);
   
-  lambda = 0.99;
-  P = ones(dmp.N_kernels, 1);
+  lambda = 0.987;
+  P = ones(dmp.N_kernels, 1)*1;
   dmp.w = zeros(dmp.N_kernels, 1);
   
-  P_data = [];
-  U_data = [];
+%   P_data = [];
+%   U_data = [];
   
   for i = 1:n
       
-      u_data = zeros(dmp.N_kernels,1);
+      %u_data = zeros(dmp.N_kernels,1);
       
       Psi = dmp.activation_function(x(i));
       for k = 1:dmp.N_kernels
@@ -68,12 +68,12 @@ function RLWR_train(dmp, x, s, Fd)
           P(k) = (P(k) - (P(k)^2 * s(i)^2) / (lambda / psi + P(k) * s(i) ^ 2)) / lambda;
           dmp.w(k) = dmp.w(k) + psi * P(k) * s(i) * error;
           
-         u_data(k) = psi * P(k) * s(i) * error;
+         %u_data(k) = psi * P(k) * s(i) * error;
           
       end
       
-      U_data = [U_data u_data];
-      P_data = [P_data P];
+%       U_data = [U_data u_data];
+%       P_data = [P_data P];
       
   end
   

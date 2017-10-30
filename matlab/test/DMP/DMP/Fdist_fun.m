@@ -22,5 +22,9 @@ if (t>t1 && t<t2)
     end
 end
 
+% if (t>t1 && t<t2)
+%     Fdist = Fdist + cmd_args.Fdist_max/50*rand(1);
+% end
+
 end
 

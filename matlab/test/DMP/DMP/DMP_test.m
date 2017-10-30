@@ -147,6 +147,8 @@ can_sys_ptr.set_tau(tau);
 iters = 0;
 dt = cmd_args.dt;
 
+temp_data = [];
+
 disp('DMP simulation...')
 tic
 while (true)
@@ -190,33 +192,24 @@ while (true)
 
         scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(u, y0(i), g0(i));
         
-        %dz(i) = ( dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i))-z(i)) + force_term(i) ) / v_scale;
-        %dy(i) = ( z(i) - cmd_args.a_py*(y_robot(i)-y(i)) ) / v_scale;
-        
         y_c = - cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
         
-%         
-%         if (x == 1)
-%            f = dmp{i}.forcing_term(x);
-%            f_s = dmp{i}.forcing_term_scaling(u, y0(i), g0(i));
-%            s_attr = f*f_s;
-%            
-%            psi = dmp{i}.activation_function(x);
-%            ind = [1];
-%            f2 = dot(psi(ind),dmp{i}.w(ind)) / (sum(psi(ind))+dmp{i}.zero_tol);
-%            s_attr2 = f2*f_s;
-%            
-%            s_attr
-%            s_attr2
-%            s_attr_d = Fd_train_data(1,1)
-%            e_attr = abs(s_attr - s_attr_d)
-%            e_attr2 = abs(s_attr2 - s_attr_d)
-%            pause
+%         v_scale = dmp{i}.get_v_scale();
+%         dz(i) = ( dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i))-z(i)) + scaled_forcing_term(i)) / v_scale;
+%         dy(i) = ( z(i) + y_c ) / v_scale;
+        
+        temp = [dz; z; scaled_forcing_term; dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i)))];
+        temp_data = [temp_data temp];
+%         if (t>0.4 && t<2.2)
+%             dz
+%             z
+%             scaled_forcing_term
+%             dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i)))
+%             pause    
 %         end
         
-        
-        [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x(i), u(i), y0(i), g0(i), g(i), y_c, z_c);
+        [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, u, y0(i), g0(i), g(i), y_c, z_c);
         
         dy_robot(i) = dy(i) - (cmd_args.Kd/cmd_args.Dd)*(y_robot(i)-y(i)) + Fdist/cmd_args.Dd; 
       
@@ -264,6 +257,7 @@ while (true)
     
     iters = iters + 1;
     if (iters >= cmd_args.max_iters), break; end
+    
     
     %% Numerical integration
     t = t + dt;

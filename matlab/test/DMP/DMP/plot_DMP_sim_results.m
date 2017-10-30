@@ -81,20 +81,38 @@ for i=1:D
     legend({'$e_{track}$'},'Interpreter','latex','fontsize',fontsize);
     subplot(n_splots,1,4);
     plot(Time,dy_robot_data(i,:), Time, dy_data(i,:), Time, z_data(i,:));
-    legend({'$\dot{y_{robot}}$','$\dot{y_{DMP}}$','$z_{DMP}$'},'Interpreter','latex','fontsize',fontsize);
+    legend({'$\dot{y}_{robot}$','$\dot{y}_{DMP}$','$z_{DMP}$'},'Interpreter','latex','fontsize',fontsize);
 
 end
 
 
 %% Plot 'F' training
 for i=1:D
+    F = F_train_data(i,:);
+    Fd = Fd_train_data(i,:);
+    scale = 1/max(abs([F Fd]));
+    x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_train, 1);
+    x_data_train = x_data_train(1,:);
+    Psi = dmp{i}.activation_function(x_data_train);
+    
     figure;
-    subplot(2,1,1);
-    plot(Time_train,F_train_data(i,:),Time_train,Fd_train_data(i,:));
+    subplot(2,2,1);
+    plot(Time_train,F,Time_train,Fd);
     legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
-    subplot(2,1,2);
+    axis tight;
+    subplot(2,2,2);
     plot(Time_train,F_train_data(i,:)-Fd_train_data(i,:));
     legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
+    axis tight;
+    subplot(2,2,[3 4]);
+    hold on;
+    plot(Time_train,F*scale, Time_train,Fd*scale);
+    for k=1:size(Psi,1)
+        plot(Time_train,Psi(k,:));
+    end
+    axis tight;
+    hold off;
+ 
 end
 
 

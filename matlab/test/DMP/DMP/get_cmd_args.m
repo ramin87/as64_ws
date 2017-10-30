@@ -7,7 +7,7 @@ cmd_args.a_z = 40; %10 50 80 120 160
 cmd_args.b_z = cmd_args.a_z/4;
 
 cmd_args.x0 = 1;
-cmd_args.x_end = 0.01;
+cmd_args.x_end = 0.005;
 
 cmd_args.N_kernels = 60;
 
@@ -36,20 +36,20 @@ cmd_args.smooth_points_percent = 0.03;
 
 
 %% Robot controller params
-cmd_args.Kd = 150;
+cmd_args.Kd = 100;
 cmd_args.Dd = 2;
 
 %% Simulation params
 cmd_args.dt = 0.002; %simulation time_step;
 cmd_args.tol_stop = 1e-3;
-cmd_args.max_iters = 3000;
+cmd_args.max_iters = 5000;
 cmd_args.tau_sim_scale = 1;
 
 
 %% Apply disturbance force
-cmd_args.APPLY_DISTURBANCE = false;
-cmd_args.Fdist_min = 5;
-cmd_args.Fdist_max = 80;
+cmd_args.APPLY_DISTURBANCE = true;
+cmd_args.Fdist_min = 10;
+cmd_args.Fdist_max = 1000;
 cmd_args.t1_fdist = 0.4;
 cmd_args.t2_fdist = 2.2;
 
