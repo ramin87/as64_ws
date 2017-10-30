@@ -9,7 +9,7 @@ cmd_args.b_z = cmd_args.a_z/4;
 cmd_args.x0 = 1;
 cmd_args.x_end = 0.01;
 
-cmd_args.N_kernels = 50;
+cmd_args.N_kernels = 60;
 
 cmd_args.std_K = 1;
 
