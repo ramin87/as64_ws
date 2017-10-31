@@ -97,15 +97,9 @@ int main(int argc, char** argv)
 
   can_sys_ptr->init(cmd_args.x_end, tau);
   
-  std::vector<std::shared_ptr<as64::DMPBase>> dmp_ptr(D);
-
+  std::vector<as64::DMP> dmp(D);
   for (int i=0; i<D; i++){
-		
-			if (cmd_args.DMP_TYPE.compare("DMP") == 0) dmp_ptr[i].reset(new as64::DMP());
-		  else if (cmd_args.DMP_TYPE.compare("DMP-Bio") == 0) dmp_ptr[i].reset(new as64::DMPBio());
-			else throw std::runtime_error(std::string("Unsupported canonical system type: ")+cmd_args.DMP_TYPE);
-		
-      dmp_ptr[i]->init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K, cmd_args.USE_GOAL_FILT, cmd_args.a_g);
+      dmp[i].init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K, cmd_args.USE_GOAL_FILT, cmd_args.a_g);
   }
   
   // =========   Train the DMP  ============
@@ -116,14 +110,14 @@ int main(int argc, char** argv)
   for (int i=0; i<D; i++){
     arma::rowvec F_train, Fd_train;
     
-    train_mse(i) = dmp_ptr[i]->train(yd_data.row(i), dyd_data.row(i), ddyd_data.row(i), Ts, cmd_args.train_method, F_train, Fd_train);
+    train_mse(i) = dmp[i].train(yd_data.row(i), dyd_data.row(i), ddyd_data.row(i), Ts, cmd_args.train_method, F_train, Fd_train);
     
     logData.F_train_data = arma::join_vert(logData.F_train_data, F_train);
     logData.Fd_train_data = arma::join_vert(logData.Fd_train_data, Fd_train);
     
-    //std::cout << "c = " << dmp_ptr[i]->c.t() << "\n\n";
-    //std::cout << "h = " << dmp_ptr[i]->h.t() << "\n\n";
-    //std::cout << "w = " << dmp_ptr[i]->w.t() << "\n\n";
+    //std::cout << "c = " << dmp[i].c.t() << "\n\n";
+    //std::cout << "h = " << dmp[i].h.t() << "\n\n";
+    //std::cout << "w = " << dmp[i].w.t() << "\n\n";
       
   }
   std::cout << "Elapsed time is " << timer.toc() << " seconds\n";
@@ -200,31 +194,22 @@ int main(int argc, char** argv)
     
     logData.goal_attr_data = arma::join_horiz(logData.goal_attr_data, goal_attr);
     
-    arma::vec X_in(1);
-    X_in(0) = x;
-    if (USE_2nd_order_can_sys){
-      X_in.resize(2);
-      X_in(1) = u;
-    }
-    
-    
     for (int i=0;i<D;i++){
         
-        double v_scale = dmp_ptr[i]->get_v_scale(); // 1 / (tau*dmp_ptr[i]->a_s);
+        double v_scale = dmp[i].get_v_scale(); // 1 / (tau*dmp[i].a_s);
         
-        arma::vec Psi = dmp_ptr[i]->activation_function(x);
+        arma::vec Psi = dmp[i].activation_function(x);
         logData.Psi_data[i] = arma::join_horiz(logData.Psi_data[i], Psi);
        
 	//arma::vec X(2);
 	//X(0) = x;
 	//X(1) = u;
-        //shape_attr(i) = dmp_ptr[i]->shape_attractor(X,g0(i),y0(i));
-        //goal_attr(i) = dmp_ptr[i]->goal_attractor(y(i),dy(i),g(i));
+        //shape_attr(i) = dmp[i].shape_attractor(X,g0(i),y0(i));
+        //goal_attr(i) = dmp[i].goal_attractor(y(i),dy(i),g(i));
         
-        //force_term(i) = dmp_ptr[i]->forcing_term(x)*u*(g0(i)-y0(i));
-
-        force_term(i) = dmp_ptr[i]->shape_attractor(X_in, g0(i), y0(i));        
-        dz(i) = ( dmp_ptr[i]->a_z*(dmp_ptr[i]->b_z*(g(i)-y(i))-z(i)) + force_term(i) ) / v_scale;
+        force_term(i) = dmp[i].forcing_term(x)*u*(g0(i)-y0(i));
+        
+        dz(i) = ( dmp[i].a_z*(dmp[i].b_z*(g(i)-y(i))-z(i)) + force_term(i) ) / v_scale;
         
         dy(i) = ( z(i) - cmd_args.a_py*(y_robot(i)-y(i)) ) / v_scale;
         
@@ -236,6 +221,13 @@ int main(int argc, char** argv)
     else dg.zeros(D);
     
     // Update phase variable
+    
+    arma::vec X_in(1);
+    X_in(0) = x;
+    if (USE_2nd_order_can_sys){
+      X_in.resize(2);
+      X_in(1) = u;
+    }
         
     arma::vec X_out = can_sys_ptr->get_derivative(X_in);
     

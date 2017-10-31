@@ -8,7 +8,7 @@
 #include <fstream>
 #include <boost/concept_check.hpp>
 #include <armadillo>
-#include <../../home/slifer/slifer/RAMCIP/ramcip_handover/src/BHand_lib/include/barrett_properties.h>
+//#include <../../home/slifer/slifer/RAMCIP/ramcip_handover/src/BHand_lib/include/barrett_properties.h>
 
 #include <ros/ros.h>
 
@@ -48,6 +48,7 @@ struct CMD_ARGS{
   double std_K;
   std::string train_method;
   std::string CAN_SYS_TYPE;
+  std::string DMP_TYPE;
   
   double add_points_percent;
   double smooth_points_percent;

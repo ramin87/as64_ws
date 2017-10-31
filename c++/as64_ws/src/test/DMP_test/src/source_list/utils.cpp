@@ -288,6 +288,7 @@ bool CMD_ARGS::parse_cmd_args()
   
   if (!nh_.getParam("train_method", train_method)) train_method = "LWR";
   if (!nh_.getParam("CAN_SYS_TYPE", CAN_SYS_TYPE)) CAN_SYS_TYPE = "exp";
+  if (!nh_.getParam("DMP_TYPE", DMP_TYPE)) DMP_TYPE = "DMP";
   
   if (!nh_.getParam("add_points_percent", add_points_percent)) add_points_percent = 0.02;
   if (!nh_.getParam("smooth_points_percent", smooth_points_percent)) smooth_points_percent = 0.02;
@@ -334,6 +335,7 @@ void CMD_ARGS::print(std::ostream &out) const
 
   out << "train_method: " << train_method << "\n";
   out << "CAN_SYS_TYPE: " << CAN_SYS_TYPE << "\n";
+  out << "DMP_TYPE: " << DMP_TYPE << "\n";
   
   out << "add_points_percent: " << add_points_percent << "\n";
   out << "smooth_points_percent: " << smooth_points_percent << "\n";
