@@ -43,9 +43,9 @@ function [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_dat
   
       LWR_train(dmp,x, s, Fd);
       
-    elseif (strcmpi(train_method,'RLWR'))
+    elseif (strcmpi(train_method,'RFWR'))
         
-        RLWR_train(dmp,x, s, Fd);
+      RFWR_train(dmp,x, s, Fd);
 
     elseif (strcmpi(train_method,'LS'))
 
@@ -59,23 +59,7 @@ function [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_dat
     for i=1:size(F,2)
       F(i) = dmp.forcing_term(x(i))*dmp.forcing_term_scaling(u(i), y0, g0);
     end
-    
-%     scale = 1/max(abs([F Fd]));
-%     Psi = dmp.activation_function(x);
-%     %Psi = Psi.^3;
-%     figure;
-%     subplot(2,1,1);
-%     hold on;
-%     plot(Time,F*scale, Time,Fd*scale);
-%     for k=1:size(Psi,1)
-%         plot(Time,Psi(k,:));
-%     end
-%     %legend('F','F_d');
-%     hold off;
-%     subplot(2,1,2);
-%     plot(Time,F, Time,Fd);
-%     legend('F','F_d');
-    
+
     train_error = norm(F-Fd)/length(F);
 
 end

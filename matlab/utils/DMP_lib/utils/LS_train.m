@@ -6,9 +6,17 @@
 %  @param[in] Fd: Row vector with the desired values of the shape attractor.
 function LS_train(dmp, x, s, Fd)
   
-  H = dmp.activation_function(x);
+  s = s(:);   
   
-  H = H.*repmat(s, size(H,1),1) ./ (repmat(sum(H,1),size(H,1),1) + dmp.zero_tol);
+  n_data = length(x);
+  
+  H = zeros(dmp.N_kernels, n_data);
+
+  for k=1:dmp.N_kernels
+	  Psi = exp(-dmp.h(k)*(x-dmp.c(k)).^2);
+	  H(k,:) = Psi; 
+  end
+  H = H.*repmat(s',size(H,1),1) ./ (repmat(sum(H,1),size(H,1),1) + dmp.zero_tol);
 
 %               for i=1:n_data
 %                   Psi = exp(-dmp.h.*(x(i)-dmp.c).^2);
