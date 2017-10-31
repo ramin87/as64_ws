@@ -198,16 +198,8 @@ while (true)
 %         v_scale = dmp{i}.get_v_scale();
 %         dz(i) = ( dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i))-z(i)) + scaled_forcing_term(i)) / v_scale;
 %         dy(i) = ( z(i) + y_c ) / v_scale;
-        
         temp = [dz; z; scaled_forcing_term; dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i)))];
         temp_data = [temp_data temp];
-%         if (t>0.4 && t<2.2)
-%             dz
-%             z
-%             scaled_forcing_term
-%             dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i)))
-%             pause    
-%         end
         
         [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, u, y0(i), g0(i), g(i), y_c, z_c);
         
@@ -258,6 +250,9 @@ while (true)
     iters = iters + 1;
     if (iters >= cmd_args.max_iters), break; end
     
+%     if (t>0.4 && t<1.6)
+%         dy_robot = 0;
+%     end
     
     %% Numerical integration
     t = t + dt;
@@ -283,14 +278,6 @@ end
 toc
 
 save dmp_results.mat log_data cmd_args;
-...
-%     Time_demo yd_data dyd_data ddyd_data ...
-%     D Ts ...
-%     Time y_data dy_data z_data dz_data x_data u_data Force_term_data ...
-%     Fdist_data ...
-%     g0 g_data ...
-%     y_robot_data dy_robot_data ...
-%     Time_train F_train_data Fd_train_data
     
 
 %% Find mean square error between the signals

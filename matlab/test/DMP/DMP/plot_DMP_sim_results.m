@@ -117,11 +117,11 @@ end
 
 
 %% Plot phase variable evolution
-figure;
-plot(Time,x_data, Time, u_data);
-legend({'x','u'},'Interpreter','latex','fontsize',fontsize);
-title('phase variable evolution','Interpreter','latex','fontsize',fontsize);
-axis tight;
+% figure;
+% plot(Time,x_data, Time, u_data);
+% legend({'x','u'},'Interpreter','latex','fontsize',fontsize);
+% title('phase variable evolution','Interpreter','latex','fontsize',fontsize);
+% axis tight;
 
 
 %% Plot goal evolution
