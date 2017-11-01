@@ -1,5 +1,5 @@
-%clc; 
-%close all;
+% clc; 
+close all;
 clear;
 
 load dmp_results.mat
@@ -36,6 +36,7 @@ Psi_data = log_data.Psi_data;
 shape_attr_data = log_data.shape_attr_data;
 goal_attr_data = log_data.goal_attr_data;
 P_lwr = log_data.P_lwr;
+DMP_w = log_data.DMP_w;
 
 e_track_data = y_data - y_robot_data;
 
@@ -90,7 +91,7 @@ end
 
 
 %% Plot 'F' training
-if (~isempty(F_train_data))
+if (cmd_args.OFFLINE_DMP_TRAINING_enable)
     for i=1:D
         F = F_train_data(i,:);
         Fd = Fd_train_data(i,:);
@@ -100,7 +101,7 @@ if (~isempty(F_train_data))
         Psi = dmp{i}.activation_function(x_data_train);
 
         figure;
-        title('Off-line training');
+        title('Off-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
         subplot(2,2,1);
         plot(Time_train,F,Time_train,Fd);
         legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
@@ -122,7 +123,7 @@ if (~isempty(F_train_data))
 end
 
 %% Plot 'F' online training
-if (~isempty(F_train_online_data))
+if (cmd_args.ONLINE_DMP_UPDATE_enable)
     for i=1:D
         F = F_train_online_data(i,:);
         Fd = Fd_train_online_data(i,:);
@@ -132,7 +133,7 @@ if (~isempty(F_train_online_data))
         Psi = dmp{i}.activation_function(x_data_train);
 
         figure;
-        title('On-line training');
+        title('On-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
         subplot(2,2,1);
         plot(Time_online_train,F,Time_online_train,Fd);
         legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
@@ -153,37 +154,23 @@ if (~isempty(F_train_online_data))
     end
 end
 
-if (~isepmty(P_lwr))
-    for i=1:D
-        F = F_train_online_data(i,:);
-        Fd = Fd_train_online_data(i,:);
-        scale = 1/max(abs([F Fd]));
-        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_online_train, 1);
-        x_data_train = x_data_train(1,:);
-        Psi = dmp{i}.activation_function(x_data_train);
-
-        figure;
-        title('On-line training');
-        subplot(2,2,1);
-        plot(Time_online_train,F,Time_online_train,Fd);
-        legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
-        axis tight;
-        subplot(2,2,2);
-        plot(Time_online_train,F_train_online_data(i,:)-Fd_train_online_data(i,:));
-        legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
-        axis tight;
-        subplot(2,2,[3 4]);
-        hold on;
-        plot(Time_online_train,F*scale, Time_online_train,Fd*scale);
-        for k=1:size(Psi,1)
-            plot(Time_online_train,Psi(k,:));
-        end
-        axis tight;
-        hold off;
-
-    end
+%% Plot DMP RLWR cov 'P' evoultion
+if (cmd_args.ONLINE_DMP_UPDATE_enable)
+   for i=1:D
+       figure;
+       plot(Time_online_train,P_lwr{i}');
+       title('DMP RLWR cov $P$ evoultion during on-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
+   end
 end
     
+%% Plot DMP weights evoultion
+if (cmd_args.ONLINE_DMP_UPDATE_enable)
+   for i=1:D
+       figure;
+       plot(Time_online_train,DMP_w{i}');
+       title('DMP weights evolution during on-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
+   end
+end
 
 
 %% Plot phase variable evolution

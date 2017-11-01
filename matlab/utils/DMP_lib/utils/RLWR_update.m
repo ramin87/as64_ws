@@ -18,9 +18,9 @@ function [P] = RLWR_update(dmp, x, u, y, dy, ddy, y0, g0, g, P, lambda)
     
     error = Fd - dmp.w*s;
     
-    P = (P - (P.^2*s^2) ./ (lambda./psi + P*s^2)) / lambda;
-    dmp.w = dmp.w + psi.*P*s.*error; 
-  
+    P = (P - (P.^2.*s.^2) ./ (lambda./psi + P.*s.^2)) / lambda;
+    dmp.w = dmp.w + psi.*P.*s.*error; 
+    
 end
 
 

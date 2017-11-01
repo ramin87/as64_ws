@@ -23,11 +23,37 @@
 namespace as64
 {
 
-class DMPBase
+class DMP_
 {
 public:
+  int N_kernels; ///< number of kernels (basis functions)
+  
+  double a_z; ///< parameter 'a_z' relating to the spring-damper system
+  double b_z; ///< parameter 'b_z' relating to the spring-damper system
+  
+  std::shared_ptr<CanonicalSystem> can_sys_ptr; ///< handle (pointer) to the canonical system
 
-  DMPBase();
+  arma::vec w; ///< N_kernelsx1 vector with the weights of the DMP
+  arma::vec c; ///< N_kernelsx1 vector with the kernel centers of the DMP
+  arma::vec h; ///< N_kernelsx1 vector with the kernel stds of the DMP
+
+  long double zero_tol; ///< tolerance value used to avoid divisions with very small numbers
+  
+  double a_s; ///< scaling factor to ensure smaller changes in the accelaration to improve the training
+
+  DMP_();
+  
+  /** DMP constructor
+   *  @param[in] N_kernels: the number of kernels
+   *  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
+   *  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
+   *  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
+   *  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
+   */ 
+  DMP_(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> &can_sys_ptr, double std_K=1)
+  {
+    this->init(N_kernels, a_z, b_z, can_sys_ptr, std_K);
+  }
 
   /** \brief initializes a DMP
    *  \param[in] a_z parameter a_z of the linear (spring-damper) part of the DMP

@@ -19,7 +19,9 @@ P = data(:,2:4);
 segment_1 = P(start(1):stop(1),:);
 segment_2 = P(stop(1):start(2),:);
 
+
 data = segment_2';
+data = data(:,1:3:end);
 Ts = 0.001;
 save('data.mat','data','Ts');
 

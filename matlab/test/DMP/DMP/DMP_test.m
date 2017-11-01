@@ -63,12 +63,13 @@ end
 F_train_data = [];
 Fd_train_data = [];
 Time_train = [];
-train_mse = [];
+offline_train_mse = [];
+online_train_mse = [];
 %% Train the DMP
 if (cmd_args.OFFLINE_DMP_TRAINING_enable)
     disp('DMP training...')
     tic
-    train_mse = zeros(D,1); 
+    offline_train_mse = zeros(D,1); 
     n_data = length(yd_data(i,:));
     Time = (0:n_data-1)*Ts;
     for i=1:D
@@ -83,7 +84,7 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
         dyd = dyd_data(i,ind);
         ddyd = ddyd_data(i,ind);
 
-        [train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method, cmd_args.USE_GOAL_FILT, cmd_args.a_g);      
+        [offline_train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method, cmd_args.USE_GOAL_FILT, cmd_args.a_g);      
 
         F_train_data = [F_train_data; F_train];
         Fd_train_data = [Fd_train_data; Fd_train];
@@ -123,7 +124,7 @@ goal_attr = zeros(D,1);
 
 P_lwr = cell(D,1);
 for i=1:D
-    P_lwr{i} = ones(size(cmd_args.N_kernels,1))*cmd_args.RLWR_P;
+    P_lwr{i} = ones(cmd_args.N_kernels,1)*cmd_args.RLWR_P;
 end
 F = zeros(D,1);
 Fd = zeros(D,1);
@@ -148,6 +149,7 @@ log_data.F_train_online_data = [];
 log_data.Fd_train_online_data = [];
 log_data.Psi_data = cell(D,1);
 log_data.P_lwr = cell(D,1);
+log_data.DMP_w = cell(D,1);
 
 % for some strange reason I have to pass cell array explicitly here. In the
 % initialization of the structure above, cell array are rendered as []...?
@@ -203,13 +205,16 @@ while (true)
         
         if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
             
+            log_data.DMP_w{i} = [log_data.DMP_w{i} dmp{i}.w];
+            log_data.P_lwr{i} = [log_data.P_lwr{i} P_lwr{i}];
+            
             yd = yd_data(i,iters+1);
             dyd = dyd_data(i,iters+1);
             ddyd = ddyd_data(i,iters+1);
             P_lwr{i} = dmp{i}.update_weights(x, u, yd, dyd, ddyd, y0(i), g0(i), g(i), P_lwr{i}, cmd_args.RLWR_lambda); 
             
-            F(i) = dmp{i}.calc_Fd(y, dy, ddy, u, y0, g0, g);
-            Fd(i) = dmp{i}.calc_Fd(yd, dyd, ddyd, u, y0, g0, g);
+            F(i) = dmp{i}.calc_Fd(y(i), dy(i), ddy(i), u, y0(i), g0(i), g(i));
+            Fd(i) = dmp{i}.calc_Fd(yd, dyd, ddyd, u, y0(i), g0(i), g(i));
             
         end
         
@@ -233,10 +238,6 @@ while (true)
         [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, u, y0(i), g0(i), g(i), y_c, z_c);
         
         dy_robot(i) = dy(i) - (cmd_args.Kd/cmd_args.Dd)*(y_robot(i)-y(i)) + Fdist/cmd_args.Dd; 
-      
-        if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
-            log_data.P_lwr{i} = [log_data.P_lwr{i} P_lwr];
-        end
     end
     
     if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
@@ -321,6 +322,23 @@ save dmp_results.mat log_data cmd_args;
 
 %% Find mean square error between the signals
 
+if (cmd_args.ONLINE_DMP_UPDATE_enable)
+   online_train_mse = zeros(D,1);
+   for i=1:D
+       n = length(log_data.F_train_online_data(i,:));
+       online_train_mse(i) = norm(log_data.F_train_online_data(i,:)-log_data.Fd_train_online_data(i,:))/n;
+   end
+end
+
+if (cmd_args.OFFLINE_DMP_TRAINING_enable)
+   offline_train_mse = zeros(D,1);
+   for i=1:D
+       n = length(log_data.F_train_data(i,:));
+       offline_train_mse(i) = norm(log_data.F_train_data(i,:)-log_data.Fd_train_data(i,:))/n;
+   end
+end
+
+
 y_data = log_data.y_data;
 yd_data = log_data.yd_data;
 
@@ -330,6 +348,7 @@ dtw_win = floor(max([size(y_data,2), size(yd_data,2)])/3);
 sim_mse = sum(C)/length(C);
 
 
-train_mse
+offline_train_mse
+online_train_mse
 sim_mse
 dtw_dist/length(C)

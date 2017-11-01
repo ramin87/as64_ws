@@ -9,7 +9,7 @@ cmd_args.b_z = cmd_args.a_z/4;
 cmd_args.x0 = 1;
 cmd_args.x_end = 0.005;
 
-cmd_args.N_kernels = 60;
+cmd_args.N_kernels = 30;
 
 cmd_args.std_K = 1;
 
@@ -21,7 +21,7 @@ cmd_args.CAN_SYS_TYPE = 'lin'; % 'lin', exp', 'spring-damper'
 
 cmd_args.OFFLINE_DMP_TRAINING_enable = true;
 cmd_args.ONLINE_DMP_UPDATE_enable = true;
-cmd_args.RLWR_lambda = 0.987;
+cmd_args.RLWR_lambda = 0.8;
 cmd_args.RLWR_P = 1000;
 
 cmd_args.USE_GOAL_FILT = false;
