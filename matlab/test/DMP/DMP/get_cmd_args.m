@@ -15,10 +15,14 @@ cmd_args.std_K = 1;
 
 cmd_args.DMP_TYPE = 'DMP'; % 'DMP', 'DMP-bio', 'DMP-plus'
 
-cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
+cmd_args.train_method = 'RLWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 
 cmd_args.CAN_SYS_TYPE = 'lin'; % 'lin', exp', 'spring-damper'
 
+cmd_args.OFFLINE_DMP_TRAINING_enable = true;
+cmd_args.ONLINE_DMP_UPDATE_enable = true;
+cmd_args.RLWR_lambda = 0.987;
+cmd_args.RLWR_P = 1000;
 
 cmd_args.USE_GOAL_FILT = false;
 cmd_args.a_g = 10;

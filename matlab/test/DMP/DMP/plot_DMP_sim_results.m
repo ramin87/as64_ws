@@ -17,6 +17,9 @@ g0 = log_data.g0;
 Time_train = log_data.Time_train;
 F_train_data = log_data.F_train_data;
 Fd_train_data = log_data.Fd_train_data;
+Time_online_train = log_data.Time_online_train;
+F_train_online_data = log_data.F_train_online_data;
+Fd_train_online_data = log_data.Fd_train_online_data;
 Time = log_data.Time;
 y_data = log_data.y_data;
 dy_data = log_data.dy_data;
@@ -32,7 +35,7 @@ g_data = log_data.g_data;
 Psi_data = log_data.Psi_data;
 shape_attr_data = log_data.shape_attr_data;
 goal_attr_data = log_data.goal_attr_data;
-
+P_lwr = log_data.P_lwr;
 
 e_track_data = y_data - y_robot_data;
 
@@ -87,33 +90,100 @@ end
 
 
 %% Plot 'F' training
-for i=1:D
-    F = F_train_data(i,:);
-    Fd = Fd_train_data(i,:);
-    scale = 1/max(abs([F Fd]));
-    x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_train, 1);
-    x_data_train = x_data_train(1,:);
-    Psi = dmp{i}.activation_function(x_data_train);
-    
-    figure;
-    subplot(2,2,1);
-    plot(Time_train,F,Time_train,Fd);
-    legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
-    axis tight;
-    subplot(2,2,2);
-    plot(Time_train,F_train_data(i,:)-Fd_train_data(i,:));
-    legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
-    axis tight;
-    subplot(2,2,[3 4]);
-    hold on;
-    plot(Time_train,F*scale, Time_train,Fd*scale);
-    for k=1:size(Psi,1)
-        plot(Time_train,Psi(k,:));
+if (~isempty(F_train_data))
+    for i=1:D
+        F = F_train_data(i,:);
+        Fd = Fd_train_data(i,:);
+        scale = 1/max(abs([F Fd]));
+        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_train, 1);
+        x_data_train = x_data_train(1,:);
+        Psi = dmp{i}.activation_function(x_data_train);
+
+        figure;
+        title('Off-line training');
+        subplot(2,2,1);
+        plot(Time_train,F,Time_train,Fd);
+        legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
+        axis tight;
+        subplot(2,2,2);
+        plot(Time_train,F_train_data(i,:)-Fd_train_data(i,:));
+        legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
+        axis tight;
+        subplot(2,2,[3 4]);
+        hold on;
+        plot(Time_train,F*scale, Time_train,Fd*scale);
+        for k=1:size(Psi,1)
+            plot(Time_train,Psi(k,:));
+        end
+        axis tight;
+        hold off;
+
     end
-    axis tight;
-    hold off;
- 
 end
+
+%% Plot 'F' online training
+if (~isempty(F_train_online_data))
+    for i=1:D
+        F = F_train_online_data(i,:);
+        Fd = Fd_train_online_data(i,:);
+        scale = 1/max(abs([F Fd]));
+        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_online_train, 1);
+        x_data_train = x_data_train(1,:);
+        Psi = dmp{i}.activation_function(x_data_train);
+
+        figure;
+        title('On-line training');
+        subplot(2,2,1);
+        plot(Time_online_train,F,Time_online_train,Fd);
+        legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
+        axis tight;
+        subplot(2,2,2);
+        plot(Time_online_train,F_train_online_data(i,:)-Fd_train_online_data(i,:));
+        legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
+        axis tight;
+        subplot(2,2,[3 4]);
+        hold on;
+        plot(Time_online_train,F*scale, Time_online_train,Fd*scale);
+        for k=1:size(Psi,1)
+            plot(Time_online_train,Psi(k,:));
+        end
+        axis tight;
+        hold off;
+
+    end
+end
+
+if (~isepmty(P_lwr))
+    for i=1:D
+        F = F_train_online_data(i,:);
+        Fd = Fd_train_online_data(i,:);
+        scale = 1/max(abs([F Fd]));
+        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_online_train, 1);
+        x_data_train = x_data_train(1,:);
+        Psi = dmp{i}.activation_function(x_data_train);
+
+        figure;
+        title('On-line training');
+        subplot(2,2,1);
+        plot(Time_online_train,F,Time_online_train,Fd);
+        legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
+        axis tight;
+        subplot(2,2,2);
+        plot(Time_online_train,F_train_online_data(i,:)-Fd_train_online_data(i,:));
+        legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
+        axis tight;
+        subplot(2,2,[3 4]);
+        hold on;
+        plot(Time_online_train,F*scale, Time_online_train,Fd*scale);
+        for k=1:size(Psi,1)
+            plot(Time_online_train,Psi(k,:));
+        end
+        axis tight;
+        hold off;
+
+    end
+end
+    
 
 
 %% Plot phase variable evolution

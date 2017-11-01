@@ -62,32 +62,35 @@ end
 
 F_train_data = [];
 Fd_train_data = [];
-
+Time_train = [];
+train_mse = [];
 %% Train the DMP
-disp('DMP training...')
-tic
-train_mse = zeros(D,1); 
-n_data = length(yd_data(i,:));
-Time = (0:n_data-1)*Ts;
-for i=1:D
-    
-    y0 = yd_data(i,1);
-    g0 = yd_data(i,end);
-    
-    ind = 1:n_data;
-%     ind = randperm(n_data);
-    T = Time(ind);
-    yd = yd_data(i,ind);
-    dyd = dyd_data(i,ind);
-    ddyd = ddyd_data(i,ind);
+if (cmd_args.OFFLINE_DMP_TRAINING_enable)
+    disp('DMP training...')
+    tic
+    train_mse = zeros(D,1); 
+    n_data = length(yd_data(i,:));
+    Time = (0:n_data-1)*Ts;
+    for i=1:D
 
-    [train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method, cmd_args.USE_GOAL_FILT, cmd_args.a_g);      
+        y0 = yd_data(i,1);
+        g0 = yd_data(i,end);
 
-    F_train_data = [F_train_data; F_train];
-    Fd_train_data = [Fd_train_data; Fd_train];
-    
+        ind = 1:n_data;
+    %     ind = randperm(n_data);
+        T = Time(ind);
+        yd = yd_data(i,ind);
+        dyd = dyd_data(i,ind);
+        ddyd = ddyd_data(i,ind);
+
+        [train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method, cmd_args.USE_GOAL_FILT, cmd_args.a_g);      
+
+        F_train_data = [F_train_data; F_train];
+        Fd_train_data = [Fd_train_data; Fd_train];
+
+    end
+    Time_train = (0:(size(F_train_data,2)-1))*Ts;
 end
-Time_train = (0:(size(F_train_data,2)-1))*Ts;
 
 toc
 
@@ -118,6 +121,13 @@ scaled_forcing_term = zeros(D,1);
 shape_attr = zeros(D,1);
 goal_attr = zeros(D,1);
 
+P_lwr = cell(D,1);
+for i=1:D
+    P_lwr{i} = ones(size(cmd_args.N_kernels,1))*cmd_args.RLWR_P;
+end
+F = zeros(D,1);
+Fd = zeros(D,1);
+
 Fdist = 0;
 
 log_data = get_logData_struct();   
@@ -133,7 +143,11 @@ log_data.g0 = g0;
 log_data.Time_train = Time_train;
 log_data.F_train_data = F_train_data;
 log_data.Fd_train_data = Fd_train_data;
+log_data.Time_online_train = [];
+log_data.F_train_online_data = [];
+log_data.Fd_train_online_data = [];
 log_data.Psi_data = cell(D,1);
+log_data.P_lwr = cell(D,1);
 
 % for some strange reason I have to pass cell array explicitly here. In the
 % initialization of the structure above, cell array are rendered as []...?
@@ -145,7 +159,12 @@ tau = cmd_args.tau_sim_scale*tau;
 can_sys_ptr.set_tau(tau);
 
 iters = 0;
-dt = cmd_args.dt;
+
+if (cmd_args.ONLINE_DMP_UPDATE_enable)
+    dt = Ts; % sync sim with training data
+else
+    dt = cmd_args.dt;
+end
 
 temp_data = [];
 
@@ -179,10 +198,20 @@ while (true)
     %log_data.goal_attr_data = [log_data.goal_attr_data goal_attr];
     
     %% DMP simulation
-    
+
     for i=1:D
         
-        v_scale = dmp{i}.get_v_scale();% 1 / (tau*dmp{i}.a_s);
+        if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
+            
+            yd = yd_data(i,iters+1);
+            dyd = dyd_data(i,iters+1);
+            ddyd = ddyd_data(i,iters+1);
+            P_lwr{i} = dmp{i}.update_weights(x, u, yd, dyd, ddyd, y0(i), g0(i), g(i), P_lwr{i}, cmd_args.RLWR_lambda); 
+            
+            F(i) = dmp{i}.calc_Fd(y, dy, ddy, u, y0, g0, g);
+            Fd(i) = dmp{i}.calc_Fd(yd, dyd, ddyd, u, y0, g0, g);
+            
+        end
         
         Psi = dmp{i}.activation_function(x);
         log_data.Psi_data{i} = [log_data.Psi_data{i} Psi(:)];
@@ -205,7 +234,17 @@ while (true)
         
         dy_robot(i) = dy(i) - (cmd_args.Kd/cmd_args.Dd)*(y_robot(i)-y(i)) + Fdist/cmd_args.Dd; 
       
+        if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
+            log_data.P_lwr{i} = [log_data.P_lwr{i} P_lwr];
+        end
     end
+    
+    if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
+        log_data.Time_online_train = [log_data.Time_online_train t];
+        log_data.F_train_online_data = [log_data.F_train_online_data F];
+        log_data.Fd_train_online_data = [log_data.Fd_train_online_data Fd];
+    end
+    
     
     if (cmd_args.USE_GOAL_FILT)
         dg = -cmd_args.a_g*(g-g0)/can_sys_ptr.tau;
