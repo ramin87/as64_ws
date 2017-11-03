@@ -39,7 +39,7 @@ double DMPBio::shape_attractor(const arma::vec X, double g0, double y0)
   
   double s_attr = f * K * u - K * (g0 - y0) * u;
 				
-	std::cout << s_attr << std::endl;
+//	std::cout <<  x << std::endl;
 				
   return s_attr;
 }
@@ -48,10 +48,14 @@ void DMPBio::calculate_Fd(const arma::rowvec &yd_data, const arma::rowvec &dyd_d
 {	
   double v_scale = this->get_v_scale();
   
+  arma::rowvec y0_vec = y0 * arma::ones<arma::rowvec>(g.n_elem);
+  
   arma::rowvec ddzd_data = ddyd_data * std::pow(v_scale,2);
   arma::rowvec g_attr_data = -this->a_z * (this->b_z * (g - yd_data) - dyd_data * v_scale);
   
-  Fd = (ddzd_data + g_attr_data + this->a_z * this->b_z * (g0 - y0) * u);
+  //std::cout << g.t() << std::endl;
+  
+  Fd = (ddzd_data + g_attr_data + this->a_z * this->b_z * (g - y0_vec) % u);
 }
 
 } //as64

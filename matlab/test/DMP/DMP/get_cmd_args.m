@@ -17,10 +17,10 @@ cmd_args.DMP_TYPE = 'DMP-bio'; % 'DMP', 'DMP-bio', 'DMP-plus'
 
 cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RFWR'
 
-cmd_args.CAN_SYS_TYPE = 'exp'; % 'lin', exp', 'spring-damper'
+cmd_args.CAN_SYS_TYPE = 'spring-damper'; % 'lin', exp', 'spring-damper'
 
 
-cmd_args.USE_GOAL_FILT = false;
+cmd_args.USE_GOAL_FILT = true;
 cmd_args.a_g = 10;
 cmd_args.USE_PHASE_STOP = true;
 cmd_args.a_px = 100; 

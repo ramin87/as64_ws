@@ -37,6 +37,9 @@ void DMPBase::init(int N_kernels, double a_z, double b_z, std::shared_ptr<Canoni
     this->USE_GOAL_FILT = true;
     this->a_g = a_g;
   }
+  else{
+		this->USE_GOAL_FILT = false;
+	}
 
 }
 
@@ -176,10 +179,24 @@ double DMPBase::train(const arma::rowvec &yd_data, const arma::rowvec &dyd_data,
     arma::vec s = forcing_term_scaling(u, y0, g0);
     arma::rowvec g = g0 * arma::rowvec().ones(t.n_elem);
     
+    std::cout << "Before filtering" << std::endl;
+    std::cout << g(0) << std::endl;
+    std::cout << g(1) << std::endl;
+    
+    std::cout << "Filtering " << this->USE_GOAL_FILT << std::endl;
+    
     if (this->USE_GOAL_FILT){
+			std::cout << "Filtering " << this->USE_GOAL_FILT << std::endl;
+			std::cout << "During filtering" << std::endl;
+			std::cout << "Filtering " << this->USE_GOAL_FILT << std::endl;
       arma::rowvec exp_t = arma::exp(-this->a_g*t/tau);
       g = y0*exp_t + g0*(1-exp_t);
     }
+    
+    std::cout << "After filtering" << std::endl;
+    std::cout << "Filtering " << this->USE_GOAL_FILT << std::endl;
+    std::cout << g(0) << std::endl;
+    std::cout << g(1) << std::endl;
     
     arma::rowvec Fd(t.n_elem);
     //arma::rowvec ddzd_data = ddyd_data*std::pow(v_scale,2);

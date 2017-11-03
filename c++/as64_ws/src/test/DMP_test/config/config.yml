@@ -9,7 +9,7 @@ train_method: "LWR"
 CAN_SYS_TYPE: "exp" # "exp", "lin", "spring-damper"
 DMP_TYPE: "DMP-Bio" # "DMP", "DMP-Bio"
 
-USE_GOAL_FILT: false
+USE_GOAL_FILT: true
 a_g: 10
 USE_PHASE_STOP: true
 a_px: 100
@@ -37,8 +37,8 @@ sim_max_iters: 6000
 tau_sim_scale: 1
 
 
-data_input_path: "/home/leonidas/Documents/workspaces/ros_ws/as64_ws0/matlab/test/DMP/DMP/"
-data_output_path: "/home/leonidas/Documents/workspaces/ros_ws/as64_ws0/matlab/test/DMP/DMP/"
+data_input_path: "/home/leonidas/Documents/workspaces/ros_ws/as64_ws/matlab/test/DMP/DMP/"
+data_output_path: "/home/leonidas/Documents/workspaces/ros_ws/as64_ws/matlab/test/DMP/DMP/"
 
 
 #data_input_path: "/home/slifer/Dropbox/64631466/lib/matlab/DMP/DMP_temp/"
