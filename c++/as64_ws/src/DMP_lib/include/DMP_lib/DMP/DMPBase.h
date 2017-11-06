@@ -65,7 +65,7 @@ public:
   double train(const arma::rowvec &yd_data, const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double Ts, const std::string &train_method);
   
   //Returns the scaling of the forcing term
-  virtual arma::vec forcing_term_scaling(arma::rowvec &u, double y0, double g0) = 0;
+  virtual arma::vec forcing_term_scaling(arma::rowvec &u, arma::rowvec &y0, arma::rowvec &g0) = 0;
 
   virtual double forcing_term_scaling(double u, double y0, double g0) = 0;
   
@@ -104,7 +104,7 @@ public:
 
 private:
   // calculates the desired force for the demonstraded path
-  virtual void calculate_Fd(const arma::rowvec &yd_data, const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, arma::mat &u, arma::rowvec &g, double g0, double y0, arma::rowvec &Fd) = 0;
+  virtual void calculate_Fd(const arma::rowvec &yd_data, const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, arma::rowvec &u, arma::rowvec &g, double g0, double y0, arma::rowvec &Fd) = 0;
 
   int N_kernels; // number of kernels (basis functions)
 

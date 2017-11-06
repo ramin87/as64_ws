@@ -197,8 +197,6 @@ classdef DMP_bio < handle
           f_scale = dmp.forcing_term_scaling(u, y0, g0);  
           K = dmp.a_z * dmp.b_z;
           
-          K*(g0-y0)*u;
-          
           shape_attr = f * f_scale - K*(g0-y0)*u;
           
       end

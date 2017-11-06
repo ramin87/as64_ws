@@ -14,7 +14,7 @@ DMPBio::DMPBio(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalS
 DMPBase(N_kernels, a_z, b_z, cs_ptr, std_K, USE_GOAL_FILT, a_g)
 {}
 
-arma::vec DMPBio::forcing_term_scaling(arma::rowvec &u, double y0, double g0)
+arma::vec DMPBio::forcing_term_scaling(arma::rowvec &u, arma::rowvec &y0, arma::rowvec &g0)
 {
 	return u.t() * this->a_z * this->b_z;
 }
@@ -39,23 +39,17 @@ double DMPBio::shape_attractor(const arma::vec X, double g0, double y0)
   
   double s_attr = f * K * u - K * (g0 - y0) * u;
 				
-//	std::cout <<  x << std::endl;
-				
   return s_attr;
 }
 
-void DMPBio::calculate_Fd(const arma::rowvec &yd_data, const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, arma::mat &u, arma::rowvec &g, double g0, double y0, arma::rowvec &Fd)
+void DMPBio::calculate_Fd(const arma::rowvec &yd_data, const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, arma::rowvec &u, arma::rowvec &g, double g0, double y0, arma::rowvec &Fd)
 {	
   double v_scale = this->get_v_scale();
-  
-  arma::rowvec y0_vec = y0 * arma::ones<arma::rowvec>(g.n_elem);
   
   arma::rowvec ddzd_data = ddyd_data * std::pow(v_scale,2);
   arma::rowvec g_attr_data = -this->a_z * (this->b_z * (g - yd_data) - dyd_data * v_scale);
   
-  //std::cout << g.t() << std::endl;
-  
-  Fd = (ddzd_data + g_attr_data + this->a_z * this->b_z * (g - y0_vec) % u);
+  Fd = (ddzd_data + g_attr_data + this->a_z * this->b_z * (g0 - y0) * u);
 }
 
 } //as64

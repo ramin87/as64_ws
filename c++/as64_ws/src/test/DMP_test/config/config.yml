@@ -6,7 +6,7 @@ x_end: 0.005
 N_kernels: 100
 std_K: 0.92
 train_method: "LWR"
-CAN_SYS_TYPE: "exp" # "exp", "lin", "spring-damper"
+CAN_SYS_TYPE: "spring-damper" # "exp", "lin", "spring-damper"
 DMP_TYPE: "DMP-Bio" # "DMP", "DMP-Bio"
 
 USE_GOAL_FILT: true

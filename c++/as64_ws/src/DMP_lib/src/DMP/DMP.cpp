@@ -16,9 +16,9 @@ DMPBase(N_kernels, a_z, b_z, cs_ptr, std_K, USE_GOAL_FILT, a_g)
   init(N_kernels, a_z, b_z, cs_ptr, std_K, USE_GOAL_FILT, a_g); 
 }
 
-arma::vec DMP::forcing_term_scaling(arma::rowvec &u, double y0, double g0)
+arma::vec DMP::forcing_term_scaling(arma::rowvec &u, arma::rowvec &y0, arma::rowvec &g0)
 {
-	return u.t() * (g0 - y0);
+	return u.t() % (g0.t() - y0.t());
 }
 
 double DMP::forcing_term_scaling(double u, double y0, double g0)
@@ -41,7 +41,7 @@ double DMP::shape_attractor(const arma::vec X, double g0, double y0)
   return s_attr;
 }
 
-void DMP::calculate_Fd(const arma::rowvec &yd_data, const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, arma::mat &u, arma::rowvec &g, double g0, double y0, arma::rowvec &Fd)
+void DMP::calculate_Fd(const arma::rowvec &yd_data, const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, arma::rowvec &u, arma::rowvec &g, double g0, double y0, arma::rowvec &Fd)
 {
   double v_scale = this->get_v_scale();
   
