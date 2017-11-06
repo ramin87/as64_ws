@@ -14,7 +14,7 @@ DMPBio::DMPBio(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalS
 DMPBase(N_kernels, a_z, b_z, cs_ptr, std_K, USE_GOAL_FILT, a_g)
 {}
 
-arma::vec DMPBio::forcing_term_scaling(arma::rowvec &u, arma::rowvec &y0, arma::rowvec &g0)
+arma::vec DMPBio::forcing_term_scaling(arma::rowvec &u, double y0, double g0)
 {
 	return u.t() * this->a_z * this->b_z;
 }
@@ -24,7 +24,7 @@ double DMPBio::forcing_term_scaling(double u, double y0, double g0)
 	return u * this->a_z * this->b_z;
 }
 
-double DMPBio::shape_attractor(const arma::vec X, double g0, double y0)
+double DMPBio::shape_attractor(const arma::vec &X, double g0, double y0)
 {
 	double x,u;
   

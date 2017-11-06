@@ -223,7 +223,10 @@ int main(int argc, char** argv)
         
         //force_term(i) = dmp_ptr[i]->forcing_term(x)*u*(g0(i)-y0(i));
 
-        force_term(i) = dmp_ptr[i]->shape_attractor(X_in, g0(i), y0(i));        
+				force_term(i) = dmp_ptr[i]->shape_attractor(X_in, g0(i), y0(i)); 
+        
+        //force_term(i) = dmp_ptr[i]->forcing_term(x) * dmp_ptr[i]->forcing_term_scaling(u, y0(i), g0(i));
+               
         dz(i) = ( dmp_ptr[i]->a_z*(dmp_ptr[i]->b_z*(g(i)-y(i))-z(i)) + force_term(i) ) / v_scale;
         
         dy(i) = ( z(i) - cmd_args.a_py*(y_robot(i)-y(i)) ) / v_scale;

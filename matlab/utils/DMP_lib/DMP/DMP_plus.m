@@ -41,7 +41,7 @@
 classdef DMP_plus < handle
    properties
        N_kernels % number of kernels (basis functions)
-       
+       DMP_set_kernels_with_EM
        a_z % parameter 'a_z' relating to the spring-damper system
        b_z % parameter 'b_z' relating to the spring-damper system
        
@@ -219,7 +219,7 @@ classdef DMP_plus < handle
       %  @param[out] f_scale: The scaling factor of the forcing term.
       function f_scale = forcing_term_scaling(dmp, u, y0, g0)
           
-          f_scale = (g0-y0);
+          f_scale = (g0-y0)*ones(size(u));
           
       end
       

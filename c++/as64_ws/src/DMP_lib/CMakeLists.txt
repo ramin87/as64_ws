@@ -17,9 +17,9 @@ include_directories(
 )
 
 add_library(DMP-lib
-  src/DMP/DMPBase.cpp
-  src/DMP/DMP.cpp
-  src/DMP/DMPBio.cpp
+  src/DMP/DMP_.cpp
+  #src/DMP/DMP.cpp
+  #src/DMP/DMPBio.cpp
   src/CanonicalSystem/CanonicalSystem.cpp
   src/CanonicalSystem/LinCanonicalSystem.cpp
   src/CanonicalSystem/ExpCanonicalSystem.cpp
