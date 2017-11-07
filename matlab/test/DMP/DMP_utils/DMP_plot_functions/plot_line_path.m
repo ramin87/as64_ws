@@ -13,7 +13,9 @@ if (D == 2)
     plot(y_data(1,:),y_data(2,:),'b',yd_data(1,:),yd_data(2,:),'g');
     plot(yd_data(1,1), yd_data(2,1),'mo','Markersize',markerSize, 'LineWidth',lineWidth);
     plot(yd_data(1,end), yd_data(2,end),'rx','Markersize',markerSize, 'LineWidth',lineWidth);
-    legend(y_label, yd_label, 'start', 'end');
+    legend({y_label, yd_label, 'start', 'end'}, 'Interpreter', 'latex', 'fontsize', 14);
+    xlabel('$X$', 'Interpreter', 'latex', 'fontsize', 14);
+    ylabel('$Y$', 'Interpreter', 'latex', 'fontsize', 14);
     hold off;
 elseif (D == 3)
     figure;
@@ -21,7 +23,10 @@ elseif (D == 3)
     plot3(y_data(1,:),y_data(2,:),y_data(3,:),'b',yd_data(1,:),yd_data(2,:),yd_data(3,:),'g');
     plot3(yd_data(1,1), yd_data(2,1),yd_data(3,1),'mo','Markersize',markerSize, 'LineWidth',lineWidth);
     plot3(yd_data(1,end), yd_data(2,end),yd_data(3,end),'rx','Markersize',markerSize, 'LineWidth',lineWidth);
-    legend(y_label, yd_label, 'start', 'end');
+    legend({y_label, yd_label, 'start', 'end'}, 'Interpreter', 'latex', 'fontsize', 14);
+    xlabel('$X$', 'Interpreter', 'latex', 'fontsize', 14);
+    ylabel('$Y$', 'Interpreter', 'latex', 'fontsize', 14);
+    zlabel('$Z$', 'Interpreter', 'latex', 'fontsize', 14);
     hold off;
 else
    error('Unsopported dimensionality of data D = %i',D); 

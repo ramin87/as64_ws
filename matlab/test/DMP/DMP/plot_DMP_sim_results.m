@@ -101,10 +101,10 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
         Psi = dmp{i}.activation_function(x_data_train);
 
         figure;
-        title('Off-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
         subplot(2,2,1);
         plot(Time_train,F,Time_train,Fd);
         legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
+        title('Off-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
         axis tight;
         subplot(2,2,2);
         plot(Time_train,F_train_data(i,:)-Fd_train_data(i,:));
@@ -133,10 +133,10 @@ if (cmd_args.ONLINE_DMP_UPDATE_enable)
         Psi = dmp{i}.activation_function(x_data_train);
 
         figure;
-        title('On-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
         subplot(2,2,1);
         plot(Time_online_train,F,Time_online_train,Fd);
         legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
+        title('On-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
         axis tight;
         subplot(2,2,2);
         plot(Time_online_train,F_train_online_data(i,:)-Fd_train_online_data(i,:));

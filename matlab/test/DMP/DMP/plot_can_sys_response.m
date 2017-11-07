@@ -2,7 +2,9 @@ clc;
 close all;
 clear;
 
-CAN_SYS_TYPE = 'spring-damper';
+set_matlab_utils_path();
+
+CAN_SYS_TYPE = 'lin';
 tau = 1;
 time_step = 0.002;
 t = 0:time_step:tau;
@@ -14,11 +16,11 @@ lineWidth = 1.5;
 
 
 if (strcmpi(CAN_SYS_TYPE,'lin'))
-    can_sys_ptr = DMP_lin_canonical_system(x_end, tau);
+    can_sys_ptr = LinCanonicalSystem(x_end, tau);
 elseif (strcmpi(CAN_SYS_TYPE,'exp'))
-    can_sys_ptr = DMP_exp_canonical_system(x_end, tau);
+    can_sys_ptr = ExpCanonicalSystem(x_end, tau);
 elseif (strcmpi(CAN_SYS_TYPE,'spring-damper'))
-    can_sys_ptr = DMP_spring_damper_canonical_system(x_end, tau);
+    can_sys_ptr = SpringDamperCanonicalSystem(x_end, tau);
     USE_2nd_order_can_sys = true;
 else
     error('Unsupported canonical system type ''%s''',CAN_SYS_TYPE);

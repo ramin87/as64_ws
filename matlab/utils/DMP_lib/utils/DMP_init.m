@@ -27,4 +27,6 @@ function DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
     dmp.set_centers();
     dmp.set_stds(std_K);
 
+    dmp.set_training_params(false, 0, 0.95, 1000);
+
 end

@@ -13,7 +13,7 @@
 %  \note The timestamps in \a Time and the corresponding position,
 %  velocity and acceleration data in \a yd_data, \a dyd_data and \a
 %  ddyd_data need not be sequantial in time.
-function [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method, USE_GOAL_FILT, a_g)
+function [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method)
 
     g = g0;
     x0 = 1;
@@ -30,8 +30,8 @@ function [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_dat
     end
 
     g = g * ones(size(x));
-    if (USE_GOAL_FILT)
-    g = y0*exp(-a_g*Time/tau) + g0*(1 - exp(-a_g*Time/tau));
+    if (dmp.USE_GOAL_FILT)
+    g = y0*exp(-dmp.a_g*Time/tau) + g0*(1 - exp(-dmp.a_g*Time/tau));
     end
 
     s = dmp.forcing_term_scaling(u, y0, g0);

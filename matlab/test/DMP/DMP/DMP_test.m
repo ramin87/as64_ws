@@ -84,7 +84,8 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
         dyd = dyd_data(i,ind);
         ddyd = ddyd_data(i,ind);
 
-        [offline_train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method, cmd_args.USE_GOAL_FILT, cmd_args.a_g);      
+        dmp{i}.set_training_params(cmd_args.USE_GOAL_FILT, cmd_args.a_g, cmd_args.RLWR_lambda, cmd_args.RLWR_P);
+        [offline_train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method);      
 
         F_train_data = [F_train_data; F_train];
         Fd_train_data = [Fd_train_data; Fd_train];
@@ -98,7 +99,7 @@ toc
 %% DMP simulation
 % set initial values
 y0 = yd_data(:,1);
-g0 = yd_data(:,end); 
+g0 = cmd_args.goal_scale*yd_data(:,end); 
 g = g0;
 dg = zeros(D,1);
 if (cmd_args.USE_GOAL_FILT), g = y0; end
@@ -212,7 +213,7 @@ while (true)
             dyd = dyd_data(i,iters+1);
             ddyd = ddyd_data(i,iters+1);
             P_lwr{i} = dmp{i}.update_weights(x, u, yd, dyd, ddyd, y0(i), g0(i), g(i), P_lwr{i}, cmd_args.RLWR_lambda); 
-            
+
             F(i) = dmp{i}.calc_Fd(y(i), dy(i), ddy(i), u, y0(i), g0(i), g(i));
             Fd(i) = dmp{i}.calc_Fd(yd, dyd, ddyd, u, y0(i), g0(i), g(i));
             
@@ -228,12 +229,6 @@ while (true)
         
         y_c = - cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
-        
-%         v_scale = dmp{i}.get_v_scale();
-%         dz(i) = ( dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i))-z(i)) + scaled_forcing_term(i)) / v_scale;
-%         dy(i) = ( z(i) + y_c ) / v_scale;
-        temp = [dz; z; scaled_forcing_term; dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i)))];
-        temp_data = [temp_data temp];
         
         [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, u, y0(i), g0(i), g(i), y_c, z_c);
         
@@ -262,10 +257,8 @@ while (true)
         
     X_out = can_sys_ptr.get_derivative(X_in);
     
-%     x = X_out(1);
     dx = X_out(1);
     if (length(X_out) > 1)
-%         u = X_out(2);
         du = X_out(2);
     else
         du = dx;
@@ -289,10 +282,6 @@ while (true)
     
     iters = iters + 1;
     if (iters >= cmd_args.max_iters), break; end
-    
-%     if (t>0.4 && t<1.6)
-%         dy_robot = 0;
-%     end
     
     %% Numerical integration
     t = t + dt;
