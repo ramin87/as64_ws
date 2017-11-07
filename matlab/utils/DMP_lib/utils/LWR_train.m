@@ -12,7 +12,7 @@ function LWR_train(dmp, x, s, Fd)
 	  Psi = exp(-dmp.h(k)*(x-dmp.c(k)).^2);
 	  temp = s'.*Psi;
 	  dmp.w(k) = (temp*Fd(:)) / (temp*s + dmp.zero_tol);
-
+      
 	  %Psi = diag( exp(-dmp.h(k)*(x-dmp.c(k)).^2) );
 	  %dmp.w(k) = (s'*Psi*Fd(:)) / (s'*Psi*s + dmp.zero_tol);
   end

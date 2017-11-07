@@ -18,12 +18,12 @@
 #include <exception>
 #include <armadillo>
 
-#include <DMP_lib/DMP/DMPBase.h>
+#include <DMP_lib/DMP/DMP_.h>
 
 namespace as64
 {
 
-class DMP:public DMPBase
+class DMP:public DMP_
 {
 public:
 
@@ -42,11 +42,9 @@ public:
   // ax: the decay factor of the phase variable
   // centers_part_type: method to partition the centers of the activation function kernels (supported: {'lin', 'exp'})
   // std_K: scales the std of each kernel
-  DMP(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> cs_ptr, double std_K=1, bool USE_GOAL_FILT=false, double a_g=0);
+  DMP(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
   
   //Returns the scaling of the forcing term
-  arma::vec forcing_term_scaling(arma::rowvec &u, double y0, double g0);
-  
   double forcing_term_scaling(double u, double y0, double g0);
   
   // Returns the shape-attractor of the DMP
@@ -54,7 +52,7 @@ public:
 
 private:
   // calculates the desired force for the demonstraded path
-  void calculate_Fd(const arma::rowvec &yd_data, const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, arma::rowvec &u, arma::rowvec &g, double g0, double y0, arma::rowvec &Fd);
+  double calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0);
 
 };
 

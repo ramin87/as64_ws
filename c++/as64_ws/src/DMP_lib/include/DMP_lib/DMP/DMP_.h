@@ -94,12 +94,18 @@ public:
    *  velocity and acceleration data in \a yd_data, \a dyd_data and \a
    *  ddyd_data need not be sequantial in time.
 	 */
-    double train(const arma:: rowvec &Time, const arma::rowvec &yd_data, const arma::rowvec &dyd_data, 
+   double train(const arma:: rowvec &Time, const arma::rowvec &yd_data, const arma::rowvec &dyd_data, 
 								 const arma::rowvec &ddyd_data, double y0, double g0, const std::string &train_method,
 								 arma::rowvec *Fd_ptr=NULL, arma::rowvec *F_ptr=NULL);
 	
   
-		void set_training_params(bool USE_GOAL_FILT, double a_g, double lambda, double P_rlwr);
+	/** \brief sets training parameters of the DMP
+	 *  @param[in] USE_GOAL_FILT: flag for enabling goal filtering
+   *  @param[in] a_g: goal filtering gain.
+   *	@param[in] lambda: forgetting factor for RLWR.
+   *	@param[in] P_rlwr: initial value of covarience matrix for RLWR.
+	 */ 
+	void set_training_params(bool USE_GOAL_FILT, double a_g, double lambda, double P_rlwr);
 
 	/** \brief Returns the scaling factor of the forcing term.
    *	@param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
@@ -133,10 +139,20 @@ public:
    */
   virtual double forcing_term(double x);
 	
-  // Returns a vector with the activation functions for the DMP
-  arma::vec activation_function(double x);
+	/** \brief Returns a column vector with the values of the activation functions of the DMP
+	 *  @param[in] x: phase variable
+	 *  @param[out] psi: column vector with the values of the activation functions of the DMP
+   */
+  virtual arma::vec activation_function(double x);
 
+	/** \brief Returns the time cycle of the DMP
+   *  @param[out] tau: The time cycle of the DMP.  
+	 */
   double get_tau();
+	
+	/** Returns the scaling factor of the DMP
+   *  @param[out] v_scale: The scaling factor of the DMP.
+	 */ 
   double get_v_scale();
 
 protected:
@@ -177,11 +193,36 @@ protected:
 	virtual double calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0) = 0;
 
 private:
-	void train_LWR(arma::rowvec &x, arma::rowvec &s, arma::rowvec &Fd);
 	
-	void train_RLWR(arma::rowvec &x, arma::rowvec &s, arma::rowvec &Fd);
+	/** \brief Trains the DMP weights using LWR (Locally Weighted Regression)
+	 *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s), 
+	 *  where Psi = exp(-h(k)*(x-c(k)).^2)
+	 *  @param[in] x: Row vector with the values of the phase variable.
+	 *  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
+	 *  @param[in] Fd: Row vector with the desired values of the shape attractor.
+	 */
+	void train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
 	
-	void train_LS(arma::rowvec &x, arma::rowvec &s, arma::rowvec &Fd);
+	/** Trains the DMP weights using RLWR (Recursive Locally Weighted Regression)
+	 *  For the i-th data point the k-th weight is updated as w_k = w_k+Psi*P_k*s_i*e_i, 
+	 *  where Psi = exp(-h(k)*(x_i-c(k)).^2), e_i = Fd_i-w_k*s_i, 
+	 *  P_k = P_k - (P_k^2*s_i^2/((l/Psi)+P_k*s_i))/l
+	 *  P_k is initialized in 1 and lambda is a forgetting factor in (0, 1].
+	 *  @param[in] x: Row vector with the values of the phase variable.
+	 *  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
+	 *  @param[in] Fd: Row vector with the desired values of the shape attractor.
+	 */
+	void train_RLWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
+	
+	
+	/** Trains the DMP weights using LS (Least Squares)
+	 *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s), 
+	 *  where Psi = exp(-h(k)*(x-c(k)).^2)
+	 *  @param[in] x: Row vector with the values of the phase variable.
+	 *  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
+	 *  @param[in] Fd: Row vector with the desired values of the shape attractor.
+	 */
+	void train_LS(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
 
 };
 

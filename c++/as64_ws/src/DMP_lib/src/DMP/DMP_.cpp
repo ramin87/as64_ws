@@ -121,6 +121,21 @@ namespace as64
 		double g_attr = this->a_z * (this->b_z * ( g - y ) - z);
     return g_attr;       
 	}
+	
+	double DMP_::forcing_term(double x)
+	{
+		arma::vec Psi = this->activation_function(x);
+    
+    double f = arma::dot(this->w, Psi) / (arma::sum(Psi) + this->zero_tol);
+		
+		return f;
+	}
+	
+	arma::vec DMP_::activation_function(double x)
+	{
+    arma::vec Psi = arma::exp(-this->h % arma::pow((x - this->c), 2));
+		return Psi;
+	}
 		
 	void DMP_::set_training_params(bool USE_GOAL_FILT, double a_g, double lambda, double P_rlwr)
 	{
@@ -131,14 +146,69 @@ namespace as64
 	}
 
 	
-	void DMP_::train_LWR(arma::rowvec &x, arma::rowvec &s, arma::rowvec &Fd)
-	{}
+	void DMP_::train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd)
+	{
+		
+		arma::rowvec Psi, temp;
+		
+		for (int k=0; k<this->N_kernels; k++)
+		{
+			Psi = arma::exp(-this->h(k)* arma::pow((x-this->c(k)),2));
+			temp = s.t()%Psi;
+			this->w(k) = arma::dot(temp, Fd) / (arma::dot(temp, s) + this->zero_tol);
+		}
+	}
 	
-	void DMP_::train_RLWR(arma::rowvec &x, arma::rowvec &s, arma::rowvec &Fd)
-	{}
+	void DMP_::train_RLWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd)
+	{
+		int n_data = x.n_elem;
+
+		arma::vec P = arma::vec().ones(this->N_kernels) * this->P_rlwr;
+		this->w = arma::vec().zeros(this->N_kernels);
+  
+		arma::vec Psi;
+		arma::vec error;
+		
+		for (int i=0; i<n_data; i++)
+		{	
+				Psi = this->activation_function(x(i));
+				
+				error = Fd(i) - this->w * s(i);
+				
+				P = (P - (P%P * std::pow(s(i), 2)) / (this->lambda / Psi + P * std::pow(s(i), 2))) / this->lambda;
+				
+				this->w = this->w + Psi % P % error * s(i);
+		}
+	}
 	
-	void DMP_::train_LS(arma::rowvec &x, arma::rowvec &s, arma::rowvec &Fd)
-	{}
+	void DMP_::train_LS(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd)
+	{
+		int n_data = x.n_elem;
+		
+		arma::mat H = arma::zeros(this->N_kernels, n_data);
+		arma::vec Psi;
+		
+		for (int i=0; i<n_data; i++)
+		{
+				Psi = this->activation_function(x(i));
+				Psi = s(i)*Psi / (arma::sum(Psi) + this->zero_tol);
+				H.col(i) = Psi;
+		}
+
+		this->w = (Fd*arma::pinv(H)).t();
+	}
+	
+	double DMP_::get_tau()
+	{
+		double tau = this->can_sys_ptr->get_tau();
+		return tau;
+	}
+	
+	double DMP_::get_v_scale()
+	{
+		double v_scale = this->get_tau() * this->a_s;
+		return v_scale;
+	}
 	
 	/*
 DMP_::DMP_()
