@@ -66,7 +66,7 @@ public:
 	 * @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
 	 * @param[in] std_K: Scales the std of each kernel (optional, default = 1).
 	 */ 
-	void init(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
+	virtual void init(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
 	
 	/** \brief Sets the centers for the activation functions of the DMP according to the partition method specified
 	 *  @param[in] part_type: Partitioning method for the kernel centers (optional, default = "").
@@ -94,9 +94,9 @@ public:
    *  velocity and acceleration data in \a yd_data, \a dyd_data and \a
    *  ddyd_data need not be sequantial in time.
 	 */
-   double train(const arma:: rowvec &Time, const arma::rowvec &yd_data, const arma::rowvec &dyd_data, 
-								 const arma::rowvec &ddyd_data, double y0, double g0, const std::string &train_method,
-								 arma::rowvec *Fd_ptr=NULL, arma::rowvec *F_ptr=NULL);
+   virtual double train(const arma:: rowvec &Time, const arma::rowvec &yd_data, const arma::rowvec &dyd_data, 
+												const arma::rowvec &ddyd_data, double y0, double g0, const std::string &train_method,
+												arma::rowvec *Fd_ptr=NULL, arma::rowvec *F_ptr=NULL);
 	
   
 	/** \brief sets training parameters of the DMP
@@ -145,6 +145,34 @@ public:
    */
   virtual arma::vec activation_function(double x);
 
+  /** Returns the derivatives of the DMP states
+	 *  @param[in] y: \a y state of the DMP.
+	 *  @param[in] z: \a z state of the DMP.
+ 	 *  @param[in] x: phase variable.
+	 *  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+	 *  @param[in] y0: initial position.
+ 	 *  @param[in] g0: final goal.
+ 	 *  @param[in] g: current goal (if for instance the transition from y0 to g0 is done using a filter).
+ 	 *  @param[in] y_c: coupling term for the dynamical equation of the \a y state.
+	 *  @param[in] z_c: coupling term for the dynamical equation of the \a z state.
+	 *  @param[out] dy: derivative of the \a y state of the DMP.
+	 *  @param[out] dz: derivative of the \a z state of the DMP.
+   */
+	arma::vec get_states_dot(double y, double z, double x, double u, double y0, 
+													 double g0, double g, double y_c = 0, double z_c = 0);
+	
+	/** Calculates the desired value of the scaled forcing term.
+    *  @param[in] y: Position.
+    *  @param[in] dy: Velocity.
+    *  @param[in] ddy: Acceleration.
+    *  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+    *  @param[in] y0: initial position.
+    *  @param[in] g0: final goal.
+    *  @param[in] g: current goal (if for instance the transition from y0 to g0 is done using a filter).
+    *  @param[out] Fd: Desired value of the scaled forcing term.
+		*/ 
+	virtual double calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0) = 0;
+	
 	/** \brief Returns the time cycle of the DMP
    *  @param[out] tau: The time cycle of the DMP.  
 	 */
@@ -180,20 +208,6 @@ protected:
  		
 	}
 	
-  /** Calculates the desired value of the scaled forcing term.
-    *  @param[in] y: Position.
-    *  @param[in] dy: Velocity.
-    *  @param[in] ddy: Acceleration.
-    *  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
-    *  @param[in] y0: initial position.
-    *  @param[in] g0: final goal.
-    *  @param[in] g: current goal (if for instance the transition from y0 to g0 is done using a filter).
-    *  @param[out] Fd: Desired value of the scaled forcing term.
-		*/ 
-	virtual double calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0) = 0;
-
-private:
-	
 	/** \brief Trains the DMP weights using LWR (Locally Weighted Regression)
 	 *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s), 
 	 *  where Psi = exp(-h(k)*(x-c(k)).^2)
@@ -201,7 +215,7 @@ private:
 	 *  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
 	 *  @param[in] Fd: Row vector with the desired values of the shape attractor.
 	 */
-	void train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
+	virtual void train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
 	
 	/** Trains the DMP weights using RLWR (Recursive Locally Weighted Regression)
 	 *  For the i-th data point the k-th weight is updated as w_k = w_k+Psi*P_k*s_i*e_i, 
@@ -223,6 +237,8 @@ private:
 	 *  @param[in] Fd: Row vector with the desired values of the shape attractor.
 	 */
 	void train_LS(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
+
+private:
 
 };
 

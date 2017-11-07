@@ -137,6 +137,29 @@ namespace as64
 		return Psi;
 	}
 		
+	arma::vec DMP_::get_states_dot(double y, double z, double x, double u, double y0, 
+																 double g0, double g, double y_c, double z_c)
+	{
+		double v_scale = this->get_v_scale();
+		
+		arma::vec X_in(2);
+		X_in(0) = x;
+		X_in(1) = u;
+		
+		double shape_attr = this->shape_attractor(X_in, y0, g0);
+		double goal_attr = this->goal_attractor(y, z, g);
+						
+		double dz = ( goal_attr + shape_attr + z_c) / v_scale;
+		double dy = ( z + y_c) / v_scale;
+		
+		arma::vec dydz(2);
+		
+		dydz(0) = dy;
+		dydz(1) = dz;
+		
+		return dydz;
+	}
+			
 	void DMP_::set_training_params(bool USE_GOAL_FILT, double a_g, double lambda, double P_rlwr)
 	{
 			this->USE_GOAL_FILT = USE_GOAL_FILT;

@@ -2,26 +2,26 @@
  * Copyright (C) 2017 DMP
  */
 
-#include <DMP_lib/DMP/DMPBio.h>
+#include <DMP_lib/DMP/DMP_bio.h>
 
 namespace as64
 {
 
-DMPBio::DMPBio()
+DMP_bio::DMP_bio()
 {}
 
-DMPBio::DMPBio(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K):
+DMP_bio::DMP_bio(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K):
 DMP_(N_kernels, a_z, b_z, can_sys_ptr, std_K)
 {}
 
 
-double DMPBio::forcing_term_scaling(double u, double y0, double g0)
+double DMP_bio::forcing_term_scaling(double u, double y0, double g0)
 {
 	double s = u * this->a_z * this->b_z;
 	return s;
 }
 
-double DMPBio::shape_attractor(const arma::vec &X, double g0, double y0)
+double DMP_bio::shape_attractor(const arma::vec &X, double g0, double y0)
 {
 	double x,u;
   
@@ -39,7 +39,7 @@ double DMPBio::shape_attractor(const arma::vec &X, double g0, double y0)
   return s_attr;
 }
 
-double DMPBio::calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0)
+double DMP_bio::calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0)
 {	
   double v_scale = this->get_v_scale();
   
