@@ -215,7 +215,7 @@ protected:
 	 *  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
 	 *  @param[in] Fd: Row vector with the desired values of the shape attractor.
 	 */
-	virtual void train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
+	void train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
 	
 	/** Trains the DMP weights using RLWR (Recursive Locally Weighted Regression)
 	 *  For the i-th data point the k-th weight is updated as w_k = w_k+Psi*P_k*s_i*e_i, 

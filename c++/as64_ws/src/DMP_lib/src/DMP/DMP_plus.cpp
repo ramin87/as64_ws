@@ -47,7 +47,6 @@ double DMP_plus::train(const arma:: rowvec &Time, const arma::rowvec &yd_data, c
 		g = y0*arma::exp(-a_g*Time/tau) + g0*(1 - arma::exp(-a_g*Time/tau));
 	}
 
-	arma::rowvec s = u *(g0 - y0);
 	arma::rowvec Fd(n_data);
 	
 	for (int i=0; i<n_data; i++){
@@ -56,7 +55,7 @@ double DMP_plus::train(const arma:: rowvec &Time, const arma::rowvec &yd_data, c
 
 	if (train_method.compare("LWR"))
 	{
-		this->train_LWR(x, s, Fd);
+		this->train_LWR_DMP_plus(x, Fd);
 	}
 	else
 	{
@@ -139,7 +138,7 @@ double DMP_plus::calc_Fd(double y, double dy, double ddy, double u, double g, do
 	return Fd;
 }
 
-void DMP_plus::train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd)
+void DMP_plus::train_LWR_DMP_plus(const arma::rowvec &x, arma::rowvec &Fd)
 {
 	int n_data = x.n_elem;
 	arma::mat Psi(this->N_kernels, n_data);

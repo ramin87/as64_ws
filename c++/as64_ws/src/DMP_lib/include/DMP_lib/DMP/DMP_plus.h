@@ -48,7 +48,14 @@ public:
 	double calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0);
 	
 private:
-	void train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
+	
+	/** \brief Trains the DMP weights using LWR (Locally Weighted Regression) with biased and trunckated kernels
+	 *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s), 
+	 *  where Psi = exp(-h(k)*(x-c(k)).^2)
+	 *  @param[in] x: Row vector with the values of the phase variable.
+	 *  @param[in] Fd: Row vector with the desired values of the shape attractor.
+	 */
+	void train_LWR_DMP_plus(const arma::rowvec &x, arma::rowvec &Fd);
 	
 };
 }
