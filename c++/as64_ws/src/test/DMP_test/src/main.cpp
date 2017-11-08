@@ -42,10 +42,13 @@ double Fdist_fun(double t)
 }
 
 int main(int argc, char** argv)
-{    
+{   
+	
   // Initialize the ROS node
   ros::init(argc, argv, "DMP_test_node");
   ros::NodeHandle nh("~");
+  
+  /*
   
   arma::wall_clock timer;
   double elapsed_time;
