@@ -20,11 +20,13 @@ function DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
     if (tau > 1)
       dmp.a_s = 1 / (dmp.can_sys_ptr.tau^2);
     else
-      dmp.a_s = 1;
+      dmp.a_s = (dmp.can_sys_ptr.tau^2);
     end
 
     dmp.w = zeros(dmp.N_kernels,1); %rand(dmp.N_kernels,1);
     dmp.set_centers();
     dmp.set_stds(std_K);
+
+    dmp.set_training_params(false, 0, 0.95, 1000);
 
 end

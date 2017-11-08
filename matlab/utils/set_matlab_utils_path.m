@@ -1,6 +1,6 @@
 function set_matlab_utils_path()
 
-MATLAB_PATH = '/home/leonidas/Documents/workspaces/ros_ws/as64_ws0/matlab/utils';
+MATLAB_PATH = '/home/leonidas/Documents/workspaces/ros_ws/as64_ws/matlab/utils/';
 addpath([MATLAB_PATH '/SEDS_lib']);
 addpath([MATLAB_PATH '/GMR_lib']);
 addpath([MATLAB_PATH '/math_lib']);

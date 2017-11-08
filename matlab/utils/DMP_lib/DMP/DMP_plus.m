@@ -41,7 +41,7 @@
 classdef DMP_plus < handle
    properties
        N_kernels % number of kernels (basis functions)
-       DMP_set_kernels_with_EM
+       
        a_z % parameter 'a_z' relating to the spring-damper system
        b_z % parameter 'b_z' relating to the spring-damper system
        
@@ -57,6 +57,13 @@ classdef DMP_plus < handle
        zero_tol % tolerance value used to avoid divisions with very small numbers
        
        a_s % scaling factor to ensure smaller changes in the accelaration to improve the training
+       
+       % training params
+       USE_GOAL_FILT % flag indicating whether to apply goal filtering in training or not
+       a_g % filtering gain in goal filtering
+       
+       lambda % forgetting factor in recursive training methods
+       P_rlwr% Initial value of covariance matrix in recursive training methods
    end
    
    methods
@@ -133,7 +140,7 @@ classdef DMP_plus < handle
       %  @param[in] train_method: Method used to train the DMP weights.
       %  @param[in] USE_GOAL_FILT: flag indicating whether to use filtered goal (optional, default = false).
       %  @param[in] a_g: Parameter of the goal filter.
-      function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method, USE_GOAL_FILT, a_g)
+      function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method)
 
           g = g0;
           x0 = 1;
@@ -152,8 +159,8 @@ classdef DMP_plus < handle
           s = u*(g0-y0);
           
           g = g * ones(size(x));
-          if (USE_GOAL_FILT)
-          	g = y0*exp(-a_g*Time/tau) + g0*(1 - exp(-a_g*Time/tau));
+          if (dmp.USE_GOAL_FILT)
+          	g = y0*exp(-dmp.a_g*Time/tau) + g0*(1 - exp(-dmp.a_g*Time/tau));
           end
           
           v_scale = dmp.get_v_scale();
@@ -200,6 +207,33 @@ classdef DMP_plus < handle
           
       end
       
+      function set_training_params(dmp, USE_GOAL_FILT, a_g, lambda, P_rlwr)
+          
+          dmp.USE_GOAL_FILT = USE_GOAL_FILT;
+          dmp.a_g = a_g;
+          dmp.lambda = lambda;
+          dmp.P_rlwr = P_rlwr;
+
+      end
+      
+      %% Updates the DMP weights using RLWR (Recursive Locally Weighted Regression)
+      %  @param[in] dmp: DMP object.
+      %  @param[in] x: The phase variable.
+      %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+      %  @param[in] y: Position.
+      %  @param[in] dy: Velocity.
+      %  @param[in] ddy: Acceleration.
+      %  @param[in] y0: Initial position.
+      %  @param[in] g0: Final goal.
+      %  @param[in] g: Current goal.
+      %  @param[in,out] P: \a P matrix of RLWR.
+      %  @param[in] lambda: Forgetting factor.
+      function [P] = update_weights(dmp, x, u, y, dy, ddy, y0, g0, g, P, lambda)
+
+          error('DMP_plus:update_weights: Not supported yet...');
+          %P = RLWR_update(dmp, x, u, y, dy, ddy, y0, g0, g, P, lambda);
+
+      end
             
       %% Returns the forcing term of the DMP
       %  @param[in] x: The phase variable.
@@ -219,7 +253,7 @@ classdef DMP_plus < handle
       %  @param[out] f_scale: The scaling factor of the forcing term.
       function f_scale = forcing_term_scaling(dmp, u, y0, g0)
           
-          f_scale = (g0-y0)*ones(size(u));
+          f_scale = (g0-y0);
           
       end
       

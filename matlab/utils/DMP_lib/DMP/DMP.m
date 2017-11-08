@@ -54,6 +54,14 @@ classdef DMP < handle
        zero_tol % tolerance value used to avoid divisions with very small numbers
        
        a_s % scaling factor to ensure smaller changes in the accelaration to improve the training
+       
+       % training params
+       USE_GOAL_FILT % flag indicating whether to apply goal filtering in training or not
+       a_g % filtering gain in goal filtering
+       
+       lambda % forgetting factor in recursive training methods
+       P_rlwr% Initial value of covariance matrix in recursive training methods
+       
    end
    
    methods
@@ -134,10 +142,37 @@ classdef DMP < handle
       %  \note The timestamps in \a Time and the corresponding position,
       %  velocity and acceleration data in \a yd_data, \a dyd_data and \a
       %  ddyd_data need not be sequantial in time.
-      function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method, USE_GOAL_FILT, a_g)
+      function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method)
           
-          [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method, USE_GOAL_FILT, a_g);    
+          [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method);    
           
+      end
+      
+      function set_training_params(dmp, USE_GOAL_FILT, a_g, lambda, P_rlwr)
+          
+          dmp.USE_GOAL_FILT = USE_GOAL_FILT;
+          dmp.a_g = a_g;
+          dmp.lambda = lambda;
+          dmp.P_rlwr = P_rlwr;
+
+      end
+      
+      %% Updates the DMP weights using RLWR (Recursive Locally Weighted Regression)
+      %  @param[in] dmp: DMP object.
+      %  @param[in] x: The phase variable.
+      %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+      %  @param[in] y: Position.
+      %  @param[in] dy: Velocity.
+      %  @param[in] ddy: Acceleration.
+      %  @param[in] y0: Initial position.
+      %  @param[in] g0: Final goal.
+      %  @param[in] g: Current goal.
+      %  @param[in,out] P: \a P matrix of RLWR.
+      %  @param[in] lambda: Forgetting factor.
+      function [P] = update_weights(dmp, x, u, y, dy, ddy, y0, g0, g, P, lambda)
+
+          P = RLWR_update(dmp, x, u, y, dy, ddy, y0, g0, g, P, lambda);
+
       end
       
       %% Calculates the desired values of the scaled forcing term.

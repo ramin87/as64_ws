@@ -1,7 +1,9 @@
 function set_matlab_utils_path()
 
 MATLAB_PATH = '/home/leonidas/Documents/workspaces/ros_ws/as64_ws/matlab/utils/';
-%MATLAB_PATH = 'C:/Users/Slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
+%MATLAB_PATH = '/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
+% MATLAB_PATH = 'C:/Users/Slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
+% MATLAB_PATH = 'C:/Users/Slifer64/Dropbox/64631466/lib/as64_ws/matlab/utils/';
 
 addpath([MATLAB_PATH 'math_lib/']);
 addpath([MATLAB_PATH 'filter_lib/']);
@@ -19,7 +21,7 @@ addpath([MATLAB_PATH 'DMP_lib/utils']);
 addpath([MATLAB_PATH 'DMP_lib/CanonicalSystem']);
 
 
-DMP_PATH = '../DMP_utils/';
+DMP_PATH = '/home/leonidas/Documents/workspaces/ros_ws/as64_ws/matlab/test/DMP/DMP_utils/';
 addpath([DMP_PATH 'DMP_data_process/']);
 addpath([DMP_PATH 'DMP_plot_functions/']);
 addpath([DMP_PATH 'DMP_train_data/']);

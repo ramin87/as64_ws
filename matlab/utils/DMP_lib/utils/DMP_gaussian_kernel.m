@@ -11,4 +11,5 @@ function Psi = DMP_gaussian_kernel(dmp,x)
         Psi(:,j) = exp(-dmp.h.*((x(j)-dmp.c).^2));
     end   
 
+    %Psi = Psi.^7;
 end
