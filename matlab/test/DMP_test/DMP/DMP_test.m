@@ -14,7 +14,7 @@ set_matlab_utils_path();
 USE_2nd_order_can_sys = false;
 
 %% Load demos and process demos
-load data.mat data Ts
+load data/data.mat data Ts
 
 % calculate numerically the 1st and 2nd derivatives
 [yd_data, dyd_data, ddyd_data] = process_demos(data, Ts, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
@@ -62,39 +62,44 @@ end
 
 F_train_data = [];
 Fd_train_data = [];
-
+Time_train = [];
+offline_train_mse = [];
+online_train_mse = [];
 %% Train the DMP
-disp('DMP training...')
-tic
-train_mse = zeros(D,1); 
-n_data = length(yd_data(i,:));
-Time = (0:n_data-1)*Ts;
-for i=1:D
-    
-    y0 = yd_data(i,1);
-    g0 = yd_data(i,end);
-    
-    ind = 1:n_data;
-%     ind = randperm(n_data);
-    T = Time(ind);
-    yd = yd_data(i,ind);
-    dyd = dyd_data(i,ind);
-    ddyd = ddyd_data(i,ind);
+if (cmd_args.OFFLINE_DMP_TRAINING_enable)
+    disp('DMP training...')
+    tic
+    offline_train_mse = zeros(D,1); 
+    n_data = length(yd_data(i,:));
+    Time = (0:n_data-1)*Ts;
+    for i=1:D
 
-    [train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method, cmd_args.USE_GOAL_FILT, cmd_args.a_g);      
+        y0 = yd_data(i,1);
+        g0 = yd_data(i,end);
 
-    F_train_data = [F_train_data; F_train];
-    Fd_train_data = [Fd_train_data; Fd_train];
-    
+        ind = 1:n_data;
+    %     ind = randperm(n_data);
+        T = Time(ind);
+        yd = yd_data(i,ind);
+        dyd = dyd_data(i,ind);
+        ddyd = ddyd_data(i,ind);
+
+        dmp{i}.set_training_params(cmd_args.USE_GOAL_FILT, cmd_args.a_g, cmd_args.RLWR_lambda, cmd_args.RLWR_P);
+        [offline_train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method);      
+
+        F_train_data = [F_train_data; F_train];
+        Fd_train_data = [Fd_train_data; Fd_train];
+
+    end
+    Time_train = (0:(size(F_train_data,2)-1))*Ts;
 end
-Time_train = (0:(size(F_train_data,2)-1))*Ts;
 
 toc
 
 %% DMP simulation
 % set initial values
 y0 = yd_data(:,1);
-g0 = yd_data(:,end); 
+g0 = cmd_args.goal_scale*yd_data(:,end); 
 g = g0;
 dg = zeros(D,1);
 if (cmd_args.USE_GOAL_FILT), g = y0; end
@@ -118,6 +123,13 @@ scaled_forcing_term = zeros(D,1);
 shape_attr = zeros(D,1);
 goal_attr = zeros(D,1);
 
+P_lwr = cell(D,1);
+for i=1:D
+    P_lwr{i} = ones(cmd_args.N_kernels,1)*cmd_args.RLWR_P;
+end
+F = zeros(D,1);
+Fd = zeros(D,1);
+
 Fdist = 0;
 
 log_data = get_logData_struct();   
@@ -133,7 +145,12 @@ log_data.g0 = g0;
 log_data.Time_train = Time_train;
 log_data.F_train_data = F_train_data;
 log_data.Fd_train_data = Fd_train_data;
+log_data.Time_online_train = [];
+log_data.F_train_online_data = [];
+log_data.Fd_train_online_data = [];
 log_data.Psi_data = cell(D,1);
+log_data.P_lwr = cell(D,1);
+log_data.DMP_w = cell(D,1);
 
 % for some strange reason I have to pass cell array explicitly here. In the
 % initialization of the structure above, cell array are rendered as []...?
@@ -145,7 +162,12 @@ tau = cmd_args.tau_sim_scale*tau;
 can_sys_ptr.set_tau(tau);
 
 iters = 0;
-dt = cmd_args.dt;
+
+if (cmd_args.ONLINE_DMP_UPDATE_enable)
+    dt = Ts; % sync sim with training data
+else
+    dt = cmd_args.dt;
+end
 
 temp_data = [];
 
@@ -179,10 +201,23 @@ while (true)
     %log_data.goal_attr_data = [log_data.goal_attr_data goal_attr];
     
     %% DMP simulation
-    
+
     for i=1:D
         
-        v_scale = dmp{i}.get_v_scale();% 1 / (tau*dmp{i}.a_s);
+        if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
+            
+            log_data.DMP_w{i} = [log_data.DMP_w{i} dmp{i}.w];
+            log_data.P_lwr{i} = [log_data.P_lwr{i} P_lwr{i}];
+            
+            yd = yd_data(i,iters+1);
+            dyd = dyd_data(i,iters+1);
+            ddyd = ddyd_data(i,iters+1);
+            P_lwr{i} = dmp{i}.update_weights(x, u, yd, dyd, ddyd, y0(i), g0(i), g(i), P_lwr{i}, cmd_args.RLWR_lambda); 
+
+            F(i) = dmp{i}.calc_Fd(y(i), dy(i), ddy(i), u, y0(i), g0(i), g(i));
+            Fd(i) = dmp{i}.calc_Fd(yd, dyd, ddyd, u, y0(i), g0(i), g(i));
+            
+        end
         
         Psi = dmp{i}.activation_function(x);
         log_data.Psi_data{i} = [log_data.Psi_data{i} Psi(:)];
@@ -195,25 +230,17 @@ while (true)
         y_c = - cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
         
-        v_scale = dmp{i}.get_v_scale();
-        dz(i) = ( dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i))-z(i)) + scaled_forcing_term(i)) / v_scale;
-        dy(i) = ( z(i) - cmd_args.a_py*(y_robot(i)-y(i)) ) / v_scale;
-        
-        temp = [dz; z; scaled_forcing_term; dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i)))];
-        temp_data = [temp_data temp];
-%         if (t>0.4 && t<2.2)
-%             dz
-%             z
-%             scaled_forcing_term
-%             dmp{i}.a_z*(dmp{i}.b_z*(g(i)-y(i)))
-%             pause    
-%         end
-        
-%         [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, u, y0(i), g0(i), g(i), y_c, z_c);
+        [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, u, y0(i), g0(i), g(i), y_c, z_c);
         
         dy_robot(i) = dy(i) - (cmd_args.Kd/cmd_args.Dd)*(y_robot(i)-y(i)) + Fdist/cmd_args.Dd; 
-      
     end
+    
+    if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
+        log_data.Time_online_train = [log_data.Time_online_train t];
+        log_data.F_train_online_data = [log_data.F_train_online_data F];
+        log_data.Fd_train_online_data = [log_data.Fd_train_online_data Fd];
+    end
+    
     
     if (cmd_args.USE_GOAL_FILT)
         dg = -cmd_args.a_g*(g-g0)/can_sys_ptr.tau;
@@ -230,10 +257,8 @@ while (true)
         
     X_out = can_sys_ptr.get_derivative(X_in);
     
-%     x = X_out(1);
     dx = X_out(1);
     if (length(X_out) > 1)
-%         u = X_out(2);
         du = X_out(2);
     else
         du = dx;
@@ -258,13 +283,6 @@ while (true)
     iters = iters + 1;
     if (iters >= cmd_args.max_iters), break; end
     
-    
-    if (t>0.4 && t<1.8)
-            dx = 0;
-            du = 0;
-    end
-    
-    
     %% Numerical integration
     t = t + dt;
     
@@ -288,29 +306,27 @@ while (true)
 end
 toc
 
-figure
-subplot(2,2,1);
-plot(log_data.Time,temp_data(1,:)');
-legend({'$\dot{z}$'},'Interpreter','latex','fontsize',14);
-subplot(2,2,2);
-plot(log_data.Time,temp_data(2,:)');
-legend({'$z$'},'Interpreter','latex','fontsize',14);
-subplot(2,2,[3 4]);
-plot(log_data.Time,temp_data(3:4,:)');
-legend({'$F$','$\alpha \beta (g - y)$'},'Interpreter','latex','fontsize',14);
-
-save dmp_results.mat log_data cmd_args;
-...
-%     Time_demo yd_data dyd_data ddyd_data ...
-%     D Ts ...
-%     Time y_data dy_data z_data dz_data x_data u_data Force_term_data ...
-%     Fdist_data ...
-%     g0 g_data ...
-%     y_robot_data dy_robot_data ...
-%     Time_train F_train_data Fd_train_data
+save data/dmp_results.mat log_data cmd_args;
     
 
 %% Find mean square error between the signals
+
+if (cmd_args.ONLINE_DMP_UPDATE_enable)
+   online_train_mse = zeros(D,1);
+   for i=1:D
+       n = length(log_data.F_train_online_data(i,:));
+       online_train_mse(i) = norm(log_data.F_train_online_data(i,:)-log_data.Fd_train_online_data(i,:))/n;
+   end
+end
+
+if (cmd_args.OFFLINE_DMP_TRAINING_enable)
+   offline_train_mse = zeros(D,1);
+   for i=1:D
+       n = length(log_data.F_train_data(i,:));
+       offline_train_mse(i) = norm(log_data.F_train_data(i,:)-log_data.Fd_train_data(i,:))/n;
+   end
+end
+
 
 y_data = log_data.y_data;
 yd_data = log_data.yd_data;
@@ -321,6 +337,7 @@ dtw_win = floor(max([size(y_data,2), size(yd_data,2)])/3);
 sim_mse = sum(C)/length(C);
 
 
-train_mse
+offline_train_mse
+online_train_mse
 sim_mse
 dtw_dist/length(C)

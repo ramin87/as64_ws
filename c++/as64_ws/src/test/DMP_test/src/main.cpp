@@ -17,29 +17,6 @@
 
 CMD_ARGS cmd_args;
 
-double Fdist_fun(double t)
-{
-  double Fmax = cmd_args.Fdist_max;
-  double Fmin = cmd_args.Fdist_min;
-  double t1 = cmd_args.t1_fdist;
-  double t2 = cmd_args.t2_fdist;
-
-  double tf = t2 - t1;
-
-  double tb = tf*0.15;
-  double a = (Fmax - Fmin) / tb;
-
-  double Fdist = Fmin;
-
-  if (t>t1 && t<t2){
-      if (t < t1+tb) Fdist = a*(t-t1) + Fmin;
-      else if (t < t2-tb) Fdist = Fmax;
-      else Fdist = -a*(t-t2) + Fmin;
-  }
-  
-  return Fdist;
-
-}
 
 int main(int argc, char** argv)
 {   

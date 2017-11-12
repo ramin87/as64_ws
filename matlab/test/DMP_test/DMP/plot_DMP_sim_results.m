@@ -2,7 +2,7 @@
 close all;
 clear;
 
-load dmp_results.mat
+load data/dmp_results.mat
 
 fontsize = cmd_args.fontsize;
 

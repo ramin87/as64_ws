@@ -40,7 +40,10 @@ t2_fdist: 2.2
 sim_time_step: 0.002
 sim_tol_stop: 0.001
 sim_max_iters: 5000
-tau_sim_scale: 1
+tau_sim_scale: include <cstdlib>\n');
+fprintf(fid, '#include <string>\n');
+fprintf(fid, '#include <fstream>\n');
+fprintf(fid, '#include <ros/ro1
 goal_sim_scale: 1
 
 # ====  Apply disturbance force  ====

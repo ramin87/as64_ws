@@ -19,6 +19,29 @@ namespace as64
 	{
 		this->init_helper(N_kernels, a_z, b_z, can_sys_ptr, std_K);
 	}
+	
+	void DMP_::init_helper(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K)
+	{
+		this->zero_tol = 1e-250;
+
+    this->N_kernels = N_kernels;
+    this->a_z = a_z;
+    this->b_z = b_z;
+    this->can_sys_ptr = can_sys_ptr;
+
+    double tau = this->get_tau();
+    if (tau > 1) this->a_s = 1 / (std::pow(this->can_sys_ptr->get_tau(),2));
+    else this->a_s = 1;
+
+    this->w = arma::vec().zeros(this->N_kernels); // rand(this->N_kernels,1);
+    this->set_centers();
+    this->set_stds(std_K);
+		
+		this->USE_GOAL_FILT = false;
+		this->a_g = 0;
+		this->lambda = 0.95;
+		this->P_rlwr = 1000;
+	}
 
 	void DMP_::set_centers(const std::string  &part_type)
 	{
@@ -159,6 +182,21 @@ namespace as64
 		
 		return dydz;
 	}
+	
+	void DMP_::update_weights(double x, double u, double y, double dy, double ddy, 
+														double y0, double g0, double g, arma::vec &P)
+	{
+		double Fd = this->calc_Fd(y, dy, ddy, u, y0, g0, g);
+    double s = this->forcing_term_scaling(u, y0, g0);
+		
+    arma::vec Psi = this->activation_function(x);
+				
+		arma::vec error = Fd - this->w * s;
+				
+		P = (P - (P%P * std::pow(s, 2)) / (this->lambda / Psi + P * std::pow(s, 2))) / this->lambda;
+				
+		this->w = this->w + Psi % P % error * s;
+	}
 			
 	void DMP_::set_training_params(bool USE_GOAL_FILT, double a_g, double lambda, double P_rlwr)
 	{
@@ -167,7 +205,6 @@ namespace as64
 			this->lambda = lambda;
 			this->P_rlwr = P_rlwr;
 	}
-
 	
 	void DMP_::train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd)
 	{

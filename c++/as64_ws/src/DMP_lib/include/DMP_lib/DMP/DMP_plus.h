@@ -21,11 +21,11 @@ public:
 	DMP_plus();
 	
 	/** \brief DMP plus constructor
-	 *  @param[in] N_kernels: the number of kernels
-	 *  @param[in] a_z: Parameter \a a_z relating to the spring-damper system.
-	 *  @param[in] b_z: Parameter \a b_z relating to the spring-damper system.
-	 *  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
-	 *  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
+	 *  @param[in] N_kernels the number of kernels
+	 *  @param[in] a_z Parameter \a a_z relating to the spring-damper system.
+	 *  @param[in] b_z Parameter \a b_z relating to the spring-damper system.
+	 *  @param[in] can_sys_ptr Pointer to a DMP canonical system object.
+	 *  @param[in] std_K Scales the std of each kernel (optional, default = 1).
 	 */ 
 	DMP_plus(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
 	
@@ -52,8 +52,8 @@ private:
 	/** \brief Trains the DMP weights using LWR (Locally Weighted Regression) with biased and trunckated kernels
 	 *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s), 
 	 *  where Psi = exp(-h(k)*(x-c(k)).^2)
-	 *  @param[in] x: Row vector with the values of the phase variable.
-	 *  @param[in] Fd: Row vector with the desired values of the shape attractor.
+	 *  @param[in] x Row vector with the values of the phase variable.
+	 *  @param[in] Fd Row vector with the desired values of the shape attractor.
 	 */
 	void train_LWR_DMP_plus(const arma::rowvec &x, arma::rowvec &Fd);
 	

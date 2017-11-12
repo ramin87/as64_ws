@@ -20,9 +20,10 @@ for i=1:D
 end
 
 data = y;
-save('data.mat','data','Ts');
+save('data/data.mat','data','Ts');
 
 save_ascii(data,Ts);
+save_binary(data,Ts);
 
 figure;
 for i=1:D
@@ -34,29 +35,25 @@ end
 
 function save_ascii(data,Ts)
 
-n_data = size(data,2);
-D = size(data,1);
+    fid = fopen('data/data.txt','w');
 
-fid = fopen('data.txt','w');
+    fprintf(fid, '%.6f', Ts);
+    fprintf(fid, '\n');
 
-fprintf(fid, '%i', D);
-fprintf(fid, '\n');
+    write_mat(data, fid, false);
 
-fprintf(fid, '%i', n_data);
-fprintf(fid, '\n');
-
-fprintf(fid, '%.6f', Ts);
-fprintf(fid, '\n');
-
-
-for d=1:D
-   for i=1:n_data
-       fprintf(fid, '%.6f ', data(d,i));
-   end
-   fprintf(fid, '\n');
-end
-
-fclose(fid);
+    fclose(fid);
 
 end
 
+function save_binary(data,Ts)
+
+    fid = fopen('data/data.bin','w');
+
+    fwrite(fid, Ts, 'int64');
+
+    write_mat(data, fid, true);
+
+    fclose(fid);
+
+end
