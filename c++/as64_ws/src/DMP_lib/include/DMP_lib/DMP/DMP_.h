@@ -172,7 +172,7 @@ public:
 	 *  @param[in,out] P \a P conarience matrix of RLWR.
    */
 	void update_weights(double x, double u, double y, double dy, double ddy, 
-											double y0, double g0, double g, arma::vec &P);
+											double y0, double g0, double g, arma::vec &P, double lambda);
 	
 	/** Calculates the desired value of the scaled forcing term.
     *  @param[in] y Position.

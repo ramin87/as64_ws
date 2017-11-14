@@ -159,7 +159,7 @@ namespace as64
     arma::vec Psi = arma::exp(-this->h % arma::pow((x - this->c), 2));
 		return Psi;
 	}
-		
+
 	arma::vec DMP_::get_states_dot(double y, double z, double x, double u, double y0, 
 																 double g0, double g, double y_c, double z_c)
 	{
@@ -184,7 +184,7 @@ namespace as64
 	}
 	
 	void DMP_::update_weights(double x, double u, double y, double dy, double ddy, 
-														double y0, double g0, double g, arma::vec &P)
+														double y0, double g0, double g, arma::vec &P, double lambda)
 	{
 		double Fd = this->calc_Fd(y, dy, ddy, u, y0, g0, g);
     double s = this->forcing_term_scaling(u, y0, g0);
@@ -193,7 +193,7 @@ namespace as64
 				
 		arma::vec error = Fd - this->w * s;
 				
-		P = (P - (P%P * std::pow(s, 2)) / (this->lambda / Psi + P * std::pow(s, 2))) / this->lambda;
+		P = (P - (P%P * std::pow(s, 2)) / (lambda / Psi + P * std::pow(s, 2))) / lambda;
 				
 		this->w = this->w + Psi % P % error * s;
 	}

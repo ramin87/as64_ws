@@ -28,11 +28,7 @@ cmd_args.USE_GOAL_FILT = false;
 cmd_args.a_g = 10;
 cmd_args.USE_PHASE_STOP = true;
 cmd_args.a_px = 100; 
-if (cmd_args.USE_PHASE_STOP)
-    cmd_args.a_py = -80;%cmd_args.b_z;
-else
-    cmd_args.a_py = 0;
-end
+cmd_args.a_py = 80;
 
 %% demos preprocess params
 cmd_args.add_points_percent = 0.01;

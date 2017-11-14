@@ -19,7 +19,7 @@ USE_GOAL_FILT: false
 a_g: 10
 USE_PHASE_STOP: true
 a_px: 100
-a_py: -80 # default: set to 0 if (USE_PHASE_STOP==false)
+a_py: 80 # default: set to 0 if (USE_PHASE_STOP==false)
 
 # ====  demos preprocess params ====
 add_points_percent: 0.01
@@ -28,13 +28,6 @@ smooth_points_percent: 0.03
 # ====  Robot controller params  ====
 Kd: 100
 Dd: 10
-
-# ====  Set up DMP params  ====
-APPLY_DISTURBANCE: true
-Fdist_min: 5
-Fdist_max: 80
-t1_fdist: 0.4
-t2_fdist: 2.2
      
 # ====  Simulation params  ====
 sim_time_step: 0.002
@@ -44,16 +37,16 @@ tau_sim_scale: 1
 goal_sim_scale: 1
 
 # ====  Apply disturbance force  ====
-APPLY_DISTURBANCE = false;
-Fdist_min = 0;
-Fdist_max = 200;
-t1_fdist = 0.4;
-t2_fdist = 2.2;
+APPLY_DISTURBANCE: false
+Fdist_min: 0
+Fdist_max: 200
+t1_fdist: 0.4
+t2_fdist: 2.2
 
 # ====  Path to input-output data  ====
 binary: false
-data_input_path: "/home/slifer/Dropbox/64631466/lib/matlab/DMP/DMP_temp/"
-data_output_path: "/home/slifer/Dropbox/64631466/lib/matlab/DMP/DMP_temp/"
+data_input_path: "/home/slifer/Dropbox/64631466/lib/matlab/DMP/DMP_temp/data/"
+data_output_path: "/home/slifer/Dropbox/64631466/lib/matlab/DMP/DMP_temp/data/"
 
 in_data_filename: "data.txt"
 out_data_filename: "data_out.txt"

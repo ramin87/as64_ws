@@ -1,6 +1,9 @@
 #include <IO_lib/io_utils.h>
 
-namespace as64
+namespace as64_
+{
+  
+namespace io_
 {
 	
 void read_mat(arma::mat &m, long n_rows, long n_cols, std::istream &in, bool binary)
@@ -144,6 +147,6 @@ void write_vec_mat(std::vector<arma::mat> &m, std::ostream &out, bool binary)
     for (int k=0;k<n_mat;k++) write_mat(m[k], out, binary);
 }
 
-
+} // namespace io_
 	
-} // namespace as64
+} // namespace as64_

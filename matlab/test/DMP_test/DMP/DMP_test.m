@@ -8,6 +8,10 @@ global cmd_args
 %% initialize cmd params
 cmd_args = get_cmd_args();
 
+if (~cmd_args.USE_PHASE_STOP)
+    cmd_args.a_py = 0;
+end
+
 %% Set the matlab utils paths to use custom built utility functions
 set_matlab_utils_path();
 
@@ -32,7 +36,7 @@ load data/data.mat data Ts
 % 
 % tau = Ts*L;
 % 
-% cmd_args.N_kernels = round(tau*250);
+% cmd_args.N_kernels = round(2*tau*60);
 
 % calculate numerically the 1st and 2nd derivatives
 [yd_data, dyd_data, ddyd_data] = process_demos(data, Ts, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
@@ -87,7 +91,7 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
     disp('DMP training...')
     tic
     offline_train_mse = zeros(D,1); 
-    n_data = length(yd_data(i,:));
+    n_data = size(yd_data,2);
     Time = (0:n_data-1)*Ts;
     for i=1:D
 
@@ -109,17 +113,18 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
 
     end
     Time_train = (0:(size(F_train_data,2)-1))*Ts;
+    
+    toc
 end
 
-toc
 
 %% DMP simulation
 % set initial values
 y0 = yd_data(:,1);
 g0 = cmd_args.goal_scale*yd_data(:,end); 
 g = g0;
-dg = zeros(D,1);
 if (cmd_args.USE_GOAL_FILT), g = y0; end
+dg = zeros(D,1);
 x = cmd_args.x0;
 dx = 0;
 if (USE_2nd_order_can_sys)
@@ -135,7 +140,7 @@ t = 0;
 y_robot = y0;
 dy_robot = zeros(D,1);
 dz = zeros(D,1);
-z = tau*dy + cmd_args.a_py*(y_robot-y);
+z = zeros(D,1); %tau*dy + cmd_args.a_py*(y_robot-y);
 scaled_forcing_term = zeros(D,1);
 shape_attr = zeros(D,1);
 goal_attr = zeros(D,1);
@@ -244,7 +249,7 @@ while (true)
 
         scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(u, y0(i), g0(i));
         
-        y_c = - cmd_args.a_py*(y_robot(i)-y(i));
+        y_c = cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
         
         [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, u, y0(i), g0(i), g(i), y_c, z_c);

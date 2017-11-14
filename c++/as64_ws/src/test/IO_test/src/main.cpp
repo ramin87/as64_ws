@@ -13,7 +13,7 @@
 
 #include <IO_lib/io_utils.h>
 
-using namespace as64;
+using namespace as64_::io_;
 
 int main(int argc, char** argv)
 {    

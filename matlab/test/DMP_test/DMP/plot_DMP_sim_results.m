@@ -238,4 +238,14 @@ if (D==2 || D==3)
     plot_line_path(y_data, yd_data, 'DMP', 'demo', 2, 10);
 end
 
+for i=1:D
+    figure;
+    hold on;
+    plot(Time_train, Fd_train_data(i,:));
+    plot(Time_train, F_train_data(i,:));
+    plot(Time, Force_term_data(i,:));
+    legend({'$F_{d_{train}}$','$F_{train}$','$F_{sim}$'},'Interpreter','latex','fontsize',fontsize);
+    hold off;
+end
+
 toc

@@ -7,7 +7,10 @@
 
 #include <armadillo>
 
-namespace as64
+namespace as64_
+{
+  
+namespace io_
 {
 	
 /** \brief Reads a 2D matrix from stream \a in.
@@ -103,7 +106,9 @@ void write_rowVec(arma::rowvec &v, std::ostream &out = std::cout, bool binary = 
  */ 
 void write_vec_mat(std::vector<arma::mat> &m, std::ostream &out = std::cout, bool binary = false);
 
-} // namespace as64
+} // namespace io_
+
+} // namespace as64_
 
 
 #endif // AS64_IO_UTILS_H

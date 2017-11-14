@@ -3,7 +3,8 @@ close all;
 clear;
 
 %% include path
-MATLAB_PATH = 'C:/Users/Slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
+% MATLAB_PATH = 'C:/Users/Slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
+MATLAB_PATH = '../../../utils/';
 addpath([MATLAB_PATH 'cpp_code_gen_lib/']);
 
 %% arguments
