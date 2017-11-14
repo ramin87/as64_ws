@@ -54,7 +54,7 @@ while (true)
         [num, is_num] = str2num(var_val{i});
         if (strcmpi(var_val{i},'true') || strcmpi(var_val{i},'false'))
             var_type{i} = 'bool';
-        elseif (is_num)
+        elseif (var_val{i}(1) ~= '"')
             if (isempty(strfind(var_val{i},'.')))
                 var_type{i} = 'int';
             else
@@ -136,7 +136,7 @@ if (fid < 0)
     error(err_msg);
 end
 
-fprintf(fid, '#include "%s"\n\n', cmd_args_h_filename);
+fprintf(fid, '#include <%s>\n\n', cmd_args_h_filename);
 
 fprintf(fid, 'CMD_ARGS::CMD_ARGS() {}\n\n');
 
@@ -156,7 +156,7 @@ fprintf(fid, '{\n');
 
 for i=1:length(var_name)
     fprintf(fid, '%s out << "%s: " << %s << %s;\n', ...
-        tab_space, var_name{i}, var_name{i}, '\n');
+        tab_space, var_name{i}, var_name{i}, '"\n"');
 end
 
 fprintf(fid, '\n}\n\n');

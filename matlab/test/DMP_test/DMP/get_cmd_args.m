@@ -20,7 +20,7 @@ cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 cmd_args.CAN_SYS_TYPE = 'lin'; % 'lin', exp', 'spring-damper'
 
 cmd_args.OFFLINE_DMP_TRAINING_enable = true;
-cmd_args.ONLINE_DMP_UPDATE_enable = true;
+cmd_args.ONLINE_DMP_UPDATE_enable = false;
 cmd_args.RLWR_lambda = 0.99;
 cmd_args.RLWR_P = 1e8;
 

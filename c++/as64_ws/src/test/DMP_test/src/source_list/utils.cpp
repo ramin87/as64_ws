@@ -96,26 +96,29 @@ void load_data(const std::string &data_file_name, arma::mat &data, double &Ts)
   
 }
 
-/*
-// **********************************
-// **********    LogData   **********
-// **********************************
-void LogData::push()
-{}
-			
-bool LogData::save(const std::string &filename)
+double Fdist_fun(double t, const CMD_ARGS &cmd_args)
 {
-	std::ofstream out(filename);
-	if (!out){
-		std::cerr << "Couldn't create file: \"" << filename << "\"...\n";
-		return false;
-	}
-	
-	out.precision(10);
-	
-	
-	return true;
-}*/
+  double Fmax = cmd_args.Fdist_max;
+  double Fmin = cmd_args.Fdist_min;
+  double t1 = cmd_args.t1_fdist;
+  double t2 = cmd_args.t2_fdist;
+
+  double tf = t2 - t1;
+
+  double tb = tf*0.15;
+  double a = (Fmax - Fmin) / tb;
+
+  double Fdist = Fmin;
+
+  if (t>t1 && t<t2){
+      if (t < t1+tb) Fdist = a*(t-t1) + Fmin;
+      else if (t < t2-tb) Fdist = Fmax;
+      else Fdist = -a*(t-t2) + Fmin;
+  }
+  
+  return Fdist;
+
+}
 
 
 LogData::LogData(int D){
@@ -197,8 +200,6 @@ void LogData::print_vec_mat(const std::vector<arma::mat> &m)
 }
 
 
-
-
 void LogData::save(const std::string &filename)
 {
   out.open(filename);
@@ -259,110 +260,6 @@ void LogData::save(const std::string &filename)
   print_vec_mat(Psi_data);
   
   out.close();
-}
-	
-
-// ***********************************
-// **********    CMD_ARGS   **********
-// ***********************************
-
-CMD_ARGS::CMD_ARGS() {}
-
-  std::string data_input_path;
-  std::string data_output_path;
-  
-  std::string in_data_filename;
-  std::string out_data_filename;
-  
-bool CMD_ARGS::parse_cmd_args()
-{
-  ros::NodeHandle nh_ = ros::NodeHandle("~");
-
-  if (!nh_.getParam("a_z", a_z)) a_z = 80;
-  if (!nh_.getParam("b_z", b_z)) b_z = a_z/4;
-  if (!nh_.getParam("x0", x0)) x0 = 1;
-  if (!nh_.getParam("x_end", x_end)) x_end = 0.01;
-  
-  if (!nh_.getParam("N_kernels", N_kernels)) N_kernels = 60;
-  if (!nh_.getParam("std_K", std_K)) std_K = 1;
-  
-  if (!nh_.getParam("train_method", train_method)) train_method = "LWR";
-  if (!nh_.getParam("CAN_SYS_TYPE", CAN_SYS_TYPE)) CAN_SYS_TYPE = "exp";
-  
-  if (!nh_.getParam("add_points_percent", add_points_percent)) add_points_percent = 0.02;
-  if (!nh_.getParam("smooth_points_percent", smooth_points_percent)) smooth_points_percent = 0.02;
-  
-  if (!nh_.getParam("USE_GOAL_FILT", USE_GOAL_FILT)) USE_GOAL_FILT = false;
-  if (!nh_.getParam("a_g", a_g)) a_g = 5;
-  if (!nh_.getParam("USE_PHASE_STOP", USE_PHASE_STOP)) USE_PHASE_STOP = false;
-  if (!nh_.getParam("a_px", a_px)) a_px = 150;
-  if (!nh_.getParam("a_py", a_py)) a_py = b_z;
-  
-  if (!nh_.getParam("Kd", Kd)) Kd = 50;
-  if (!nh_.getParam("Dd", Dd)) Dd = 1.5;
-
-  if (!nh_.getParam("APPLY_DISTURBANCE", APPLY_DISTURBANCE)) APPLY_DISTURBANCE = false;
-  if (!nh_.getParam("Fdist_min", Fdist_min)) Fdist_min = 3;
-  if (!nh_.getParam("Fdist_max", Fdist_max)) Fdist_max = 60;
-  if (!nh_.getParam("t1_fdist", t1_fdist)) t1_fdist = 0.2;
-  if (!nh_.getParam("t2_fdist", t2_fdist)) t2_fdist = 1.5;
-      
-  if (!nh_.getParam("sim_time_step", sim_time_step)) sim_time_step = 0.005;
-  if (!nh_.getParam("sim_tol_stop", sim_tol_stop)) sim_tol_stop = 0.5*1e-3;
-  if (!nh_.getParam("sim_max_iters", sim_max_iters)) sim_max_iters = 2000;
-  if (!nh_.getParam("tau_sim_scale", tau_sim_scale)) tau_sim_scale = 1;
-  
-  if (!nh_.getParam("data_input_path", data_input_path)) data_input_path = "";
-  if (!nh_.getParam("data_output_path", data_output_path)) data_output_path = "";
-  
-  if (!nh_.getParam("in_data_filename", in_data_filename)) in_data_filename = "";
-  if (!nh_.getParam("out_data_filename", out_data_filename)) out_data_filename = "";
-  
-  in_data_filename = data_input_path + in_data_filename;
-  out_data_filename = data_output_path + out_data_filename;
-
-}
-	
-void CMD_ARGS::print(std::ostream &out) const
-{
-  out << "a_z: " << a_z << "\n";
-  out << "b_z: " << b_z << "\n";
-  out << "x0: " << x0 << "\n";
-  out << "x_end: " << x_end << "\n";
-  out << "N_kernels: " << N_kernels << "\n";
-  out << "std_K: " << std_K << "\n";
-
-  out << "train_method: " << train_method << "\n";
-  out << "CAN_SYS_TYPE: " << CAN_SYS_TYPE << "\n";
-  
-  out << "add_points_percent: " << add_points_percent << "\n";
-  out << "smooth_points_percent: " << smooth_points_percent << "\n";
-  	
-  out << "USE_GOAL_FILT: " << USE_GOAL_FILT << "\n";
-  out << "a_g: " << a_g << "\n";
-  out << "USE_PHASE_STOP: " << USE_PHASE_STOP << "\n";
-  out << "a_px: " << a_px << "\n";
-  out << "a_py: " << a_py << "\n";
-  
-  out << "Kd: " << Kd << "\n";
-  out << "Dd: " << Dd << "\n";
-  
-  out << "APPLY_DISTURBANCE: " << APPLY_DISTURBANCE << "\n";
-  out << "Fdist_min: " << Fdist_min << "\n";
-  out << "Fdist_max: " << Fdist_max << "\n";
-  out << "t1_fdist: " << t1_fdist << "\n";
-  out << "t2_fdist: " << t2_fdist << "\n";
-  
-  out << "sim_time_step: " << sim_time_step << "\n";
-  out << "sim_tol_stop: " << sim_tol_stop << "\n";
-  out << "sim_max_iters: " << sim_max_iters << "\n";
-  out << "tau_sim_scale: " << tau_sim_scale << "\n";
-  
-  out << "data_input_path: " << data_input_path << "\n";
-  out << "data_output_path: " << data_output_path << "\n";
-  
-  out << "in_data_filename: " << in_data_filename << "\n";
-  out << "out_data_filename: " << out_data_filename << "\n";
 }
 
 

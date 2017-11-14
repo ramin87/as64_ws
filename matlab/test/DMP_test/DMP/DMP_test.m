@@ -16,18 +16,35 @@ USE_2nd_order_can_sys = false;
 %% Load demos and process demos
 load data/data.mat data Ts
 
+% Fs = 1/Ts;
+% L = size(data,2);
+% X = data;
+% Y = fft(X);
+% P2 = abs(Y/L);
+% P1 = P2(1:L/2+1);
+% P1(2:end-1) = 2*P1(2:end-1);
+% f = Fs*(0:(L/2))/L;
+% figure;
+% plot(f,P1) ;
+% title('Single-Sided Amplitude Spectrum of X(t)');
+% xlabel('f (Hz)');
+% ylabel('|P1(f)|');
+% 
+% tau = Ts*L;
+% 
+% cmd_args.N_kernels = round(tau*250);
+
 % calculate numerically the 1st and 2nd derivatives
 [yd_data, dyd_data, ddyd_data] = process_demos(data, Ts, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
 
 n_data = size(yd_data,2); % number of points in each dimension
 Time_demo = ((1:n_data)-1)*Ts;
 
+D = size(yd_data,1); % dimensionality of training data
+n_data = size(yd_data,2); % number of training points
 
 %% Set up DMP params
 tau = (n_data-1)*Ts;
-
-D = size(yd_data,1); % dimensionality of training data
-n_data = size(yd_data,2); % number of training points
 
 number_of_kernels = cmd_args.N_kernels
 n_data

@@ -9,7 +9,10 @@
 
 #include <utils.h>
 
+#include <DMP_lib/DMP/DMP_.h>
 #include <DMP_lib/DMP/DMP.h>
+#include <DMP_lib/DMP/DMP_bio.h>
+#include <DMP_lib/DMP/DMP_plus.h>
 
 #include <DMP_lib/CanonicalSystem/ExpCanonicalSystem.h>
 #include <DMP_lib/CanonicalSystem/LinCanonicalSystem.h>
@@ -20,64 +23,72 @@ CMD_ARGS cmd_args;
 
 int main(int argc, char** argv)
 {   
-	
-  // Initialize the ROS node
+  // ========  Initialize the ROS node  ===========
   ros::init(argc, argv, "DMP_test_node");
   ros::NodeHandle nh("~");
   
-  /*
-  
   arma::wall_clock timer;
   double elapsed_time;
-
-  // ============================================
-  // ============================================
-
-  bool USE_2nd_order_can_sys = false;
   
+  // ========  initialize cmd params  ===========
   cmd_args.parse_cmd_args();
-  cmd_args.print(std::cout);
+  cmd_args.in_data_filename = cmd_args.data_input_path + cmd_args.in_data_filename;
+  cmd_args.out_data_filename = cmd_args.data_output_path + cmd_args.out_data_filename;
   
-  std::shared_ptr<as64::CanonicalSystem> can_sys_ptr;
-  
-  if (cmd_args.CAN_SYS_TYPE.compare("exp") == 0) can_sys_ptr.reset(new as64::ExpCanonicalSystem());
-  else if (cmd_args.CAN_SYS_TYPE.compare("lin") == 0) can_sys_ptr.reset(new as64::LinCanonicalSystem());
-  else if (cmd_args.CAN_SYS_TYPE.compare("spring-damper") == 0){
-    can_sys_ptr.reset(new as64::SpringDamperCanonicalSystem());
-    USE_2nd_order_can_sys = true;
-  }else throw std::runtime_error(std::string("Unsupported canonical system type: ")+cmd_args.CAN_SYS_TYPE);
-  
+  // ========  Load demos and process demos  ===========
   int D;
   int n_data;
   double Ts;
   arma::mat data;
-
-  // ========  Load demos and process demos  ===========
+  
   load_data(cmd_args.in_data_filename, data, Ts);
   
   D = data.n_rows;
   
-  LogData logData(D);
-  
   arma::mat yd_data, dyd_data, ddyd_data;
-  
   process_demos(data,Ts, yd_data, dyd_data, ddyd_data, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
   
   n_data = yd_data.n_cols; // number of points in each dimension
   arma::rowvec Time_demo = arma::linspace<arma::rowvec>(0,n_data-1,n_data) * Ts;
-  logData.Time_demo = Time_demo;
-  logData.yd_data = yd_data;
-  logData.dyd_data = dyd_data;
-  logData.ddyd_data = ddyd_data;
-  logData.D = D;
-  logData.Ts = Ts;
-  
+
+  // ========  Set up DMP params  ===========
   double tau = (n_data-1)*Ts;
+  
+  std::cout << "number_of_kernels = " << cmd_args.N_kernels << "\n";
+  std::cout << "n_data = " << n_data << "\n";
+
+  // set the Canonical System
+  std::shared_ptr<as64::CanonicalSystem> can_sys_ptr;
+  bool USE_2nd_order_can_sys = false;
+  
+  if (cmd_args.CAN_SYS_TYPE.compare("exp") == 0)
+  {
+      can_sys_ptr.reset(new as64::ExpCanonicalSystem());
+  }
+  else if (cmd_args.CAN_SYS_TYPE.compare("lin") == 0)
+  {
+      can_sys_ptr.reset(new as64::LinCanonicalSystem());
+  }
+  else if (cmd_args.CAN_SYS_TYPE.compare("spring-damper") == 0)
+  {
+    can_sys_ptr.reset(new as64::SpringDamperCanonicalSystem());
+    USE_2nd_order_can_sys = true;
+  }
+  else
+  {
+      throw std::invalid_argument(std::string("Unsupported canonical system type: ")+cmd_args.CAN_SYS_TYPE);
+  }
 
   can_sys_ptr->init(cmd_args.x_end, tau);
   
-  std::vector<as64::DMP> dmp(D);
+  
+  
+  std::vector<std::shared_ptr<as64::DMP_>> dmp(D);
   for (int i=0; i<D; i++){
+      
+      
+      
+      
       dmp[i].init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K, cmd_args.USE_GOAL_FILT, cmd_args.a_g);
   }
   

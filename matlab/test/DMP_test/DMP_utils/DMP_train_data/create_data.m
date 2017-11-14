@@ -13,7 +13,7 @@ z(1,:) = sin(8*t) + t - 2*exp(t);
 z(2,:) = cos(12*t) + 2*t.^2 - 3*exp(t);
 z(3,:) = 2*t.^2 - 2*t.^3 - 3*exp(-2*t);
 
-D =1;
+D = 1;
 y = zeros(D,length(t));
 for i=1:D
     y(i,:) = z(i,:);
