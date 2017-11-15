@@ -6,43 +6,75 @@ load data/dmp_results.mat
 
 fontsize = cmd_args.fontsize;
 
-dmp = log_data.dmp;
 Time_demo = log_data.Time_demo;
 yd_data = log_data.yd_data;
 dyd_data = log_data.dyd_data;
 ddyd_data = log_data.ddyd_data;
+
 D = log_data.D;
 Ts = log_data.Ts;
 g0 = log_data.g0;
-Time_train = log_data.Time_train;
-F_train_data = log_data.F_train_data;
-Fd_train_data = log_data.Fd_train_data;
+
+Time_offline_train = log_data.Time_offline_train;
+F_offline_train_data = log_data.F_offline_train_data;
+Fd_offline_train_data = log_data.Fd_offline_train_data;
 Time_online_train = log_data.Time_online_train;
-F_train_online_data = log_data.F_train_online_data;
-Fd_train_online_data = log_data.Fd_train_online_data;
+F_online_train_data = log_data.F_online_train_data;
+Fd_online_train_data = log_data.Fd_online_train_data;
+
 Time = log_data.Time;
 y_data = log_data.y_data;
 dy_data = log_data.dy_data;
-y_robot_data = log_data.y_robot_data;
-dy_robot_data = log_data.dy_robot_data;
 z_data = log_data.z_data;
 dz_data = log_data.dz_data;
 x_data = log_data.x_data;
 u_data = log_data.u_data;
+
+y_robot_data = log_data.y_robot_data;
+dy_robot_data = log_data.dy_robot_data;
+
 Fdist_data = log_data.Fdist_data;
+
 Force_term_data = log_data.Force_term_data;
 g_data = log_data.g_data;
+
 Psi_data = log_data.Psi_data;
 shape_attr_data = log_data.shape_attr_data;
 goal_attr_data = log_data.goal_attr_data;
+
+dmp = log_data.dmp;
 P_lwr = log_data.P_lwr;
 DMP_w = log_data.DMP_w;
 
 e_track_data = y_data - y_robot_data;
 
+
+OFFLINE_DMP_TRAINING_enable = ~isempty(F_offline_train_data);
+ONLINE_DMP_UPDATE_enable = ~isempty(F_online_train_data);
+USE_GOAL_FILT = g_data(1,1)~=g_data(1,end);
+
 %% ========   Plot results  ========
 disp('Ploting results...')
 tic
+
+for i=1:D
+    X = dmp{i}.can_sys_ptr.get_continuous_output(Time_offline_train, 1);
+    x = X(1,:);
+    
+    Psi_train_data = dmp{i}.activation_function(x);
+
+    N_kernels = size(Psi_train_data,1);
+    figure;
+    hold on;
+    for k=1:N_kernels
+        plot((Time_offline_train),(Psi_train_data(k,:)));
+        axis tight;
+    end
+    plot((Time_offline_train),(F_offline_train_data(i,:)/max(abs(F_offline_train_data(i,:)))),'LineWidth',1.5);
+    plot((Time_offline_train),(Fd_offline_train_data(i,:)/max(abs(Fd_offline_train_data(i,:)))),'LineWidth',3);
+    title('Psi activations','Interpreter','latex','fontsize',fontsize);
+    hold off;
+end
 
 
 %% Plot the training data
@@ -91,30 +123,30 @@ end
 
 
 %% Plot 'F' training
-if (cmd_args.OFFLINE_DMP_TRAINING_enable)
+if (OFFLINE_DMP_TRAINING_enable)
     for i=1:D
-        F = F_train_data(i,:);
-        Fd = Fd_train_data(i,:);
+        F = F_offline_train_data(i,:);
+        Fd = Fd_offline_train_data(i,:);
         scale = 1/max(abs([F Fd]));
-        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_train, 1);
+        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_offline_train, 1);
         x_data_train = x_data_train(1,:);
         Psi = dmp{i}.activation_function(x_data_train);
 
         figure;
         subplot(2,2,1);
-        plot(Time_train,F,Time_train,Fd);
+        plot(Time_offline_train,F,Time_offline_train,Fd);
         legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
-        title('Off-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
+        title('Off-line training','Interpreter','latex','fontsize',fontsize);
         axis tight;
         subplot(2,2,2);
-        plot(Time_train,F_train_data(i,:)-Fd_train_data(i,:));
+        plot(Time_offline_train,F_offline_train_data(i,:)-Fd_offline_train_data(i,:));
         legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
         axis tight;
         subplot(2,2,[3 4]);
         hold on;
-        plot(Time_train,F*scale, Time_train,Fd*scale);
+        plot(Time_offline_train,F*scale, Time_offline_train,Fd*scale);
         for k=1:size(Psi,1)
-            plot(Time_train,Psi(k,:));
+            plot(Time_offline_train,Psi(k,:));
         end
         axis tight;
         hold off;
@@ -123,10 +155,10 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
 end
 
 %% Plot 'F' online training
-if (cmd_args.ONLINE_DMP_UPDATE_enable)
+if (ONLINE_DMP_UPDATE_enable)
     for i=1:D
-        F = F_train_online_data(i,:);
-        Fd = Fd_train_online_data(i,:);
+        F = F_online_train_data(i,:);
+        Fd = Fd_online_train_data(i,:);
         scale = 1/max(abs([F Fd]));
         x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_online_train, 1);
         x_data_train = x_data_train(1,:);
@@ -136,10 +168,10 @@ if (cmd_args.ONLINE_DMP_UPDATE_enable)
         subplot(2,2,1);
         plot(Time_online_train,F,Time_online_train,Fd);
         legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
-        title('On-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
+        title('On-line training','Interpreter','latex','fontsize',fontsize);
         axis tight;
         subplot(2,2,2);
-        plot(Time_online_train,F_train_online_data(i,:)-Fd_train_online_data(i,:));
+        plot(Time_online_train,F_online_train_data(i,:)-Fd_online_train_data(i,:));
         legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
         axis tight;
         subplot(2,2,[3 4]);
@@ -155,20 +187,20 @@ if (cmd_args.ONLINE_DMP_UPDATE_enable)
 end
 
 %% Plot DMP RLWR cov 'P' evoultion
-if (cmd_args.ONLINE_DMP_UPDATE_enable)
+if (ONLINE_DMP_UPDATE_enable)
    for i=1:D
        figure;
        plot(Time_online_train,P_lwr{i}');
-       title('DMP RLWR cov $P$ evoultion during on-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
+       title('DMP RLWR cov $P$ evoultion during on-line training','Interpreter','latex','fontsize',fontsize);
    end
 end
     
 %% Plot DMP weights evoultion
-if (cmd_args.ONLINE_DMP_UPDATE_enable)
+if (ONLINE_DMP_UPDATE_enable)
    for i=1:D
        figure;
        plot(Time_online_train,DMP_w{i}');
-       title('DMP weights evolution during on-line training','Interpreter','latex','fontsize',cmd_args.fontsize);
+       title('DMP weights evolution during on-line training','Interpreter','latex','fontsize',fontsize);
    end
 end
 
@@ -182,7 +214,7 @@ end
 
 
 %% Plot goal evolution
-if (cmd_args.USE_GOAL_FILT)
+if (USE_GOAL_FILT)
     figure;
     for i=1:D
         subplot(D,1,i);
@@ -193,16 +225,16 @@ if (cmd_args.USE_GOAL_FILT)
 end
     
 lineWidth = 1.2;
-% for i=1:D
-%    figure;
-%    hold on;
-%    plot(Time,shape_attr_data{i},'LineWidth',lineWidth);
-%    plot(Time,goal_attr_data{i},'LineWidth',lineWidth);
-%    plot(Time, shape_attr_data{i}+goal_attr_data{i}, 'LineWidth',lineWidth);
-%    plot(Time, ddy_data(i,:),'LineWidth',lineWidth);
-%    legend({'shape-attr','goal-attr','goal+shape','$\ddot{y}$'},'Interpreter','latex','fontsize',fontsize);
-%    hold off;
-% end
+for i=1:D
+   figure;
+   hold on;
+   plot(Time,shape_attr_data(i,:),'LineWidth',lineWidth);
+   plot(Time,goal_attr_data(i,:),'LineWidth',lineWidth);
+   plot(Time, shape_attr_data(i,:)+goal_attr_data(i,:), 'LineWidth',lineWidth);
+   %plot(Time, ddy_data(i,:),'LineWidth',lineWidth);
+   legend({'shape-attr','goal-attr','goal+shape'},'Interpreter','latex','fontsize',fontsize);
+   hold off;
+end
 
 %% Plot DMP simulation and demo pos, vel, accel
 lineWidth = 1.1;
@@ -241,8 +273,8 @@ end
 for i=1:D
     figure;
     hold on;
-    plot(Time_train, Fd_train_data(i,:));
-    plot(Time_train, F_train_data(i,:));
+    plot(Time_offline_train, Fd_offline_train_data(i,:));
+    plot(Time_offline_train, F_offline_train_data(i,:));
     plot(Time, Force_term_data(i,:));
     legend({'$F_{d_{train}}$','$F_{train}$','$F_{sim}$'},'Interpreter','latex','fontsize',fontsize);
     hold off;

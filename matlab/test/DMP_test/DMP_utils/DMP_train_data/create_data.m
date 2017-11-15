@@ -9,7 +9,7 @@ Tend = 2;
 Ts = 0.001;
 t = 0:Ts:Tend;
 
-z(1,:) = t - 2*exp(t) + sin(2*pi*2*t);% + sin(2*pi*10*t);% + 0.5*sin(2*pi*150*t);
+z(1,:) = 0.8*(t - 2*exp(t)) + sin(2*pi*1.5*t);% + sin(2*pi*25*t);% + 0.5*sin(2*pi*150*t);
 z(2,:) = cos(12*t) + 2*t.^2 - 3*exp(t);
 z(3,:) = 2*t.^2 - 2*t.^3 - 3*exp(-2*t);
 

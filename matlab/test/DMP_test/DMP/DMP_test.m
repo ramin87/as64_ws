@@ -36,7 +36,9 @@ load data/data.mat data Ts
 % 
 % tau = Ts*L;
 % 
-% cmd_args.N_kernels = round(2*tau*60);
+% cmd_args.N_kernels = round(2*tau*27);
+
+% return
 
 % calculate numerically the 1st and 2nd derivatives
 [yd_data, dyd_data, ddyd_data] = process_demos(data, Ts, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
@@ -81,9 +83,9 @@ for i=1:D
 end
 
 
-F_train_data = [];
-Fd_train_data = [];
-Time_train = [];
+F_offline_train_data = [];
+Fd_offline_train_data = [];
+Time_offline_train = [];
 offline_train_mse = [];
 online_train_mse = [];
 %% Train the DMP
@@ -108,11 +110,11 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
         dmp{i}.set_training_params(cmd_args.USE_GOAL_FILT, cmd_args.a_g, cmd_args.RLWR_lambda, cmd_args.RLWR_P);
         [offline_train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method);      
 
-        F_train_data = [F_train_data; F_train];
-        Fd_train_data = [Fd_train_data; Fd_train];
+        F_offline_train_data = [F_offline_train_data; F_train];
+        Fd_offline_train_data = [Fd_offline_train_data; Fd_train];
 
     end
-    Time_train = (0:(size(F_train_data,2)-1))*Ts;
+    Time_offline_train = (0:(size(F_offline_train_data,2)-1))*Ts;
     
     toc
 end
@@ -140,7 +142,7 @@ t = 0;
 y_robot = y0;
 dy_robot = zeros(D,1);
 dz = zeros(D,1);
-z = zeros(D,1); %tau*dy + cmd_args.a_py*(y_robot-y);
+z = zeros(D,1);
 scaled_forcing_term = zeros(D,1);
 shape_attr = zeros(D,1);
 goal_attr = zeros(D,1);
@@ -157,27 +159,29 @@ Fdist = 0;
 log_data = get_logData_struct();   
 
 log_data.dmp = dmp;
+
 log_data.Time_demo = Time_demo;
 log_data.yd_data = yd_data;
 log_data.dyd_data = dyd_data;
 log_data.ddyd_data = ddyd_data;
+
 log_data.D = D;
 log_data.Ts = Ts;
 log_data.g0 = g0;
-log_data.Time_train = Time_train;
-log_data.F_train_data = F_train_data;
-log_data.Fd_train_data = Fd_train_data;
+
+log_data.Time_offline_train = Time_offline_train;
+log_data.F_offline_train_data = F_offline_train_data;
+log_data.Fd_offline_train_data = Fd_offline_train_data;
+
 log_data.Time_online_train = [];
-log_data.F_train_online_data = [];
-log_data.Fd_train_online_data = [];
+log_data.F_online_train_data = [];
+log_data.Fd_online_train_data = [];
+
 log_data.Psi_data = cell(D,1);
 log_data.P_lwr = cell(D,1);
 log_data.DMP_w = cell(D,1);
-
-% for some strange reason I have to pass cell array explicitly here. In the
-% initialization of the structure above, cell array are rendered as []...?
-log_data.shape_attr_data = cell(D,1);
-log_data.goal_attr_data = cell(D,1);
+log_data.shape_attr_data = [];
+log_data.goal_attr_data = [];
 
 
 tau = cmd_args.tau_sim_scale*tau;
@@ -191,8 +195,6 @@ else
     dt = cmd_args.dt;
 end
 
-temp_data = [];
-
 disp('DMP simulation...')
 tic
 while (true)
@@ -201,17 +203,16 @@ while (true)
 
     log_data.Time = [log_data.Time t];
     
-    log_data.dy_data = [log_data.dy_data dy];
     log_data.y_data = [log_data.y_data y];
-
-    log_data.dy_robot_data = [log_data.dy_robot_data dy_robot];
-    log_data.y_robot_data = [log_data.y_robot_data y_robot];
-
+    log_data.dy_data = [log_data.dy_data dy];   
     log_data.z_data = [log_data.z_data z];
     log_data.dz_data = [log_data.dz_data dz];
         
     log_data.x_data = [log_data.x_data x];
     log_data.u_data = [log_data.u_data u];
+    
+    log_data.y_robot_data = [log_data.y_robot_data y_robot];
+    log_data.dy_robot_data = [log_data.dy_robot_data dy_robot];
     
     log_data.Fdist_data = [log_data.Fdist_data Fdist];
     
@@ -219,8 +220,8 @@ while (true)
     
     log_data.g_data = [log_data.g_data g];
     
-    %log_data.shape_attr_data = [log_data.shape_attr_data shape_attr];
-    %log_data.goal_attr_data = [log_data.goal_attr_data goal_attr];
+    log_data.shape_attr_data = [log_data.shape_attr_data shape_attr];
+    log_data.goal_attr_data = [log_data.goal_attr_data goal_attr];
     
     %% DMP simulation
 
@@ -244,9 +245,8 @@ while (true)
         Psi = dmp{i}.activation_function(x);
         log_data.Psi_data{i} = [log_data.Psi_data{i} Psi(:)];
 
-        %shape_attr(i) = dmp{i}.shape_attractor(x,u,g0(i),y0(i));
-        %goal_attr(i) = dmp{i}.goal_attractor(y(i),dy(i),g(i));
-
+        shape_attr(i) = dmp{i}.shape_attractor(x,u,g0(i),y0(i));
+        goal_attr(i) = dmp{i}.goal_attractor(y(i),dy(i),g(i));
         scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(u, y0(i), g0(i));
         
         y_c = cmd_args.a_py*(y_robot(i)-y(i));
@@ -259,8 +259,8 @@ while (true)
     
     if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
         log_data.Time_online_train = [log_data.Time_online_train t];
-        log_data.F_train_online_data = [log_data.F_train_online_data F];
-        log_data.Fd_train_online_data = [log_data.Fd_train_online_data Fd];
+        log_data.F_online_train_data = [log_data.F_online_train_data F];
+        log_data.Fd_online_train_data = [log_data.Fd_online_train_data Fd];
     end
     
     
@@ -334,21 +334,26 @@ save data/dmp_results.mat log_data cmd_args;
 %% Find mean square error between the signals
 
 if (cmd_args.ONLINE_DMP_UPDATE_enable)
-   online_train_mse = zeros(D,1);
+   online_train_mse = zeros(D,1);   
    for i=1:D
-       n = length(log_data.F_train_online_data(i,:));
-       online_train_mse(i) = norm(log_data.F_train_online_data(i,:)-log_data.Fd_train_online_data(i,:))/n;
+       N = length(log_data.F_online_train_data(i,:));
+       online_train_mse(i) = 0;
+       A = abs(log_data.Fd_online_train_data(i,:)-log_data.F_online_train_data(i,:));
+       B = max(abs([log_data.Fd_online_train_data(i,:); log_data.F_online_train_data(i,:)])) + eps;
+       online_train_mse(i) = sum(A ./ B) / length(A);
    end
 end
 
 if (cmd_args.OFFLINE_DMP_TRAINING_enable)
    offline_train_mse = zeros(D,1);
    for i=1:D
-       n = length(log_data.F_train_data(i,:));
-       offline_train_mse(i) = norm(log_data.F_train_data(i,:)-log_data.Fd_train_data(i,:))/n;
+       N = length(log_data.F_offline_train_data(i,:));
+       offline_train_mse(i) = 0;
+       A = abs(log_data.Fd_offline_train_data(i,:)-log_data.F_offline_train_data(i,:));
+       B = max(abs([log_data.Fd_offline_train_data(i,:); log_data.F_offline_train_data(i,:)])) + eps;
+       offline_train_mse(i) = sum(A ./ B) / length(A);
    end
 end
-
 
 y_data = log_data.y_data;
 yd_data = log_data.yd_data;
