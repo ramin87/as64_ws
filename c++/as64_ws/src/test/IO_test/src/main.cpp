@@ -25,9 +25,11 @@ int main(int argc, char** argv)
 
   // ===========  read cmd args  ==================
   bool binary;
+  int precision;
   std::string filename;
   
   if (!nh_.getParam("binary", binary)) binary = false;
+  if (!nh_.getParam("precision", precision)) precision = 5;
   if (!nh_.getParam("filename", filename)) filename = "data";
 
   filename = path + filename;
@@ -53,11 +55,11 @@ int main(int argc, char** argv)
   
   if (!out) throw std::ios_base::failure(std::string("Couldn't create file \"") + filename + "\"...\n");
 
-  write_mat(A, out, binary);
-  write_rowVec(rowV, out, binary);
-  write_mat(B, out, binary);
-  write_vec(v, out, binary);
-  write_vec_mat(m, out, binary);
+  write_mat(A, out, binary, precision);
+  write_rowVec(rowV, out, binary, precision);
+  write_mat(B, out, binary, precision);
+  write_vec(v, out, binary, precision);
+  write_vec_mat(m, out, binary, precision);
 
   out.close();
 

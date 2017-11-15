@@ -13,6 +13,7 @@ addpath([MATLAB_PATH 'IO_lib/']);
 
 % choose 'binary' or 'text' format
 binary = false;
+precision = 10;
 
 %% create data
 % A = [1 2 3; 4 5 6; 7 8 9; 10 11 12]*0.1;
@@ -44,15 +45,15 @@ fid = fopen(filename, 'w');
 
 fprintf('Writing to %s...\n',filename);
 
-write_mat(A, fid, binary);
+write_mat(A, fid, binary, precision);
 
-write_rowVec(rowV, fid, binary);
+write_rowVec(rowV, fid, binary, precision);
 
-write_mat(B, fid, binary);
+write_mat(B, fid, binary, precision);
 
-write_vec(v, fid, binary);
+write_vec(v, fid, binary, precision);
 
-write_vec_mat(m, fid, binary);
+write_vec_mat(m, fid, binary, precision);
 
 fclose(fid);
 
