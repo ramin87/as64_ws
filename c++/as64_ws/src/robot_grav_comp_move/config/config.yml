@@ -1,0 +1,16 @@
+stiff_transl: 0.0 #3500
+damp_transl:  40.0 #40
+
+stiff_rot: 100.0
+damp_rot: 2.0
+
+zeta: 0.5
+
+Ts: 0.01 #sampling time of points [seconds]
+
+control_method: 'Joint' # 'Cartesian', 'Joint'
+
+set_init_config: true
+init_config: [1.5708, -0.7854, 0, 1.5708, 0, -0.7854, 0]
+
+filename: 'data'
