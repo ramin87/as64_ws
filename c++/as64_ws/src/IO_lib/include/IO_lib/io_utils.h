@@ -6,14 +6,23 @@
 #include <memory>
 #include <iomanip>
 
+#include <unistd.h> //used for custon getch()
+#include <termios.h> //used for custon getch()
+
 #include <armadillo>
 
 namespace as64_
 {
-  
+
 namespace io_
 {
-	
+
+/** \brief Reads a character from the keyboard (no need to press 'enter' afterwards is required)
+ *  @return the character pressed in the keyboard.
+ */
+char getch();
+
+
 /** \brief Reads a 2D matrix from stream \a in.
  *  \details Reads the elements of the matrix row by row.
  *  @param[out] m The 2D matrix
@@ -57,7 +66,7 @@ void read_rowVec(arma::rowvec &v, std::istream &in = std::cin, bool binary = fal
  *  @param[out] m cell array where each cell has a 2D matrix
  *  @param[in] in The input stream (default = std::cin).
  *  @param[in] binary Flag indicating the format (true for binary, false for text, optional, default = false).
- */ 
+ */
 void read_vec_mat(std::vector<arma::mat> &m, std::istream &in = std::cin, bool binary = false);
 
 /** \brief Reads a scalar value from stream \a in.
@@ -65,11 +74,11 @@ void read_vec_mat(std::vector<arma::mat> &m, std::istream &in = std::cin, bool b
  *  @param[out] scalar scalar value.
  *  @param[in] in The input stream (default = std::cin).
  *  @param[in] binary Flag indicating the format (true for binary, false for text, optional, default = false).
- */ 
+ */
 template <typename T>
 void read_scalar(T &scalar, std::istream &in = std::cin, bool binary = false)
 {
-  if (binary) in.read((char *)(&scalar), sizeof(scalar));  
+  if (binary) in.read((char *)(&scalar), sizeof(scalar));
   else in >> scalar;
 }
 
@@ -111,7 +120,7 @@ void write_vec(arma::vec &v, std::ostream &out = std::cout, bool binary = false,
  *  @param[in] out The output stream (optional, default = std::cout).
  *  @param[in] binary Flag indicating the format (true for binary, false for text, optional, default = false).
  *  @param[in] precision precision in txt format (optional, default = 6).
- */ 
+ */
 void write_rowVec(arma::rowvec &v, std::ostream &out = std::cout, bool binary = false, int precision = 6);
 
 
@@ -121,7 +130,7 @@ void write_rowVec(arma::rowvec &v, std::ostream &out = std::cout, bool binary = 
  *  @param[in] out The output stream (optional, default = std::cout).
  *  @param[in] binary Flag indicating the format (true for binary, false for text, optional, default = false).
  *  @param[in] precision precision in txt format (optional, default = 6).
- */ 
+ */
 void write_vec_mat(std::vector<arma::mat> &m, std::ostream &out = std::cout, bool binary = false, int precision = 6);
 
 /** \brief Writes a scalar value in stream \a out
@@ -131,11 +140,11 @@ void write_vec_mat(std::vector<arma::mat> &m, std::ostream &out = std::cout, boo
  *  @param[in] out The output stream (optional, default = std::cout).
  *  @param[in] binary Flag indicating the format (true for binary, false for text, optional, default = false).
  *  @param[in] precision precision in txt format (optional, default = 6).
- */ 
+ */
 template <typename T>
 void write_scalar(T scalar, std::ostream &out = std::cout, bool binary = false, int precision = 6)
 {
-  if (binary) out.write((const char *)(&scalar), sizeof(scalar));  
+  if (binary) out.write((const char *)(&scalar), sizeof(scalar));
   else out << std::setprecision(precision) << scalar;
 }
 
