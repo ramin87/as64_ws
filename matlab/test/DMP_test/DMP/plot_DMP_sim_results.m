@@ -57,24 +57,24 @@ USE_GOAL_FILT = g_data(1,1)~=g_data(1,end);
 disp('Ploting results...')
 tic
 
-for i=1:D
-    X = dmp{i}.can_sys_ptr.get_continuous_output(Time_offline_train, 1);
-    x = X(1,:);
-    
-    Psi_train_data = dmp{i}.activation_function(x);
-
-    N_kernels = size(Psi_train_data,1);
-    figure;
-    hold on;
-    for k=1:N_kernels
-        plot((Time_offline_train),(Psi_train_data(k,:)));
-        axis tight;
-    end
-    plot((Time_offline_train),(F_offline_train_data(i,:)/max(abs(F_offline_train_data(i,:)))),'LineWidth',1.5);
-    plot((Time_offline_train),(Fd_offline_train_data(i,:)/max(abs(Fd_offline_train_data(i,:)))),'LineWidth',3);
-    title('Psi activations','Interpreter','latex','fontsize',fontsize);
-    hold off;
-end
+% for i=1:D
+%     X = dmp{i}.can_sys_ptr.get_continuous_output(Time_offline_train, 1);
+%     x = X(1,:);
+%     
+%     Psi_train_data = dmp{i}.activation_function(x);
+% 
+%     N_kernels = size(Psi_train_data,1);
+%     figure;
+%     hold on;
+%     for k=1:N_kernels
+%         plot((Time_offline_train),(Psi_train_data(k,:)));
+%         axis tight;
+%     end
+%     plot((Time_offline_train),(F_offline_train_data(i,:)/max(abs(F_offline_train_data(i,:)))),'LineWidth',1.5);
+%     plot((Time_offline_train),(Fd_offline_train_data(i,:)/max(abs(Fd_offline_train_data(i,:)))),'LineWidth',3);
+%     title('Psi activations','Interpreter','latex','fontsize',fontsize);
+%     hold off;
+% end
 
 
 %% Plot the training data

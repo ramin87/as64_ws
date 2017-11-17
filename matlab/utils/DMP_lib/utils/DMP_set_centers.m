@@ -14,8 +14,7 @@ function DMP_set_centers(dmp, part_type)
     if (strcmpi(part_type,'lin'))
         dmp.c = t';
     elseif (strcmpi(part_type,'can_sys_like'))
-        x0 = 1;
-        x = dmp.can_sys_ptr.get_continuous_output(t*dmp.can_sys_ptr.tau, x0);
+        x = dmp.can_sys_ptr.get_continuous_output(t*dmp.can_sys_ptr.tau);
         dmp.c = x(1,:)';
     else
         error('Unsupported partition type %s',part_type);

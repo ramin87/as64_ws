@@ -12,41 +12,43 @@
 
 classdef SpringDamperCanonicalSystem < handle
    properties
+       x0 % initial value of the phase variable
        a_u % param of the spring-damper
        b_u % param of the spring-damper
        tau % movement duration (can be used to scale temporally the motion)
    end
    
    methods
-      %% initializes the canonical system
-      %
-      %  param[in] x_end: value of phase variable at the end of the motion
-      %  param[in] tau: movement duration (can be used to scale temporally the motion)
-      %
+      %% Spring-Damper Canonical System Constructor
+      %  param[in] x_end: Value of phase variable at the end of the motion.
+      %  param[in] tau: Movement duration (can be used to scale temporally the motion).
+      %  param[in] x0: Initial value of the phase variable (optional, default = 1).
       %  param[out] can_sys: canonical system object
-      %
-      function can_sys = SpringDamperCanonicalSystem(x_end, tau)
+      function can_sys = SpringDamperCanonicalSystem(x_end, tau, x0)
           
-          can_sys.init(x_end, tau);
+          if (nargin < 2), return; end
+          if (nargin < 3), x0=1; end
+          
+          can_sys.init(x_end, tau, x0);
           
       end 
       
       %% initializes the canonical system
-      %
       %  param[in] x_end: value of phase variable at the end of the motion
       %  param[in] tau: movement duration (can be used to scale temporally the motion)
-      %
-      function init(can_sys, x_end, tau)
+      %  param[in] x0: Initial value of the phase variable (optional, default = 1).
+      function init(can_sys, x_end, tau, x0)
           
+          if (nargin < 4), x0=1; end
+          
+          can_sys.x0 = x0;
           can_sys.set_can_sys_params(x_end);
           can_sys.set_tau(tau);
 
       end
 
       %% sets the canonical system's cycle time
-      %
       %  param[in] tau: the canonical system's cycle time
-      %
       function set_tau(can_sys, tau)
           
           can_sys.tau = tau;
@@ -54,9 +56,7 @@ classdef SpringDamperCanonicalSystem < handle
       end
       
       %% returns the canonical system's cycle time
-      %
       %  param[out] tau: the canonical system's cycle time
-      %
       function tau = get_tau(can_sys)
           
           tau = can_sys.tau;
@@ -65,9 +65,7 @@ classdef SpringDamperCanonicalSystem < handle
       
       
       %% sets the canonical system's time constants based on the value of the phase variable at the end of the movement
-      %
       %  param[in] x_end: value of the phase variable at the end of the movement (t = tau)
-      %
       function set_can_sys_params(can_sys, x_end)
           
           g = @(x) (1 + x/2)*exp(-x/2) - x_end;
@@ -114,11 +112,8 @@ classdef SpringDamperCanonicalSystem < handle
       end
 
       %% Returns the derivative of the canonical system
-      %
       %  param[in] x: current value of the phase variable
-      %
       %  param[out] dx: derivative
-      %
       function dX = get_derivative(can_sys, X_in)
           
           x = X_in(1);
@@ -132,25 +127,21 @@ classdef SpringDamperCanonicalSystem < handle
       end
       
       %% Returns the output of the canonical system for a continuous time interval
-      %
       %  param[in] t: the time interval
-      %  param[in] x0: initial value of the phase variable
-      %
       %  param[out] X: the output of the canonical system for the timeinterval 't'.
       %                X has so many rows as the order of the canonical. If
       %                it has order n, then the output is the 0-th till the
       %                (n-1)-th order output of the canonical system.
-      %
-      function X = get_continuous_output(can_sys, t, x0)
+      function X = get_continuous_output(can_sys, t)
           
           t = t(:)';
           
           a = can_sys.a_u/(2*can_sys.get_tau());
           exp_at = exp(-a*t);
           
-          x = x0 * (1+a*t).*exp_at;
+          x = can_sys.x0 * (1+a*t).*exp_at;
 
-          dx = x0 * ( -a^2*t.*exp_at );
+          dx = can_sys.x0 * ( -a^2*t.*exp_at );
           
           u = dx * can_sys.get_tau();
           

@@ -55,17 +55,19 @@ tau = (n_data-1)*Ts;
 number_of_kernels = cmd_args.N_kernels
 n_data
 
+
 if (strcmpi(cmd_args.CAN_SYS_TYPE,'lin'))
-    can_sys_ptr = LinCanonicalSystem(cmd_args.x_end, tau);
+    can_sys_ptr = LinCanonicalSystem();
 elseif (strcmpi(cmd_args.CAN_SYS_TYPE,'exp'))
-    can_sys_ptr = ExpCanonicalSystem(cmd_args.x_end, tau);
+    can_sys_ptr = ExpCanonicalSystem();
 elseif (strcmpi(cmd_args.CAN_SYS_TYPE,'spring-damper'))
-    can_sys_ptr = SpringDamperCanonicalSystem(cmd_args.x_end, tau);
+    can_sys_ptr = SpringDamperCanonicalSystem();
     USE_2nd_order_can_sys = true;
 else
     error('Unsupported canonical system type ''%s''',cmd_args.CAN_SYS_TYPE);
 end
 
+can_sys_ptr.init(cmd_args.x_end, tau, cmd_args.x0);
 
 dmp = cell(D,1);
 for i=1:D

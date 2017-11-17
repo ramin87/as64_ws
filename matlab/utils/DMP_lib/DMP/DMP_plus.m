@@ -143,10 +143,9 @@ classdef DMP_plus < handle
       function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0, train_method)
 
           g = g0;
-          x0 = 1;
           tau = dmp.can_sys_ptr.tau;
           
-          X = dmp.can_sys_ptr.get_continuous_output(Time, x0);
+          X = dmp.can_sys_ptr.get_continuous_output(Time);
           
           if (size(X,1) == 1)
               x = X;
