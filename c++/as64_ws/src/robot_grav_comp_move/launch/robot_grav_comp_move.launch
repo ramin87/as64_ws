@@ -1,0 +1,14 @@
+<launch>
+    <arg name="node_name"
+         default="robot_grav_comp_move" />
+
+    <node pkg="robot_grav_comp_move"
+          type="robot_grav_comp_move_node"
+          name="$(arg node_name)"
+          output="screen">
+
+        <rosparam command="load"
+                  file="$(find robot_grav_comp_move)/config/config.yml" />
+
+    </node>
+</launch>
