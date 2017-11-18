@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
   math_lib
   filter_lib
   time_lib
+  robotics_lib
 )
 
 find_package(OpenCV REQUIRED)
@@ -79,8 +80,6 @@ catkin_package(
 
 set(SRC_LIST
 	src/source_list/utils.cpp
-	src/source_list/jlav_module.cpp
-	src/source_list/svf_module.cpp
 )
 
 file(GLOB INCLUDE_LIST "include/SEDS/*.h" "include/SEDS/*.hpp")
@@ -109,6 +108,7 @@ include_directories(
 
 add_executable(handover_node
   src/main.cpp ${INCLUDE_LIST} ${SRC_LIST}
+  src/arm_handover_controller.cpp
   src/handover_controller.cpp)
 
 add_dependencies(handover_node
@@ -127,6 +127,7 @@ target_link_libraries(handover_node
   math-lib
   filter-lib
   time-lib
+  robotics-lib
 )
 
 # *************************************************
@@ -195,6 +196,7 @@ target_link_libraries(test_DS_motion
   math-lib
   filter-lib
   time-lib
+  robotics-lib
 )
 
 # *************************************************

@@ -10,7 +10,8 @@
 
 const char *ActionName[] = {"OPEN_HAND", "CLOSE_HAND", "STOP_HAND", "TERMINATE_HAND"};
 
-class Bhand_controller{
+class Bhand_controller
+{
 public:
 	enum BarrettHandAction{OPEN_HAND, CLOSE_HAND, STOP_HAND, TERMINATE_HAND};
 

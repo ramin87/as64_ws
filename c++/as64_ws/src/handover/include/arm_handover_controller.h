@@ -2,8 +2,8 @@
  * Copyright (C) 2016 AUTH-ARL
  */
 
-#ifndef HANDOVER_CONTROLLER_H
-#define HANDOVER_CONTROLLER_H
+#ifndef ARM_HANDOVER_CONTROLLER_H
+#define ARM_HANDOVER_CONTROLLER_H
 
 #define _USE_MATH_DEFINES
 
@@ -27,10 +27,10 @@
 
 #include <lwr_robot/lwr_model.h>
 #include <lwr_robot/lwr_robot.h>
+#include <autharl_core/robot/controller.h>
 #include <DS_lib/DS_GMR/DS_GMR.h>
 
 #include <utils.h>
-#include <arm_handover_controller.h>
 
 #include <autharl_core/utils/kdl_arma.h>
 #include <autharl_core/utils/kdl_eigen.h>
@@ -42,7 +42,7 @@
 #include <robotics_lib/jlav.h>
 #include <time_lib/time.h>
 
-class HandoverController
+class ArmHandoverController : public arl::robot::Controller
 {
 public:
 	std::ofstream out_err;
@@ -78,8 +78,10 @@ public:
  	double Fee_z_max;
 
 
-	HandoverController(std::shared_ptr<arl::robot::Robot> robot);
+	ArmHandoverController(std::shared_ptr<arl::robot::Robot> robot);
 	void execute();
+	bool run();
+	void update();
 	bool start;
 
 	ros::NodeHandle n;
@@ -179,4 +181,4 @@ private:
 	bool zero_vel, move_back, start_move_back;
 };
 
-#endif  // HANDOVER_CONTROLLER_H
+#endif  // ARM_HANDOVER_CONTROLLER_H

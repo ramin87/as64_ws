@@ -1,54 +1,37 @@
-#include "jlav_module.h"
+#include <robotics_lib/jlav.h>
+
+namespace as64
+{
 
 /**
-* @brief Jlav_module::Jlav_module
+* @brief JLAv::JLAv
 */
-Jlav_module::Jlav_module()
+JLAv::JLAv()
 {
 
 }
 
 
-
-
 /**
-* @brief Jlav_module::Jlav_module
+* @brief JLAv::JLAv
 * @param qmin, low limit of joints in a vector form
 * @param qmax, high limit of joints in a vector form
 * @param gain, gain for the attraction to the mean value
 */
-Jlav_module::Jlav_module(arma::vec qmin, arma::vec qmax)
+JLAv::JLAv(arma::vec qmin, arma::vec qmax)
 {
-
-    // Create ROS node handle
-    nh_ = ros::NodeHandle("~");
-
-    // read parameters
-    //readParams();
-
     // initialization
     init(qmin,qmax);
 
 }
 
-/**
-* @brief Jlav_module::readParams, read the parameters from the yaml file
-*/
-void Jlav_module::readParams()
-{
-    std::cout << "[Jlav_controller::readParams] Reading the parameters from the yaml file." << std::endl;
-    nh_.getParam("k_jla", gain_) ;
-    //SHOW_DOUB(gain_);
-}
-
-
 
 /**
-* @brief Jlav_module::init
+* @brief JLAv::init
 * @param qmin, low limit of joints in a vector form
 * @param qmax, high limit of joints in a vector form
 */
-void Jlav_module::init(arma::vec qmin, arma::vec qmax)
+void JLAv::init(arma::vec qmin, arma::vec qmax)
 {
   //SHOW_ARMA(qmin);
   //SHOW_ARMA(qmax);
@@ -90,9 +73,9 @@ void Jlav_module::init(arma::vec qmin, arma::vec qmax)
 
 
 /**
-* @brief Jlav_module::initAllVarsToZero
+* @brief JLAv::initAllVarsToZero
 */
-void Jlav_module::initAllVarsToZero()
+void JLAv::initAllVarsToZero()
 {
     e_ = arma::zeros<arma::vec>(Njoints_);
     c_ = arma::zeros<arma::vec>(Njoints_);
@@ -103,32 +86,32 @@ void Jlav_module::initAllVarsToZero()
 
 
 /**
-* @brief Jlav_module::changeLowLimit, change one joint limit value
+* @brief JLAv::setLowLimit, set one joint limit value
 * @param joint_index, index of the joint
 * @param low_limit, the low limit value
 */
-void Jlav_module::changeLowLimit(int joint_index, double low_limit)
+void JLAv::setLowLimit(int joint_index, double low_limit)
 {
     // set the value
     qmin_(joint_index) = low_limit;
 }
 
 /**
-* @brief Jlav_module::changeLowLimits, change all the joint limit values
+* @brief JLAv::setLowLimits, set all the joint limit values
 * @param qmins, joint low limits
 */
-void Jlav_module::changeLowLimits(arma::vec qmins)
+void JLAv::setLowLimits(arma::vec qmins)
 {
     // set the vector values
     qmin_ = qmins;
 }
 
 /**
-* @brief Jlav_module::changeHighLimit, change one joint limit value
+* @brief JLAv::setHighLimit, set one joint limit value
 * @param joint_index, index of the joint
 * @param low_limit, the high limit value
 */
-void Jlav_module::changeHighLimit(int joint_index, double high_limit)
+void JLAv::setHighLimit(int joint_index, double high_limit)
 {
     // set the value
     qmax_(joint_index) = high_limit;
@@ -136,31 +119,31 @@ void Jlav_module::changeHighLimit(int joint_index, double high_limit)
 
 
 /**
-* @brief Jlav_module::changeHighLimits, change all the joint limit values
+* @brief JLAv::setHighLimits, set all the joint limit values
 * @param qmaxs, joint high limits
 */
-void Jlav_module::changeHighLimits(arma::vec qmaxs)
+void JLAv::setHighLimits(arma::vec qmaxs)
 {
     // set the vector values
     qmax_ = qmaxs;
 }
 
 /**
-* @brief Jlav_module::changeGain, change one joint gain value
+* @brief JLAv::setGain, set one joint gain value
 * @param joint_index, index of the joint
 * @param gain, the gain value
 */
-void Jlav_module::changeGain(int joint_index, double gain)
+void JLAv::setGain(int joint_index, double gain)
 {
     // set the value
     kq_(joint_index) = gain;
 }
 
 /**
-* @brief Jlav_module::changeGains, change all the joint gain values with the same value
+* @brief JLAv::setGains, set all the joint gain values with the same value
 * @param gain, the gain value
 */
-void Jlav_module::changeGains(double gain)
+void JLAv::setGains(double gain)
 {
 
     gain_ = gain;
@@ -173,10 +156,10 @@ void Jlav_module::changeGains(double gain)
 }
 
 /**
-* @brief Jlav_module::changeGains, change all the joint gain values
+* @brief JLAv::setGains, set all the joint gain values
 * @param gains, the gain values in vector form
 */
-void Jlav_module::changeGains(arma::vec gains)
+void JLAv::setGains(arma::vec gains)
 {
     // set the vector values
     kq_ = gains;
@@ -184,9 +167,9 @@ void Jlav_module::changeGains(arma::vec gains)
 
 
 /**
-* @brief Jlav_module::printParams
+* @brief JLAv::printParams
 */
-void Jlav_module::printParams(void)
+void JLAv::printParams(void)
 {
 
     std::cout << "[Jlav_controller::printParams] Printing all Joint limit acoidance controller parameters ..." << std::endl;
@@ -204,11 +187,11 @@ void Jlav_module::printParams(void)
 
 
 /**
-* @brief Jlav_module::getControlSignal
+* @brief JLAv::getControlSignal
 * @return the control signal, which is a velocity vector of dimension of N on the joint space
 * @param q_meas, measure joint position
 */
-arma::vec Jlav_module::getControlSignal(arma::vec q_meas)
+arma::vec JLAv::getControlSignal(arma::vec q_meas)
 {
 
     // compute the error from the mean
@@ -234,3 +217,4 @@ arma::vec Jlav_module::getControlSignal(arma::vec q_meas)
 
 }
 
+} // namespace as64

@@ -2,9 +2,9 @@
  * Copyright (C) 2016 AUTH-ARL
  */
 
-#include <handover_controller.h>
+#include <arm_handover_controller.h>
 
-Eigen::Matrix4d HandoverController::robotArm_fkine() const
+Eigen::Matrix4d ArmHandoverController::robotArm_fkine() const
 {
 	Eigen::Matrix4d T_robot_endEffector = Eigen::Matrix4d::Identity();
 
@@ -19,7 +19,7 @@ Eigen::Matrix4d HandoverController::robotArm_fkine() const
 	return T_robot_endEffector;
 }
 
-Eigen::Matrix<double, CART_DOF_SIZE, JOINT_SIZE> HandoverController::robotArm_jacob() const
+Eigen::Matrix<double, CART_DOF_SIZE, JOINT_SIZE> ArmHandoverController::robotArm_jacob() const
 {
 	Eigen::Matrix<double, CART_DOF_SIZE, JOINT_SIZE> Jrobot;
 	Eigen::MatrixXd Jrobot2;
@@ -32,7 +32,7 @@ Eigen::Matrix<double, CART_DOF_SIZE, JOINT_SIZE> HandoverController::robotArm_ja
 	return Jrobot;
 }
 
-void HandoverController::goToStartPose(double t)
+void ArmHandoverController::goToStartPose(double t)
 {
 	arma::vec qT(7), q_current(7);
 
@@ -44,7 +44,7 @@ void HandoverController::goToStartPose(double t)
 	goToJointsTrajectory(qT, q_current, t);
 }
 
-void HandoverController::goToJointsTrajectory(arma::vec qT, arma::vec &q0, double totalTime)
+void ArmHandoverController::goToJointsTrajectory(arma::vec qT, arma::vec &q0, double totalTime)
 {
 
 	arma::vec temp = (arma::abs(qT-q0));
@@ -85,7 +85,7 @@ void HandoverController::goToJointsTrajectory(arma::vec qT, arma::vec &q0, doubl
 
 }
 /*
-Eigen::MatrixXd HandoverController::get5thOrder(double t, const Eigen::VectorXd &p0, const Eigen::VectorXd &pT, double totalTime)
+Eigen::MatrixXd ArmHandoverController::get5thOrder(double t, const Eigen::VectorXd &p0, const Eigen::VectorXd &pT, double totalTime)
 {
     Eigen::MatrixXd retTemp = Eigen::MatrixXd::Zero();
     arma::zeros<arma::mat>(p0.n_rows, 3);
@@ -111,7 +111,7 @@ Eigen::MatrixXd HandoverController::get5thOrder(double t, const Eigen::VectorXd 
 
 }*/
 
-arma::mat HandoverController::get5thOrder(double t, arma::vec p0, arma::vec pT, double totalTime)
+arma::mat ArmHandoverController::get5thOrder(double t, arma::vec p0, arma::vec pT, double totalTime)
 {
     arma::mat retTemp = arma::zeros<arma::mat>(p0.n_rows, 3);
 
@@ -136,7 +136,7 @@ arma::mat HandoverController::get5thOrder(double t, arma::vec p0, arma::vec pT, 
 
 }
 
-void HandoverController::listenCameraTargetTransformCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
+void ArmHandoverController::listenCameraTargetTransformCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {
 	if (cmd_args.p_ch==2 || cmd_args.p_ch==5 || cmd_args.p_ch==22){
 
@@ -152,7 +152,7 @@ void HandoverController::listenCameraTargetTransformCallback(const std_msgs::Flo
 
 }
 
-double HandoverController::get_pose_error(const Eigen::Matrix4d &T) const
+double ArmHandoverController::get_pose_error(const Eigen::Matrix4d &T) const
 {
 	Eigen::Vector3d pos_err = T.block(0,3,3,1);
 
@@ -163,7 +163,7 @@ double HandoverController::get_pose_error(const Eigen::Matrix4d &T) const
 	return r;
 }
 
-void HandoverController::calc_DS_input(const Eigen::Matrix4d &T_objTarget_obj, Eigen::Matrix<double,6,1> *X_in) const
+void ArmHandoverController::calc_DS_input(const Eigen::Matrix4d &T_objTarget_obj, Eigen::Matrix<double,6,1> *X_in) const
 {
 // 	Eigen::Vector3d pos_err = T_objTarget_obj.block(0,3,3,1);
 // 	X_in->segment(0,3) = pos_err;
@@ -175,7 +175,7 @@ void HandoverController::calc_DS_input(const Eigen::Matrix4d &T_objTarget_obj, E
 	X_in->segment(3,3) = as64::rotm2quat(T_objTarget_obj.block(0,0,3,3)).segment(1,3);
 }
 
-HandoverController::HandoverController(std::shared_ptr<arl::robot::Robot> robot)
+ArmHandoverController::ArmHandoverController(std::shared_ptr<arl::robot::Robot> robot)
 {
 	robot_ = robot;
 	start = true;
@@ -235,7 +235,7 @@ HandoverController::HandoverController(std::shared_ptr<arl::robot::Robot> robot)
 	// ****************************************
 	node_handle_ = ros::NodeHandle("~");
 
-	sub_camTargTrans = n.subscribe(cmd_args.cam_target_transform_topic, 1, &HandoverController::listenCameraTargetTransformCallback, this);
+	sub_camTargTrans = n.subscribe(cmd_args.cam_target_transform_topic, 1, &ArmHandoverController::listenCameraTargetTransformCallback, this);
 
 	std::cout << "Subscrivbed to target-frame topic: \"" << cmd_args.cam_target_transform_topic << "\"\n";
 
@@ -444,7 +444,7 @@ HandoverController::HandoverController(std::shared_ptr<arl::robot::Robot> robot)
 }
 
 
-void HandoverController::execute()
+void ArmHandoverController::execute()
 {
 	while (ros::ok() && this->start){
 		ros::spinOnce();
@@ -644,13 +644,13 @@ void HandoverController::execute()
 			zero_vel = true;
 			move_back = true;
 
-			bHandAction = HandoverController::OPEN_HAND;
+			bHandAction = ArmHandoverController::OPEN_HAND;
 			msg.data[0] = (int)bHandAction;
 			msg.data[1] = w_est_filt;
 			n_pub.publish(msg);
 
 			std::cout << "Kuka: I published!!!\n";
-			//bHandAction = HandoverController::OPEN_HAND;
+			//bHandAction = ArmHandoverController::OPEN_HAND;
 		}
 
 		start_move_back = move_back && V_endEffector.squaredNorm() < 0.001;
@@ -678,7 +678,17 @@ void HandoverController::execute()
 	}
 }
 
-void HandoverController::finalize()
+bool ArmHandoverController::run()
+{
+
+}
+
+void ArmHandoverController::update()
+{
+
+}
+
+void ArmHandoverController::finalize()
 {
 	std::cout << "[HANDOVER_CONTROLLER]: Entered finalize...\n";
 
@@ -687,7 +697,7 @@ void HandoverController::finalize()
 	  goToStartPose(6);
 	}
 
-	bHandAction = HandoverController::TERMINATE_HAND;
+	bHandAction = ArmHandoverController::TERMINATE_HAND;
 	msg.data[0] = (int)bHandAction;
 	msg.data[1] = w_est;
 	n_pub.publish(msg);

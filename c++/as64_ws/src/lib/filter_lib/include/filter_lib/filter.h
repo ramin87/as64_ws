@@ -2,7 +2,7 @@
 #define FILTER_LIB_FILTER_64_H
 
 #include <filter_lib/movingWinMeanFilter.h>
-
+#include <filter_lib/svf.h>
 
 namespace as64
 {
