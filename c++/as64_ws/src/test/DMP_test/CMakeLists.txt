@@ -29,6 +29,7 @@ catkin_package(
 set(SRC_LIST
 	src/source_list/utils.cpp
 	src/source_list/cmd_args.cpp
+	src/source_list/log_data.cpp
 )
 
 file(GLOB INCLUDE_LIST "")

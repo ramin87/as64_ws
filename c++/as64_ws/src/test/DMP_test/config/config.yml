@@ -3,7 +3,7 @@ a_z: 40
 b_z: 10 # default: set to a_z/4 
 x0: 1
 x_end: 0.005
-N_kernels: 50
+N_kernels: 10
 std_K: 0.95
 DMP_TYPE: "DMP" # "DMP", "DMP-bio", "DMP-plus"
 train_method: "LWR" # "LWR", "LS", "RLS" , "RLWR"

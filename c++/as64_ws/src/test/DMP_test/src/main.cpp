@@ -18,8 +18,6 @@
 #include <DMP_lib/CanonicalSystem/LinCanonicalSystem.h>
 #include <DMP_lib/CanonicalSystem/SpringDamperCanonicalSystem.h>
 
-CMD_ARGS cmd_args;
-
 
 int main(int argc, char** argv)
 {   
@@ -31,11 +29,12 @@ int main(int argc, char** argv)
   double elapsed_time;
   
   // ========  initialize cmd params  ===========
+  CMD_ARGS cmd_args;
   std::cout << "====> Parsing CMD args...\n";
   cmd_args.parse_cmd_args();
   std::string file_ext = cmd_args.binary?".bin":".txt";
   cmd_args.in_data_filename = cmd_args.data_input_path + cmd_args.in_data_filename + file_ext;
-  cmd_args.out_data_filename = cmd_args.data_output_path + cmd_args.out_data_filename + file_ext;
+  cmd_args.out_data_filename = cmd_args.data_output_path + cmd_args.out_data_filename; // + file_ext;
   
   if (~cmd_args.USE_PHASE_STOP)
   {
@@ -110,17 +109,18 @@ int main(int argc, char** argv)
       throw std::invalid_argument(std::string("Unsupported DMP type: \"")+cmd_args.DMP_TYPE+"\"");
     }
     
+    std::cout << "Init DMP...\n";
     dmp[i]->init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
   
   }
   
-  arma::mat F_train_data;
-  arma::mat Fd_train_data;
+  arma::mat F_offline_train_data;
+  arma::mat Fd_offline_train_data;
   arma::vec offline_train_mse;
   arma::vec online_train_mse;
   
   arma::rowvec Time;
-  arma::rowvec Time_train;
+  arma::rowvec Time_offline_train;
   
   // ========  Train the DMP  ===========
   if (cmd_args.OFFLINE_DMP_TRAINING_enable)
@@ -156,11 +156,11 @@ int main(int argc, char** argv)
 	dmp[i]->set_training_params(cmd_args.USE_GOAL_FILT, cmd_args.a_g, cmd_args.RLWR_lambda, cmd_args.RLWR_P);
 	offline_train_mse(i) = dmp[i]->train(T, yd, dyd, ddyd, y0, g0, cmd_args.train_method, &F_train, &Fd_train);      
 
-	F_train_data = arma::join_vert(F_train_data, F_train);
-	Fd_train_data = arma::join_vert(Fd_train_data, Fd_train);
+	F_offline_train_data = arma::join_vert(F_offline_train_data, F_train);
+	Fd_offline_train_data = arma::join_vert(Fd_offline_train_data, Fd_train);
 
     }
-    Time_train = arma::linspace<arma::rowvec>(0,F_train_data.size()-1,F_train_data.size())*Ts;
+    Time_offline_train = arma::linspace<arma::rowvec>(0,F_offline_train_data.size()-1,F_offline_train_data.size())*Ts;
     
     std::cout << "Elapsed time is " << timer.toc() << " seconds\n";
 
@@ -199,6 +199,28 @@ int main(int argc, char** argv)
   
   double Fdist = 0;
   
+  LogData log_data;
+  
+  log_data.dmp = dmp;
+
+  log_data.Time_demo = Time_demo;
+  log_data.yd_data = yd_data;
+  log_data.dyd_data = dyd_data;
+  log_data.ddyd_data = ddyd_data;
+
+  log_data.D = D;
+  log_data.Ts = Ts;
+  log_data.g0 = g0;
+
+  log_data.Time_offline_train = Time_offline_train;
+  log_data.F_offline_train_data = F_offline_train_data;
+  log_data.Fd_offline_train_data = Fd_offline_train_data;
+
+  log_data.Psi_data = std::vector<arma::mat>(D);
+  log_data.P_lwr = std::vector<arma::mat>(D);
+  log_data.DMP_w = std::vector<arma::mat>(D);
+  
+  
   tau = cmd_args.tau_sim_scale*tau;
   can_sys_ptr->set_tau(tau);
 
@@ -224,36 +246,35 @@ int main(int argc, char** argv)
   while (true)
   {
     // data logging
-//     logData.Time.push_back(t);
-//     
-//     logData.dy_data = arma::join_horiz(logData.dy_data, dy);
-//     logData.y_data = arma::join_horiz(logData.y_data, y);
-// 
-//     logData.dy_robot_data = arma::join_horiz(logData.dy_robot_data, dy_robot);
-//     logData.y_robot_data = arma::join_horiz(logData.y_robot_data, y_robot);
-// 
-//     logData.z_data = arma::join_horiz(logData.z_data, z);
-//     logData.dz_data = arma::join_horiz(logData.dz_data, dz);
-//         
-//     logData.x_data.push_back(x);
-//     logData.u_data.push_back(u);
-//     
-//     logData.Fdist_data.push_back(Fdist);
-//     
-//     logData.Force_term_data = arma::join_horiz(logData.Force_term_data, force_term);
-//     
-//     logData.g_data = arma::join_horiz(logData.g_data, g); 
-//     
-//     logData.shape_attr_data = arma::join_horiz(logData.shape_attr_data, shape_attr);
-//     
-//     logData.goal_attr_data = arma::join_horiz(logData.goal_attr_data, goal_attr);
+
+    log_data.Time = join_horiz(log_data.Time, t);
+
+    log_data.y_data = join_horiz(log_data.y_data, y);
+    log_data.dy_data = join_horiz(log_data.dy_data, dy);
+
+    log_data.z_data = join_horiz(log_data.z_data, z);
+    log_data.dz_data = join_horiz(log_data.dz_data, dz);
+    
+    log_data.x_data = join_horiz(log_data.x_data, x);
+    log_data.u_data = join_horiz(log_data.u_data, u);
+    
+    log_data.y_robot_data = join_horiz(log_data.y_robot_data, y_robot);
+    log_data.dy_robot_data = join_horiz(log_data.dy_robot_data, dy_robot);    
+
+    
+    log_data.Fdist_data = join_horiz(log_data.Fdist_data, Fdist);
+    log_data.Force_term_data = join_horiz(log_data.Force_term_data, scaled_forcing_term);
+    log_data.g_data = join_horiz(log_data.g_data, g);
+    log_data.shape_attr_data = join_horiz(log_data.shape_attr_data, shape_attr);
+    log_data.goal_attr_data = join_horiz(log_data.goal_attr_data, goal_attr);
+    
     
     for (int i=0; i<D; i++){
       
       if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
       {
-  // 	log_data.DMP_w{i} = [log_data.DMP_w{i} dmp{i}.w];
-  // 	log_data.P_lwr{i} = [log_data.P_lwr{i} P_lwr{i}];
+	log_data.DMP_w[i] = join_horiz(log_data.DMP_w[i], dmp[i]->w);
+	log_data.P_lwr[i] = join_horiz(log_data.P_lwr[i], P_lwr[i]);
 	
 	double yd = yd_data(i,iters+1);
 	double dyd = dyd_data(i,iters+1);
@@ -265,10 +286,12 @@ int main(int argc, char** argv)
       }
 
       arma::vec Psi = dmp[i]->activation_function(x);
-//       logData.Psi_data[i] = arma::join_horiz(logData.Psi_data[i], Psi);
+      log_data.Psi_data[i] = arma::join_horiz(log_data.Psi_data[i], Psi);
 
-      //shape_attr(i) = dmp[i].shape_attractor(X,g0(i),y0(i));
-      //goal_attr(i) = dmp[i].goal_attractor(y(i),dy(i),g(i));
+      arma::vec X(2);
+      X << x << u;
+      shape_attr(i) = dmp[i]->shape_attractor(X,g0(i),y0(i));
+      goal_attr(i) = dmp[i]->goal_attractor(y(i),dy(i),g(i));
 
       scaled_forcing_term(i) = dmp[i]->forcing_term(x)*dmp[i]->forcing_term_scaling(u, y0(i), g0(i));
         
@@ -287,9 +310,9 @@ int main(int argc, char** argv)
     
     if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
     {
-//         log_data.Time_online_train = [log_data.Time_online_train t];
-//         log_data.F_train_online_data = [log_data.F_train_online_data F];
-//         log_data.Fd_train_online_data = [log_data.Fd_train_online_data Fd];
+        log_data.Time_online_train = join_horiz(log_data.Time_online_train, t);
+	log_data.F_online_train_data = join_horiz(log_data.F_online_train_data, F);
+	log_data.Fd_online_train_data = join_horiz(log_data.Fd_online_train_data, Fd);
     }
 
     if (cmd_args.USE_GOAL_FILT)
@@ -338,7 +361,7 @@ int main(int argc, char** argv)
     double err = arma::max(arma::abs(g0-y_robot));
     if (err <= cmd_args.sim_tol_stop) break;
     
-    std::cout << "err = " << err << "\n";
+    //std::cout << "err = " << err << "\n";
     
     iters++;
     if (iters >= cmd_args.sim_max_iters) break;
@@ -372,11 +395,15 @@ int main(int argc, char** argv)
     std::cout << "online_train_mse:\n" << online_train_mse << "\n";
   }
   
+  std::cout << "Saving results...";
+  log_data.cmd_args = cmd_args;
+  log_data.save(cmd_args.out_data_filename, true);
+  log_data.save(cmd_args.out_data_filename, false, 10);
+  std::cout << "[DONE]!\n";
   
-//   std::cout << "Saving results...";
-//   logData.cmd_args = cmd_args;
-//   logData.save(cmd_args.out_data_filename);
-//   std::cout << "[DONE]!";
+  std::cout << "c = " << dmp[0]->c.t() << "\n";
+  std::cout << "h = " << dmp[0]->h.t() << "\n";
+  std::cout << "w = " << dmp[0]->w.t() << "\n";
   
   /*
   // =============  export data  ================

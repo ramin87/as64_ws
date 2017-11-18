@@ -28,10 +28,9 @@ double DMP_plus::train(const arma:: rowvec &Time, const arma::rowvec &yd_data, c
 												arma::rowvec *Fd_ptr, arma::rowvec *F_ptr)
 {
 	int n_data = Time.size();
-	double x0 = 1;
 	double tau = this->can_sys_ptr->get_tau();
 
-	arma::mat X = this->can_sys_ptr->get_continuous_output(Time, x0);
+	arma::mat X = this->can_sys_ptr->get_continuous_output(Time);
 	arma::rowvec x, u;
 	
 	if (X.n_rows == 1){

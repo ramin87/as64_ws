@@ -25,7 +25,7 @@ arma::vec ExpCanonicalSystem::get_derivative(const arma::vec &X)
 }
 
 
-arma::mat ExpCanonicalSystem::get_continuous_output(const arma::rowvec &t, double x0)
+arma::mat ExpCanonicalSystem::get_continuous_output(const arma::rowvec &t)
 {
   arma::mat x;
   double tau = get_tau();

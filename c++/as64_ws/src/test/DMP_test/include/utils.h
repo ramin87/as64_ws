@@ -23,4 +23,7 @@ void load_data(const std::string &data_file_name, arma::mat &data, double &Ts, b
 
 double Fdist_fun(double t, const CMD_ARGS &cmd_args);
 
+arma::rowvec join_horiz(const arma::rowvec &v, double a);
+arma::mat join_horiz(const arma::mat &v, const arma::mat &v2);
+
 #endif

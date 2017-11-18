@@ -73,7 +73,7 @@ arma::vec SpringDamperCanonicalSystem::get_derivative(const arma::vec &X)
 }
 
 
-arma::mat SpringDamperCanonicalSystem::get_continuous_output(const arma::rowvec &t, double x0)
+arma::mat SpringDamperCanonicalSystem::get_continuous_output(const arma::rowvec &t)
 {
   arma::mat X(2,t.n_elem);
   double tau = get_tau();

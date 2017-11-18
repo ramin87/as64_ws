@@ -124,5 +124,21 @@ double Fdist_fun(double t, const CMD_ARGS &cmd_args)
 
 }
 
+arma::rowvec  join_horiz(const arma::rowvec &v, double a)
+{
+  arma::rowvec v3, v2(1);
+  v2(0) = a;
+  
+  v3 = arma::join_horiz(v,v2);
 
+  return v3;
+}
 
+arma::mat join_horiz(const arma::mat &v, const arma::mat &v2)
+{
+  arma::mat v3;
+  
+  v3 = arma::join_horiz(v,v2);
+
+  return v3;
+}

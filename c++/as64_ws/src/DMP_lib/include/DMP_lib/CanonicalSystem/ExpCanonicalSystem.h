@@ -3,7 +3,7 @@
  */
 
 
-/** Canonical system class
+/** \brief Exponential Canonical system class
  * 
  * Implements a 1st order exponentially decaying canonical system for a DMP.
  * The canonical system is defined as:
@@ -30,7 +30,7 @@ public:
 
   arma::vec get_derivative(const arma::vec &X);
 
-  arma::mat get_continuous_output(const arma::rowvec &t, double x0);
+  arma::mat get_continuous_output(const arma::rowvec &t);
 
 private:
   double a_x;
