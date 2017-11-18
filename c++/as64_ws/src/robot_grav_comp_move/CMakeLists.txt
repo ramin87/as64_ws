@@ -12,7 +12,9 @@ find_package(catkin REQUIRED COMPONENTS
   autharl_core
   std_msgs
   lwr_robot
-  io_lib)
+  io_lib
+  time_lib
+)
 
 catkin_package()
 
@@ -35,4 +37,6 @@ target_link_libraries(robot_grav_comp_move_node
   autharl-viz
   lwr-robot
   pthread
-  IO-lib)
+  IO-lib
+  time-lib
+)

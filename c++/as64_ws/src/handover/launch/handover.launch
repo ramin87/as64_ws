@@ -1,0 +1,13 @@
+<launch>
+    <arg name="node_name" default="handover_node" />
+
+    <node pkg="handover"
+          type="handover_node"
+          name="$(arg node_name)"
+          output="screen">
+
+        <rosparam command="load"
+                  file="$(find handover)/config/config.yml" />
+
+    </node>
+</launch>

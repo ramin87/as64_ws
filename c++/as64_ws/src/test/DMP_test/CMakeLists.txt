@@ -5,9 +5,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  as64_utils
   dmp_lib
   io_lib
+  filter_lib
 )
 
 find_package(OpenCV REQUIRED)
@@ -67,7 +67,7 @@ target_link_libraries(DMP_test_node
   ${Boost_LIBRARIES}
   DMP-lib
   IO-lib
-  as64-filter
+  filter-lib
 )
 
 

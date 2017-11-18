@@ -10,30 +10,15 @@ RobotGravCompController::RobotGravCompController(std::shared_ptr<arl::robot::Rob
 	nh_ = ros::NodeHandle("~");
 	this->robot = robot;
 
+	this->DIR = ros::package::getPath("robot_grav_comp_move") + "/data/";
+
 	N_JOINTS = robot->model->getNrOfJoints(0);
 
 	// get the parameters from the yaml file
 	readParameters();
-
-	std::string DIR = ros::package::getPath("robot_grav_comp_move");
-
-	std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-	std::ostringstream out_s;
-	out_s << std::ctime(&t);
-	std::string time_stamp = out_s.str();
-	for (int i=0;i<time_stamp.size();i++)
-	{
-		if (time_stamp[i]==' ') time_stamp[i] = '_';
-		else if (time_stamp[i]==':') time_stamp[i] = '-';
-	}
-
-	std::string PATH = DIR + "/data/" + filename + "_" + time_stamp + ".dat";
+	printParameters(std::cout);
 
 	init();
-
-	printParameters();
-	std::cout << "PATH = " << PATH << "\n";
-
 }
 
 void RobotGravCompController::init()
@@ -94,6 +79,8 @@ void RobotGravCompController::readParameters()
 
 	if (!nh_.getParam("filename", filename)) filename = "data";
 
+	if (!nh_.getParam("binary", binary)) binary = false;
+
 	if (!nh_.getParam("set_init_config", set_init_config)) set_init_config = false;
 
 	std::vector<double> vec;
@@ -117,18 +104,19 @@ void RobotGravCompController::readParameters()
 
 }
 
-void RobotGravCompController::printParameters()
+void RobotGravCompController::printParameters(std::ostream &out)
 {
-	std::cout << "stiff_transl = " << stiff_transl << std::endl;
-	std::cout << "damp_transl = " << damp_transl << std::endl;
-	std::cout << "stiff_rot = " << stiff_rot << std::endl;
-	std::cout << "damp_rot = " << damp_rot << std::endl;
-	std::cout << "zeta = " << zeta << std::endl;
-	std::cout << "Ts = " << Ts << std::endl;
-	std::cout << "control_method = " << stiff_transl << std::endl;
-	std::cout << "set_init_config = " << set_init_config << std::endl;
-	std::cout << "init_config = " << q_init.t() << std::endl;
-	std::cout << "filename = " << filename << std::endl;
+	out << "stiff_transl = " << stiff_transl << std::endl;
+	out << "damp_transl = " << damp_transl << std::endl;
+	out << "stiff_rot = " << stiff_rot << std::endl;
+	out << "damp_rot = " << damp_rot << std::endl;
+	out << "zeta = " << zeta << std::endl;
+	out << "Ts = " << Ts << std::endl;
+	out << "control_method = " << stiff_transl << std::endl;
+	out << "set_init_config = " << set_init_config << std::endl;
+	out << "init_config = " << q_init.t() << std::endl;
+	out << "filename = " << filename << std::endl;
+	out << "binary = " << binary << std::endl;
 }
 
 void RobotGravCompController::reset()
@@ -202,10 +190,25 @@ void RobotGravCompController::measure()
 
 	if (record_current_pose)
 	{
+		record_current_pose = false;
 
+		std::string time_stamp = as64::getTimeStamp();
+
+		std::string path = this->DIR + "pose_" + this->filename + "_" + time_stamp; // + ".dat";
+
+		std::ofstream out;
+		if (this->binary) out.open(path, std::ios::binary);
+		else out.open(path);
+
+		if (!out) throw std::ios_base::failure(std::string("Couldn't create file \"") + path + "\"");
+
+		as64_::io_::write_mat(pose, out, binary, 6);
+		as64_::io_::write_mat(q, out, binary, 6);
+
+		out.close();
 	}
 
-	
+
 }
 
 

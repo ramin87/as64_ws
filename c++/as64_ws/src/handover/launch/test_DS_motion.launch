@@ -1,0 +1,13 @@
+<launch>
+    <arg name="node_name" default="test_DS_motion" />
+
+    <node pkg="handover"
+          type="test_DS_motion"
+          name="$(arg node_name)"
+          output="screen">
+
+        <rosparam command="load"
+                  file="$(find handover)/config/config.yml" />
+
+    </node>
+</launch>

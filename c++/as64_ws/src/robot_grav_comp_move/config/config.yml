@@ -6,11 +6,12 @@ damp_rot: 2.0
 
 zeta: 0.5
 
-Ts: 0.01 #sampling time of points [seconds]
+Ts: 0.01 # sampling time of points [seconds]
 
 control_method: 'Joint' # 'Cartesian', 'Joint'
 
-set_init_config: true
-init_config: [1.5708, -0.7854, 0, 1.5708, 0, -0.7854, 0]
+set_init_config: true # set to true to move the robot to 'init_config'
+init_config: [1.5708, -0.7854, 0, 1.5708, 0, -0.7854, 0] # initial robot configuration (values of joints)
 
-filename: 'data'
+filename: 'data' # name of the file for logging data
+binary: false # format in which to write the data

@@ -1,0 +1,86 @@
+# ======  program_execution_choice  ========
+#  0: measure joints / pose
+#  1: go from start pose to target pose
+#  2: set start pose and go to camera target
+#  5: get robot-camera transform
+# 22: go from current pose to camera target
+program_execution_choice: 1
+
+# enable/disable data logging
+LOG_DATA: true
+output_path: "/home/user/as64_ws/other/slifer/ros_GMM_SEDS/"
+
+# ======  MIRRORING args  ========
+USE_MIRRORING: false # false
+MIRROR_THRES: 0
+MIRROR_SMOOTH_THRES: 0.01
+
+# ======  Object load transfer args  ========
+OLT_THRES: 2.5
+WEIGHT_EST_FILT_N: 50
+c: 0.0008
+
+# r = 0.6*norm(pos_error) + 0.4*norm(eo)
+# if (r<TOL_STOP) zero_vel = true;
+TOL_STOP: 0.002
+# if (r>START_MOVE_THRES) zero_vel = true;
+START_MOVE_THRES: 0.85
+# if (Vd.norm()>HIGH_VEL_TOL_STOP) zero_vel = true;
+HIGH_VEL_TOL_STOP: 0.75
+
+
+# ====== Joint Limit Avoidance (JLAV) ===========
+JLAV_enable: true
+JLAV_gain: 2 #0.01
+
+# ====== Singular Value Filtering (SVF) ========
+SVF_enable: true
+SVF_sigma_min: 0.002 # minimum allowable eigenvalue
+SVF_shape_factor: 30 # the greater the shape factor, the closer are the filtered eigenvalues to the initial ones
+
+# ====== Velocity args  ========
+
+# stop velocity coefficient
+# V(i+1) = kV*V(i)
+kV: 0.996
+
+# filter velocity coefficient
+# Vd = ks*Vd + (1-ks)*V
+ks: 0.003 # 0.01
+
+# maximum velocity norm
+VEL_SCALE: 0.4 # 0.6
+
+# use Vd as V in closed loop in position control
+V_Vd_equal: true
+
+# maximum position+orientation distance
+MAX_R: 1.0
+
+# multiplier factor affecting the smoothing
+V_SCALE_C: 10
+
+# the higher the exponent in the smoothing the flatter the scale
+V_SCALE_EXP: 5
+
+# flag indicating whether to normalize the DS velocity
+NORM_VEL: true # false
+
+
+# position error coefficient
+POS_ERR_COEFF: 0.6
+# orientation error coefficient
+ORIENT_ERR_COEFF: 0.4
+
+# ============   topics to subscribe   =============
+cam_target_transform_topic: "/cam_target_transform"
+Kuka_to_Barrett_topic: "/Kuka_to_Barrett1"
+
+
+# other args
+params_path: "/home/user/as64_ws/other/slifer/ros_GMM_SEDS/src/handover_node/config/"
+DS_params_filename: "DS_GMR_params.txt"
+init_pose_filename: "init_pose.txt"
+target_pose_filename: "target_pose.txt"
+T_endEffector_obj_filename: "T_endEffector_obj.txt"
+T_robot_cam_filename: "T_robot_cam.txt"
