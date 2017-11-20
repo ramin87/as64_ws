@@ -1,16 +1,16 @@
 /*******************************************************************************
  * Copyright (c) 2016-2017 Automation and Robotics Lab, AUTh
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
  * deal in the Software without restriction, including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -199,7 +199,7 @@ public:
   virtual void setCartDamping(const KDL::Wrench &input, const int chain_index = 0);
   virtual void setCartDamping(const arma::vec &input, const int chain_index = 0);
   virtual void setCartDamping(const Eigen::VectorXd &input, const int chain_index = 0);
-  
+
   virtual void setTwist(const KDL::Twist &input, const int chain_index = 0);
   /**
    * @brief Sends Cartesian velocity to the robot using Armadillo
@@ -601,7 +601,7 @@ public:
   /**
    * @brief Reads the joint velocity using the derivative of the position
    * (previous and current position)
-   * 
+   *
    * @param output The current joint velocities
    * @param chain_index The index of the chain
    */
@@ -649,7 +649,7 @@ public:
   /**
    * @brief Reads the joint velocity by integrating the position
    * (previous and current position)
-   * 
+   *
    * @param output The commanded joint velocities
    * @param chain_index The index of the chain
    */

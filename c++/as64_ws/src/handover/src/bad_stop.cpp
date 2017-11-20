@@ -1,5 +1,4 @@
-#include "BarrettHand.h"
-#include "RobotHand.h"
+#include <BHand_lib/RobotHand.h>
 #include <cstring>
 #include <cstdlib>
 #include <memory>
@@ -11,7 +10,7 @@
 class Bhand_controller{
 public:
 	enum BarrettHandAction{OPEN_HAND, CLOSE_HAND, STOP_HAND, TERMINATE_HAND};
-	
+
 	BarrettHandAction bHandAction;
 	double weight_est;
 
@@ -22,20 +21,20 @@ public:
 
 	std::string hand_type;
 	RobotHand robotHand;
-	
+
 	double grasp_force_thres;
-	
+
 	Bhand_controller();
-	 
+
 	void init();
-	
+
 	void listenCallback(const std_msgs::Float64MultiArray::ConstPtr& msg);
 
 	void update_bhand();
 
 	void grasp_object();
 	void release_object();
-	
+
 	void shutdown_bhand();
 
 	void open_hand_action();
@@ -53,14 +52,14 @@ Bhand_controller::Bhand_controller():robotHand("BH8-282")
 	hand_type = "BH8-282";
 	bHandAction = Bhand_controller::CLOSE_HAND;
 	weight_est = 0;
-	
+
 	grasp_force_thres = 400;
-} 
+}
 
 void Bhand_controller::init()
 {
 	robotHand.init();
-	
+
 	update_bhand();
 	for (int i=0;i<NUM_FINGERS;i++) finger_init_force[i] = finger_force[i];
 }
@@ -69,7 +68,7 @@ void Bhand_controller::listenCallback(const std_msgs::Float64MultiArray::ConstPt
 {
 	bHandAction = (BarrettHandAction)(msg->data[0]);
 	weight_est = msg->data[1];
-	
+
 	std::cout << "I received: " <<  msg->data[0] << "\n";
 }
 
@@ -87,12 +86,12 @@ void Bhand_controller::grasp_object()
 {
 /** Start grasping. When every fingers feels the object stop and hold the grasp */
 	bool move_finger[NUM_FINGERS] = {true, true, true};
-	
+
 	while (move_finger[0] | move_finger[1] | move_finger[2]) {
 		update_bhand();
-		
+
 		close_hand_action();
-		
+
 		for (int i=0;i<NUM_FINGERS;i++){
 			move_finger[i] = finger_vel[i] != 0;
 			robotHand.setFingerVelocity(finger_vel[i], i+1);
@@ -100,17 +99,17 @@ void Bhand_controller::grasp_object()
 		}
 	}
 }
-	
+
 void Bhand_controller::release_object()
 {
 /** Start grasping. When every fingers feels the object stop and hold the grasp */
 	bool move_finger[NUM_FINGERS] = {true, true, true};
-	
+
 	while (move_finger[0] | move_finger[1] | move_finger[2]) {
 		update_bhand();
-		
+
 		open_hand_action();
-		
+
 		for (int i=0;i<NUM_FINGERS;i++){
 			move_finger[i] = finger_vel[i] != 0;
 			robotHand.setFingerVelocity(finger_vel[i], i+1);
@@ -118,7 +117,7 @@ void Bhand_controller::release_object()
 		}
 	}
 }
-	
+
 
 void Bhand_controller::shutdown_bhand()
 {
@@ -133,19 +132,19 @@ void Bhand_controller::open_hand_action()
 			finger_vel[i] = 0;
 		}else{
 			double const_vel = -70;
-			
+
 			double grasp_scale = (finger_force[i] - finger_init_force[i])/grasp_force_thres;
 			if (grasp_scale < 0) grasp_scale = 0;
 			if (grasp_scale > 1) grasp_scale = 1;
 			double grasp_vel = -grasp_scale*50;
-			
+
 			double weight_scale = weight_est/5;
 			if (weight_scale < 0) weight_scale = 0;
 			if (weight_scale > 1) weight_scale = 1;
 			double weight_vel =  -weight_scale * 50;
-			
+
 			finger_vel[i] =  const_vel + grasp_vel + weight_vel;
-		}	
+		}
 	}
 }
 
@@ -156,17 +155,17 @@ void Bhand_controller::close_hand_action()
 			finger_vel[i] = 0;
 		}else{
 			double const_vel = 90;
-			
+
 			double grasp_scale = (finger_force[i] - finger_init_force[i])/grasp_force_thres;
 			if (grasp_scale < 0) grasp_scale = 0;
 			if (grasp_scale > 1) grasp_scale = 1;
 			double grasp_vel = -grasp_scale*50;
-			
+
 			double weight_scale = -weight_est/5;
 			if (weight_scale < 0) weight_scale = 0;
 			if (weight_scale > 1) weight_scale = 1;
 			double weight_vel =  weight_scale * 40;
-			
+
 			finger_vel[i] =  const_vel + grasp_vel + weight_vel;
 		}
 	}
@@ -196,7 +195,7 @@ void Bhand_controller::barrett_thread()
 			default:
 				break;
 		}
-		
+
 		for (int i=0;i<NUM_FINGERS;i++){
 			robotHand.setFingerVelocity(finger_vel[i], i+1);
 			//std::cout << "Finger #" << i+1 << " velocity = " << finger_vel[i] << "\n";
@@ -208,24 +207,20 @@ int main(int argc, char* argv[])
 {
 	Bhand_controller bhandController;
 
-	ros::init(argc, argv, "bad"); 
+	ros::init(argc, argv, "bad");
 	ros::NodeHandle n;
 	//ros::Publisher chatter_pub = n.advertise<std_msgs::Float64MultiArray>("Barrett_to_Kuka", 1);
 	ros::Subscriber sub = n.subscribe("Kuka_to_Barrett", 1, &Bhand_controller::listenCallback, &bhandController);
 
-	  
+
 	printf("[BAD] Initializing...\n");
-	bhandController.init();	
+	bhandController.init();
 	if (!bhandController.robotHand.initialized()){
 		std::cerr << "[BAD ERROR]: Barrett hand not initiallized properly\n";
 		exit(-1);
 	}
-	
+
 	bhandController.shutdown_bhand();
-	
+
 	return 0;
 }
-
-
-
-

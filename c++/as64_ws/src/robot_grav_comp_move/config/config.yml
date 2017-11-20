@@ -10,7 +10,7 @@ Ts: 0.01 # sampling time of points [seconds]
 
 control_method: 'Joint' # 'Cartesian', 'Joint'
 
-set_init_config: true # set to true to move the robot to 'init_config'
+set_init_config: false # set to true to move the robot to 'init_config'
 init_config: [1.5708, -0.7854, 0, 1.5708, 0, -0.7854, 0] # initial robot configuration (values of joints)
 
 filename: 'data' # name of the file for logging data

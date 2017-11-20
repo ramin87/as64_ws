@@ -46,6 +46,19 @@ Eigen::Vector4d quatDiff(const Eigen::Vector4d &quat1, const Eigen::Vector4d &qu
   return quatD;
 }
 
+arma::vec quatDiff(const arma::vec &quat1, const arma::vec &quat2)
+{
+  arma::vec qdiff(4);
+
+  Eigen::Map<const Eigen::Vector4d> temp_quat1(quat1.memptr());
+  Eigen::Map<const Eigen::Vector4d> temp_quat2(quat2.memptr());
+  Eigen::Map<Eigen::Vector4d> temp_qdiff(qdiff.memptr());
+  temp_qdiff = quatDiff(temp_quat1, temp_quat2);
+
+  return qdiff;
+
+}
+
 
 Eigen::Vector4d quatExp(const Eigen::Vector3d &omega, double tol)
 {

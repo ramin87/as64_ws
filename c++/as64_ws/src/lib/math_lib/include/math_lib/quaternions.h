@@ -17,6 +17,7 @@ Eigen::Vector4d quatProd(const Eigen::Vector4d &quat1, const Eigen::Vector4d &qu
 // The result is the amount of rotation needed to go from quat2 to quat1, i.e. quatD*quat2 = quat1
 // Equivalently, the result is quaternion corresponding to the angular velocity which takes us from quat2 to quat1 in unit time.
 Eigen::Vector4d quatDiff(const Eigen::Vector4d &quat1, const Eigen::Vector4d &quat2);
+arma::vec quatDiff(const arma::vec &quat1, const arma::vec &quat2);
 
 Eigen::Vector4d quatExp(const Eigen::Vector3d &omega, double tol=1e-15);
 

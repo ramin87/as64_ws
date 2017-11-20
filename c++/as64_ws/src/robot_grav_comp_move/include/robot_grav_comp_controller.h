@@ -43,7 +43,12 @@ public:
 	bool stop();
 	void keyboardControl();
 
+	void write_recorded_poses();
+
 private:
+
+	std::vector<arma::mat> Poses;
+	std::vector<arma::vec> Joints;
 
 	//std::string getTimeStamp() const;
 

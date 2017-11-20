@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
   lwr_robot
   io_lib
   time_lib
+  math_lib
 )
 
 find_package(Yaml-cpp REQUIRED)
@@ -43,7 +44,7 @@ include_directories(
 add_library(robotics-lib
   src/robotics.cpp
   src/jlav.cpp
-  src/control/GravityCompController.cpp
+  src/control/RobotController.cpp
 )
 
 add_dependencies(robotics-lib
@@ -61,5 +62,6 @@ target_link_libraries(robotics-lib
   IO-lib
   time-lib
   yaml-cpp
+  math-lib
   #orocos-kdl
 )

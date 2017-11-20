@@ -47,5 +47,5 @@ add_dependencies(math-lib
 target_link_libraries(math-lib
   ${catkin_LIBRARIES}
   #orocos-kdl
-  #armadillo
+  armadillo
 )

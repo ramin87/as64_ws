@@ -80,6 +80,9 @@ catkin_package(
 
 set(SRC_LIST
 	src/source_list/utils.cpp
+  src/handover_controller.cpp
+  #src/source_list/arm_handover_controller.cpp
+  #src/source_list/hand_handover_controller.cpp
 )
 
 file(GLOB INCLUDE_LIST "include/SEDS/*.h" "include/SEDS/*.hpp")
@@ -108,8 +111,7 @@ include_directories(
 
 add_executable(handover_node
   src/main.cpp ${INCLUDE_LIST} ${SRC_LIST}
-  src/arm_handover_controller.cpp
-  src/handover_controller.cpp)
+)
 
 add_dependencies(handover_node
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
@@ -128,6 +130,7 @@ target_link_libraries(handover_node
   filter-lib
   time-lib
   robotics-lib
+  bhand-lib
 )
 
 # *************************************************
@@ -150,7 +153,15 @@ target_link_libraries(bhand_node
   ${OpenCV_LIBS}
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
-  bhand
+  autharl-robot
+  autharl-utils
+  lwr-robot
+  DS-lib
+  math-lib
+  filter-lib
+  time-lib
+  robotics-lib
+  bhand-lib
 )
 
 add_executable(bhand_stop
@@ -170,25 +181,6 @@ target_link_libraries(bhand_stop
   ${OpenCV_LIBS}
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
-  bhand
-)
-
-# *************************************************
-# *************************************************
-
-add_executable(test_DS_motion
-  src/test_DS_motion.cpp ${INCLUDE_LIST} ${SRC_LIST}
-)
-
-add_dependencies(test_DS_motion
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(test_DS_motion
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBS}
-  ${PCL_LIBRARIES}
-  ${Boost_LIBRARIES}
   autharl-robot
   autharl-utils
   lwr-robot
@@ -197,7 +189,36 @@ target_link_libraries(test_DS_motion
   filter-lib
   time-lib
   robotics-lib
+  bhand-lib
 )
+
+# *************************************************
+# *************************************************
+
+
+# add_executable(test_DS_motion
+#   src/test_DS_motion.cpp ${INCLUDE_LIST} ${SRC_LIST}
+# )
+#
+# add_dependencies(test_DS_motion
+#   ${${PROJECT_NAME}_EXPORTED_TARGETS}
+#   ${catkin_EXPORTED_TARGETS})
+#
+# target_link_libraries(test_DS_motion
+#   ${catkin_LIBRARIES}
+#   ${OpenCV_LIBS}
+#   ${PCL_LIBRARIES}
+#   ${Boost_LIBRARIES}
+#   autharl-robot
+#   autharl-utils
+#   lwr-robot
+#   DS-lib
+#   math-lib
+#   filter-lib
+#   time-lib
+#   robotics-lib
+# )
+
 
 # *************************************************
 # *************************************************

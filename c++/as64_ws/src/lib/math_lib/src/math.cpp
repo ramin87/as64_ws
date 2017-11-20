@@ -17,6 +17,17 @@ Eigen::Matrix3d vec2ssMat(const Eigen::Vector3d &v)
   return ssMat;
 }
 
+arma::mat vec2ssMat(const arma::vec &v)
+{
+  arma::mat ssMat;
+
+  Eigen::Map<const Eigen::Vector3d> v_temp(v.memptr());
+  Eigen::Map<Eigen::Matrix3d> ssMat_temp(ssMat.memptr());
+  ssMat_temp = vec2ssMat(v_temp);
+
+  return ssMat;
+}
+
 Eigen::Vector4d rotm2quat(Eigen::Matrix3d rotm)
 {
     Eigen::Quaternion<double> temp_quat(rotm);
@@ -26,6 +37,17 @@ Eigen::Vector4d rotm2quat(Eigen::Matrix3d rotm)
     quat = quat * (2*(quat(0)>=0)-1); // to avoid discontinuities
 
     return quat;
+}
+
+arma::vec rotm2quat(const arma::mat &rotm)
+{
+  arma::vec quat(4);
+
+  Eigen::Map<const Eigen::Matrix3d> temp_rotm(rotm.memptr());
+  Eigen::Map<Eigen::Vector4d> temp_quat(quat.memptr());
+  temp_quat = rotm2quat(temp_rotm);
+
+  return quat;
 }
 
 Eigen::Matrix3d quat2rotm(Eigen::Vector4d quat)
@@ -91,7 +113,7 @@ Eigen::Vector4d quat2axang(Eigen::Vector4d quat)
 
 
 
-Eigen::MatrixXd inv(Eigen::MatrixXd M)
+Eigen::MatrixXd inv(const Eigen::MatrixXd &M)
 {
   Eigen::JacobiSVD<Eigen::MatrixXd> svd(M, Eigen::ComputeThinU | Eigen::ComputeThinV);
   Eigen::MatrixXd S = svd.singularValues().asDiagonal();

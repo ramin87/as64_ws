@@ -678,6 +678,16 @@ void HandoverController::execute()
 	}
 }
 
+void HandoverController::update()
+{
+
+}
+
+bool HandoverController::run()
+{
+	return true;
+}
+
 void HandoverController::finalize()
 {
 	std::cout << "[HANDOVER_CONTROLLER]: Entered finalize...\n";

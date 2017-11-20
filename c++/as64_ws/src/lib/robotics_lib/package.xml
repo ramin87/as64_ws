@@ -24,6 +24,9 @@
   <build_depend>io_lib</build_depend>
   <run_depend>io_lib</run_depend>
 
+  <build_depend>math_lib</build_depend>
+  <run_depend>math_lib</run_depend>
+
   <build_depend>time_lib</build_depend>
   <run_depend>time_lib</run_depend>
 

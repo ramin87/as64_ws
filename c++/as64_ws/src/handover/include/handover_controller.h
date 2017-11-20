@@ -27,22 +27,25 @@
 
 #include <lwr_robot/lwr_model.h>
 #include <lwr_robot/lwr_robot.h>
+#include <autharl_core/robot/controller.h>
 #include <DS_lib/DS_GMR/DS_GMR.h>
 
 #include <utils.h>
-#include <arm_handover_controller.h>
+//#include <arm_handover_controller.h>
+//#include <hand_handover_controller.h>
 
 #include <autharl_core/utils/kdl_arma.h>
 #include <autharl_core/utils/kdl_eigen.h>
 #include <autharl_core/math/orientation.h>
 #include <autharl_core/math/skew_symmetric.h>
 
+#include <robotics_lib/control/RobotController.h>
 #include <math_lib/math.h>
 #include <filter_lib/filter.h>
 #include <robotics_lib/jlav.h>
 #include <time_lib/time.h>
 
-class HandoverController
+class HandoverController : public arl::robot::Controller
 {
 public:
 	std::ofstream out_err;
@@ -80,6 +83,8 @@ public:
 
 	HandoverController(std::shared_ptr<arl::robot::Robot> robot);
 	void execute();
+	void update();
+	bool run();
 	bool start;
 
 	ros::NodeHandle n;

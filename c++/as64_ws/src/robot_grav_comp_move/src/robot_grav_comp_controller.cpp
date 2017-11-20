@@ -190,22 +190,28 @@ void RobotGravCompController::measure()
 
 	if (record_current_pose)
 	{
-		record_current_pose = false;
+		record_current_pose = false; // reset flag
 
-		std::string time_stamp = as64::getTimeStamp();
+		Poses.push_back(pose);
+		Joints.push_back(q);
 
-		std::string path = this->DIR + "pose_" + this->filename + "_" + time_stamp; // + ".dat";
-
-		std::ofstream out;
-		if (this->binary) out.open(path, std::ios::binary);
-		else out.open(path);
-
-		if (!out) throw std::ios_base::failure(std::string("Couldn't create file \"") + path + "\"");
-
-		as64_::io_::write_mat(pose, out, binary, 6);
-		as64_::io_::write_mat(q, out, binary, 6);
-
-		out.close();
+		std::cout << "Recorded current pose!\n";
+		// record_current_pose = false;
+		//
+		// std::string time_stamp = as64::getTimeStamp();
+		//
+		// std::string path = this->DIR + "pose_" + this->filename + "_" + time_stamp; // + ".dat";
+		//
+		// std::ofstream out;
+		// if (this->binary) out.open(path, std::ios::binary);
+		// else out.open(path);
+		//
+		// if (!out) throw std::ios_base::failure(std::string("Couldn't create file \"") + path + "\"");
+		//
+		// as64_::io_::write_mat(pose, out, binary, 6);
+		// as64_::io_::write_mat(q, out, binary, 6);
+		//
+		// out.close();
 	}
 
 
@@ -314,9 +320,13 @@ bool RobotGravCompController::run()
 	std::thread waitInput(&RobotGravCompController::keyboardControl, this);
 
 	//move to initial pose
-	robot->setMode(arl::robot::Mode::POSITION_CONTROL); //position mode
-	std::cout << "Moving to start configuration..." << std::endl;
-	robot->setJointTrajectory(q_init, 6.0);
+	if (set_init_config)
+	{
+		robot->setMode(arl::robot::Mode::POSITION_CONTROL); //position mode
+		std::cout << "Moving to start configuration..." << std::endl;
+		robot->setJointTrajectory(q_init, 6.0);
+	}
+
 
 	//Generate trajectory to follow
 	robot->getTaskPose(pose);
@@ -356,17 +366,38 @@ bool RobotGravCompController::run()
 	//stop when finished
 	robot->stop();
 
+	this->write_recorded_poses();
+
 	std::cout << "Press [ENTER] to shutdown controller..." << std::endl;
 	waitInput.join();
 
 	return true;
 }
 
+void RobotGravCompController::write_recorded_poses()
+{
+	std::ofstream out(DIR + filename);
+
+	int n_poses = Poses.size();
+
+	out << n_poses << "\n";
+
+	for (int k=0; k<n_poses; k++)
+	{
+		for (int i=0;i<Joints[k].size(); i++) out << Joints[k](i) << " ";
+		out << "\n";
+		for (int i=0;i<3;i++){
+			for (int j=0;j<4;j++) out << Poses[k](i,j) << " ";
+			out << "\n";
+		}
+		out << "\n";
+	}
+
+	out.close();
+}
+
+
 bool RobotGravCompController::stop()
 {
-	// if (user_stop2) {
-	// 	return true;
-	// }
-	// else
-	// 	return false;
+	return stop_program;
 }
