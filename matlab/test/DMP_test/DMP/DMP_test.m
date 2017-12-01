@@ -365,7 +365,6 @@ dtw_win = floor(max([size(y_data,2), size(yd_data,2)])/3);
 [dtw_dist, ind_y, ind_yd, C] = dtw(y_data, yd_data, dtw_win, dist_f);
 sim_mse = sum(C)/length(C);
 
-
 offline_train_mse
 online_train_mse
 sim_mse

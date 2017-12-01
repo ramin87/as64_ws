@@ -49,7 +49,7 @@ cmd_args.goal_scale = 1;
 
 %% Apply disturbance force
 cmd_args.APPLY_DISTURBANCE = false;
-cmd_args.Fdist_min = 0;
+cmd_args.Fdist_min = 5;
 cmd_args.Fdist_max = 200;
 cmd_args.t1_fdist = 0.4;
 cmd_args.t2_fdist = 2.2;

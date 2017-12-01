@@ -128,7 +128,7 @@ if (OFFLINE_DMP_TRAINING_enable)
         F = F_offline_train_data(i,:);
         Fd = Fd_offline_train_data(i,:);
         scale = 1/max(abs([F Fd]));
-        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_offline_train, 1);
+        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_offline_train);
         x_data_train = x_data_train(1,:);
         Psi = dmp{i}.activation_function(x_data_train);
 
