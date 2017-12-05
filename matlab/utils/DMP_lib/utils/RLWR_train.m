@@ -4,30 +4,19 @@
 %  @param[in] x: Row vector with the values of the phase variable.
 %  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
 %  @param[in] Fd: Row vector with the desired values of the shape attractor.
-function RLWR_train(dmp, x, s, Fd)
+function [w, P] = RLWR_train(Psi, s, Fd, lambda, P)
 
     n = length(Fd);
-    lambda = dmp.lambda;
-    P = dmp.P_rlwr;
-    dmp.w = zeros(dmp.N_kernels, 1);
+    N_kernels = size(Psi,1);
+    dmp.w = zeros(N_kernels, 1);
     
     for i = 1:n 
-      Psi = dmp.activation_function(x(i));
+      psi = Psi(:,i);
       error = Fd(i) - dmp.w*s(i);
-      P = (P - (P.^2*s(i)^2) ./ (lambda./Psi + P*s(i)^2)) / lambda;
-      dmp.w = dmp.w + Psi .* P * s(i) .* error;   
-%       for k = 1:dmp.N_kernels
-% 
-%           psi = Psi(k);
-%           error = Fd(i) - dmp.w(k) * s(i);
-% 
-%           P(k) = (P(k) - (P(k)^2 * s(i)^2) / (lambda / psi + P(k) * s(i) ^ 2)) / lambda;
-%           dmp.w(k) = dmp.w(k) + psi * P(k) * s(i) * error; 
-%       end
+      P = (P - (P.^2*s(i)^2) ./ (lambda./psi + P*s(i)^2)) / lambda;
+      dmp.w = dmp.w + psi .* P * s(i) .* error;   
     end
-    
-    dmp.P_rlwr = P;
-  
+
 end
 
 

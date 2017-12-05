@@ -1,10 +1,20 @@
+function plot_DMP_sim_results()
+
 % clc; 
 close all;
 clear;
 
-load data/dmp_results.mat
+load data/dmp_results.mat log_data log_data_o
 
-fontsize = cmd_args.fontsize;
+plot_DMP_sim_results_helper(log_data);
+
+% plot_DMP_sim_results_helper(log_data_o);
+
+end
+
+function plot_DMP_sim_results_helper(log_data)
+
+fontsize = 14;
 
 Time_demo = log_data.Time_demo;
 yd_data = log_data.yd_data;
@@ -130,21 +140,24 @@ if (OFFLINE_DMP_TRAINING_enable)
         scale = 1/max(abs([F Fd]));
         x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_offline_train);
         x_data_train = x_data_train(1,:);
-        Psi = dmp{i}.activation_function(x_data_train);
+        Psi = [];
+        for j=1:length(x_data_train)
+            Psi = [Psi dmp{i}.activation_function(x_data_train(j))];
+        end
 
         figure;
         subplot(2,2,1);
-        plot(Time_offline_train,F,Time_offline_train,Fd);
+        plot(Time_offline_train,F,Time_offline_train,Fd, 'LineWidth',1.2);
         legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
         title('Off-line training','Interpreter','latex','fontsize',fontsize);
         axis tight;
         subplot(2,2,2);
-        plot(Time_offline_train,F_offline_train_data(i,:)-Fd_offline_train_data(i,:));
+        plot(Time_offline_train,F_offline_train_data(i,:)-Fd_offline_train_data(i,:), 'r', 'LineWidth',1.2);
         legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
         axis tight;
         subplot(2,2,[3 4]);
         hold on;
-        plot(Time_offline_train,F*scale, Time_offline_train,Fd*scale);
+        plot(Time_offline_train,F*scale, Time_offline_train,Fd*scale, 'LineStyle', '--', 'LineWidth',1.2);
         for k=1:size(Psi,1)
             plot(Time_offline_train,Psi(k,:));
         end
@@ -162,21 +175,24 @@ if (ONLINE_DMP_UPDATE_enable)
         scale = 1/max(abs([F Fd]));
         x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_online_train, 1);
         x_data_train = x_data_train(1,:);
-        Psi = dmp{i}.activation_function(x_data_train);
+        Psi = [];
+        for j=1:length(x_data_train)
+            Psi = [Psi dmp{i}.activation_function(x_data_train(j))];
+        end
 
         figure;
         subplot(2,2,1);
-        plot(Time_online_train,F,Time_online_train,Fd);
+        plot(Time_online_train,F,Time_online_train,Fd, 'LineWidth',1.2);
         legend({'$F$','$F_d$'},'Interpreter','latex','fontsize',fontsize);
         title('On-line training','Interpreter','latex','fontsize',fontsize);
         axis tight;
         subplot(2,2,2);
-        plot(Time_online_train,F_online_train_data(i,:)-Fd_online_train_data(i,:));
+        plot(Time_online_train,F_online_train_data(i,:)-Fd_online_train_data(i,:), 'r', 'LineWidth',1.2);
         legend({'$F-F_d$'},'Interpreter','latex','fontsize',fontsize);
         axis tight;
         subplot(2,2,[3 4]);
         hold on;
-        plot(Time_online_train,F*scale, Time_online_train,Fd*scale);
+        plot(Time_online_train,F*scale, Time_online_train,Fd*scale, 'LineStyle', '--', 'LineWidth',1.2);
         for k=1:size(Psi,1)
             plot(Time_online_train,Psi(k,:));
         end
@@ -225,16 +241,16 @@ if (USE_GOAL_FILT)
 end
     
 lineWidth = 1.2;
-for i=1:D
-   figure;
-   hold on;
-   plot(Time,shape_attr_data(i,:),'LineWidth',lineWidth);
-   plot(Time,goal_attr_data(i,:),'LineWidth',lineWidth);
-   plot(Time, shape_attr_data(i,:)+goal_attr_data(i,:), 'LineWidth',lineWidth);
-   %plot(Time, ddy_data(i,:),'LineWidth',lineWidth);
-   legend({'shape-attr','goal-attr','goal+shape'},'Interpreter','latex','fontsize',fontsize);
-   hold off;
-end
+% for i=1:D
+%    figure;
+%    hold on;
+%    plot(Time,shape_attr_data(i,:),'LineWidth',lineWidth);
+%    plot(Time,goal_attr_data(i,:),'LineWidth',lineWidth);
+%    plot(Time, shape_attr_data(i,:)+goal_attr_data(i,:), 'LineWidth',lineWidth);
+%    %plot(Time, ddy_data(i,:),'LineWidth',lineWidth);
+%    legend({'shape-attr','goal-attr','goal+shape'},'Interpreter','latex','fontsize',fontsize);
+%    hold off;
+% end
 
 %% Plot DMP simulation and demo pos, vel, accel
 lineWidth = 1.1;
@@ -281,3 +297,5 @@ for i=1:D
 end
 
 toc
+
+end

@@ -7,6 +7,7 @@ MATLAB_PATH = '/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
 
 addpath([MATLAB_PATH 'math_lib/']);
 addpath([MATLAB_PATH 'filter_lib/']);
+addpath([MATLAB_PATH 'signalProcessing_lib/']);
 addpath([MATLAB_PATH 'IO_lib/']);
 addpath([MATLAB_PATH 'math_lib/quaternion/']);
 addpath([MATLAB_PATH 'lwr4_lib/']);

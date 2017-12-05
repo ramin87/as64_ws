@@ -187,7 +187,17 @@ classdef DMP < handle
       function Fd = calc_Fd(dmp, y, dy, ddy, u, y0, g0, g)
           
           v_scale = dmp.get_v_scale();
-          Fd = (ddy*v_scale^2 + -dmp.goal_attractor(y, v_scale*dy, g));
+          Fd = (ddy*v_scale^2 - dmp.goal_attractor(y, v_scale*dy, g));
+          
+%           g_attr = dmp.goal_attractor(y, v_scale*dy, g);
+% %           Y = [y' v_scale*dy' g' g_attr']
+%           v_scale
+%           y_3 = y(3)
+%           dy_3 = dy(3)
+%           v_scale_dy_3 = v_scale*dy(3)
+%           g_3 = g(3)
+%           
+%           g_attr_3 = g_attr(3)
           
       end
       

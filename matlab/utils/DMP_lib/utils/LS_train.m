@@ -4,11 +4,14 @@
 %  @param[in] x: Row vector with the values of the phase variable.
 %  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
 %  @param[in] Fd: Row vector with the desired values of the shape attractor.
-function LS_train(dmp, x, s, Fd)
+function w = LS_train(Psi, s, Fd, zero_tol)
   
-  H = dmp.activation_function(x);
-  
-  H = H.*repmat(s, size(H,1),1) ./ (repmat(sum(H,1),size(H,1),1) + dmp.zero_tol);
+    N_kernels = size(Psi,1);
+    w = zeros(N_kernels,1);
+    
+    H = Psi;
+
+    H = H.*repmat(s, size(H,1),1) ./ (repmat(sum(H,1),size(H,1),1) + zero_tol);
 
 %               for i=1:n_data
 %                   Psi = exp(-dmp.h.*(x(i)-dmp.c).^2);
@@ -16,6 +19,6 @@ function LS_train(dmp, x, s, Fd)
 %                   H(:,i) = Psi(:);
 %               end
 
-  dmp.w = (Fd/H)';
+    w = (Fd/H)';
   
 end

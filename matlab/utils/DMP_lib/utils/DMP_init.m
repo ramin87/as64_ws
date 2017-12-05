@@ -7,7 +7,7 @@
 %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
 function DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
 
-    dmp.zero_tol = realmin;
+    dmp.zero_tol = 1e-250;%realmin;
 
     if (nargin < 5), std_K = 1; end
 
@@ -22,7 +22,7 @@ function DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
     else
       dmp.a_s = (dmp.can_sys_ptr.tau^2);
     end
-	dmp.a_s = 1/10;
+	dmp.a_s = 1.0/10;
 
     dmp.w = zeros(dmp.N_kernels,1); %rand(dmp.N_kernels,1);
     dmp.set_centers();
