@@ -3,66 +3,84 @@ function cmd_args = get_cmd_args()
 cmd_args = struct();
 
 %% Set up DMP params
-cmd_args.a_z = 40;
+
+% Parameters of the linear part of the DMP (spring-damper)
+cmd_args.a_z = 40.0;
 cmd_args.b_z = cmd_args.a_z/4;
 
-cmd_args.x0 = 1;
-cmd_args.x_end = 0.005;
+cmd_args.u0 = 1.0; % starting value of forcing term shaping
+cmd_args.u_end = 0.99; % ending value of forcing term shaping
 
-cmd_args.N_kernels = 180;
+% Do NOT change these
+cmd_args.x0 = 0.0; % start of canonical time
+cmd_args.x_end = 1.0; % end of canonical time
 
-cmd_args.std_K = 1;%0.95;
+cmd_args.N_kernels = 100; % number of kernels used in the DMP
+
+cmd_args.std_K = 1.0; % scaling factor for the kernels std
 
 cmd_args.DMP_TYPE = 'DMP-Shannon'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
 
 cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 
-cmd_args.CAN_SYS_TYPE = 'lin'; % 'lin', exp', 'spring-damper'
+cmd_args.CAN_CLOCK_TYPE = 'lin';
+cmd_args.CAN_FUN_TYPE = 'sigmoid'; % 'lin', 'exp', 'spring-damper', 'sigmoid'
+cmd_args.sigmoid_a_u = 280; % steepness of the sigmoid canonical function (optional)
+
 
 cmd_args.OFFLINE_DMP_TRAINING_enable = true;
 cmd_args.ONLINE_DMP_UPDATE_enable = false;
 cmd_args.RLWR_lambda = 0.99;
 cmd_args.RLWR_P = 1e8;
 
+cmd_args.USE_GOAL_FILT_IN_DMP = true;
 cmd_args.USE_GOAL_FILT = true;
-cmd_args.a_g = 10;
+cmd_args.a_g = 10.0;
 cmd_args.USE_PHASE_STOP = true;
-cmd_args.a_px = 100; 
-cmd_args.a_py = 80;
+cmd_args.a_px = 100.0; 
+cmd_args.a_py = 80.0;
 
 % Parameters for DMP-plus
-cmd_args.k_trunc_kernel = 3;
+cmd_args.k_trunc_kernel = 3; % number of stds beyond which the kernel is truncated
 
 % Parameters for DMP-Shannon
-cmd_args.Wmin = 0.99999;
+cmd_args.Wmin = 0.99;
 cmd_args.Freq_min = 60;
+cmd_args.Freq_max = 150;
+cmd_args.P1_min = 0.08;
 
 %% demos preprocess params
-cmd_args.add_points_percent = 0.01;
-cmd_args.smooth_points_percent = 0.03;
+% these params are expressed in percent of the total number of training points
+cmd_args.add_points_percent = 0.01; % percent of points added at the start and end of the demonstrated trajectory to ensure zero initial and final velocities/accelerations
+cmd_args.smooth_points_percent = 0.03; % width of the window used to smooth velocity and acceleration (alleviate numerica differentiation noise)
 
 
 %% Robot controller params
-cmd_args.Kd = 100;
-cmd_args.Dd = 10;
-cmd_args.Kd_o = 4;
-cmd_args.Dd_o = 1;
+cmd_args.Kd = 100.0; % translational stiffness
+cmd_args.Dd = 10.0;  % translational damping
+cmd_args.Kd_o = 4.0; % rotational stiffness
+cmd_args.Dd_o = 1.0; % rotational damping
+
 
 %% Simulation params
 cmd_args.dt = 0.002; %simulation time_step;
-cmd_args.tol_stop = 1e-3;
-cmd_args.orient_tol_stop = 1e-2;
-cmd_args.max_iters = 3000;
-cmd_args.tau_sim_scale = 1.0;
-cmd_args.goal_scale = 1.0;
+cmd_args.tol_stop = 1e-3; % position error tolerance to stop the simulation
+cmd_args.orient_tol_stop = 1e-2; % orientation error tolerance to stop the simulation
+cmd_args.max_iters = 3000; % maximum iteration steps
+cmd_args.tau_sim_scale = 1.0; % scaling factor for the time of the DMP simulation
+cmd_args.goal_scale = 1.0; % scaling factor for the goal in the DMP simulation
+cmd_args.GOAL_CHANGE_ENABLE = false;
+cmd_args.time_goal_change = 0.5; % vector of timestamps when the goal change occurs
+cmd_args.goal_change_scale = 1.5; % vector of scalings for each goal change
 
 
 %% Apply disturbance force
-cmd_args.APPLY_DISTURBANCE = false;
-cmd_args.Fdist_min = 5;
-cmd_args.Fdist_max = 200;
-cmd_args.t1_fdist = 0.4;
-cmd_args.t2_fdist = 2.2;
+cmd_args.APPLY_DISTURBANCE = false; % Flag enabling/disabling the introduction of a disturbance in the robot system
+cmd_args.Fdist_min = 5.0; % Minimum disturbance value
+cmd_args.Fdist_max = 200.0; % Maximum disturbance value
+cmd_args.t1_fdist = 0.4; % Start of Fdist_max
+cmd_args.t2_fdist = 2.2; % End of Fdist_max
+
 
 %% Plotting params
 cmd_args.fontsize = 14;

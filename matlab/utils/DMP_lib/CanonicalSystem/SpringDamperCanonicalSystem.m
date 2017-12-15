@@ -42,8 +42,8 @@ classdef SpringDamperCanonicalSystem < handle
           if (nargin < 4), x0=1; end
           
           can_sys.x0 = x0;
-          can_sys.set_can_sys_params(x_end);
           can_sys.set_tau(tau);
+          can_sys.set_can_sys_params(x_end);
 
       end
 
@@ -137,7 +137,9 @@ classdef SpringDamperCanonicalSystem < handle
           t = t(:)';
           
           a = can_sys.a_u/(2*can_sys.get_tau());
-          exp_at = exp(-a*t);
+          exp_at = exp(-a *t);         
+          % to do
+          % check if x < 0*t);
           
           x = can_sys.x0 * (1+a*t).*exp_at;
 

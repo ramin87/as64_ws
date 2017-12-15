@@ -4,7 +4,7 @@
 %  @param[in] x: Row vector with the values of the phase variable.
 %  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
 %  @param[in] Fd: Row vector with the desired values of the shape attractor.
-function w = LS_train(Psi, s, Fd, zero_tol)
+function w = leastSquares(Psi, s, Fd, zero_tol)
   
     N_kernels = size(Psi,1);
     w = zeros(N_kernels,1);

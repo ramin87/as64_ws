@@ -9,7 +9,7 @@ if (nargin < 7), lineWidth=1.1; end
 D = size(y_data,1);
 
 dtw_win = floor(max([size(y_data,2), size(y2_data,2)])/3);
-[dtw_dist, ind_y, ind_yd, C] = dtw(y_data, y2_data, dtw_win);
+[dtw_dist, ind_y, ind_yd] = dtw(y_data, y2_data, dtw_win);
 y_data_dtw = y_data(:,ind_y);
 y2_data_dtw = y2_data(:,ind_yd);
 % sum_C = sum(C)

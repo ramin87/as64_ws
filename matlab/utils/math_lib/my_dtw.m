@@ -5,7 +5,7 @@
 
 % dynamic time warping of two signals
 
-function [d, ind_s, ind_t, C] = dtw(s, t, w, dist_fun_h)
+function [d, ind_s, ind_t, C] = my_dtw(s, t, w, dist_fun_h)
 % s: signal 1, size is k*ns, row for channel, column for time 
 % t: signal 2, size is k*nt, row for channel, column for time 
 % w: window parameter

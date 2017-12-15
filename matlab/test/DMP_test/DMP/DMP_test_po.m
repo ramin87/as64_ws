@@ -69,11 +69,18 @@ for i=1:D
     dmp{i}.init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
 end
 
+dmpo = DMPo(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
+
 F_offline_train_data = [];
 Fd_offline_train_data = [];
 Time_offline_train = [];
 offline_train_mse = [];
 online_train_mse = [];
+
+F_o_offline_train_data = [];
+Fd_o_offline_train_data = [];
+offline_train_o_mse = [];
+online_train_o_mse = [];
 %% Train the DMP
 if (cmd_args.OFFLINE_DMP_TRAINING_enable)
     disp('DMP training...')
@@ -101,7 +108,12 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
 
     end
     Time_offline_train = (0:(size(F_offline_train_data,2)-1))*Ts;
-
+    
+    Q0 = Q_data(:,1);
+    Qg0 = Q_data(:,end);
+    dmpo.set_training_params(cmd_args.train_method, cmd_args.USE_GOAL_FILT, cmd_args.a_g, cmd_args.RLWR_lambda, cmd_args.RLWR_P);
+    [offline_train_o_mse, F_o_offline_train_data, Fd_o_offline_train_data] = dmpo.train(T, Qd_data, v_rot_d_data, dv_rot_d_data, Q0, Qg0);   
+    
     toc
 end
 
@@ -119,14 +131,26 @@ dg = zeros(D,1);
 x = cmd_args.x0;
 dx = 0;
 
+Q0 = Q_data(:,1);
+Qg0 = Q_data(:,end);
+Qg = Qg0;
+% if (cmd_args.USE_GOAL_FILT), Qg = Q0; end
+
 ddy = zeros(D,1);
+dv_rot = zeros(3,1);
 dy = zeros(D,1);
+v_rot = zeros(3,1);
 y = y0;
+Q = Q0;
 t = 0;
 y_robot = y0;
+Q_robot = Q0;
 dy_robot = zeros(D,1);
+v_rot_robot = zeros(3,1);
 dz = zeros(D,1);
+deta = zeros(3,1);
 z = zeros(D,1);
+eta = zeros(3,1);
 scaled_forcing_term = zeros(D,1);
 shape_attr = zeros(D,1);
 goal_attr = zeros(D,1);
@@ -141,17 +165,29 @@ Fd = zeros(D,1);
 Fdist = 0;
 
 log_data = get_logData_struct();   
+log_data_o = get_logData_struct();   
 
 log_data.dmp = dmp;
+log_data_o.dmp = cell(3,1);
+for i=1:3, log_data_o.dmp{i} = dmpo; end
 
 log_data.Time_demo = Time_demo;
 log_data.yd_data = yd_data;
 log_data.dyd_data = dyd_data;
 log_data.ddyd_data = ddyd_data;
 
+log_data_o.Time_demo = Time_demo;
+log_data_o.yd_data = quat2Vel(repmat(Qd_data(:,end),1,size(Qd_data,2)), Qd_data);
+log_data_o.dyd_data = v_rot_d_data;
+log_data_o.ddyd_data = dv_rot_d_data;
+
 log_data.D = D;
 log_data.Ts = Ts;
 log_data.g0 = g0;
+
+log_data_o.D = 3;
+log_data_o.Ts = Ts;
+log_data_o.g0 = quat2Vel(Qg0, Qg0);
 
 log_data.Time_offline_train = Time_offline_train;
 log_data.F_offline_train_data = F_offline_train_data;
@@ -161,11 +197,34 @@ log_data.Time_online_train = [];
 log_data.F_online_train_data = [];
 log_data.Fd_online_train_data = [];
 
+log_data_o.Time_offline_train = Time_offline_train;
+log_data_o.F_offline_train_data = F_o_offline_train_data;
+log_data_o.Fd_offline_train_data = Fd_o_offline_train_data;
+
+log_data_o.Time_online_train = [];
+log_data_o.F_online_train_data = [];
+log_data_o.Fd_online_train_data = [];
+
 log_data.Psi_data = cell(D,1);
 log_data.P_lwr = cell(D,1);
 log_data.DMP_w = cell(D,1);
 log_data.shape_attr_data = [];
 log_data.goal_attr_data = [];
+
+
+log_data_o.Time_offline_train = Time_offline_train;
+log_data_o.F_offline_train_data = F_o_offline_train_data;
+log_data_o.Fd_offline_train_data = Fd_o_offline_train_data;
+
+log_data_o.Time_online_train = [];
+log_data_o.F_online_train_data = [];
+log_data_o.Fd_online_train_data = [];
+
+log_data_o.Psi_data = cell(D,1);
+log_data_o.P_lwr = cell(D,1);
+log_data_o.DMP_w = cell(D,1);
+log_data_o.shape_attr_data = [];
+log_data_o.goal_attr_data = [];
 
 
 tau = cmd_args.tau_sim_scale*tau;
@@ -205,7 +264,31 @@ while (true)
     
     log_data.shape_attr_data = [log_data.shape_attr_data shape_attr];
     log_data.goal_attr_data = [log_data.goal_attr_data goal_attr];
-  
+    
+    
+    
+    log_data_o.Time = [log_data_o.Time t];
+    
+    log_data_o.y_data = [log_data_o.y_data quat2Vel(Qg0,Q)];
+    log_data_o.dy_data = [log_data_o.dy_data v_rot];   
+    log_data_o.z_data = [log_data_o.z_data eta];
+    log_data_o.dz_data = [log_data_o.dz_data deta];
+        
+    log_data_o.x_data = [log_data_o.x_data x];
+    
+    log_data_o.y_robot_data = [log_data_o.y_robot_data quat2Vel(Qg0,Q_robot)];
+    log_data_o.dy_robot_data = [log_data_o.dy_robot_data v_rot_robot];
+    
+    log_data_o.Fdist_data = [log_data_o.Fdist_data Fdist];
+    
+    log_data_o.Force_term_data = [log_data_o.Force_term_data scaled_forcing_term];
+    
+    log_data_o.g_data = [log_data_o.g_data quat2Vel(Qg0,Qg)];
+    
+    log_data_o.shape_attr_data = [log_data_o.shape_attr_data shape_attr];
+    log_data_o.goal_attr_data = [log_data_o.goal_attr_data goal_attr];
+    
+    
     
     %% DMP simulation
 
@@ -256,6 +339,15 @@ while (true)
         dg = zeros(size(g));
     end
     
+    %% Orientation DMP
+    Q_c = cmd_args.a_py*quatLog(quatProd(Q_robot,quatInv(Q)));
+    eta_c = 0;
+    [dQ, deta] = dmpo.get_states_dot(Q, eta, x, Q0, Qg0, Qg, Q_c, eta_c);
+    v_rot_temp = 2*quatProd(dQ,quatInv(Q));
+    v_rot = v_rot_temp(2:4);
+    
+    v_rot_robot = v_rot - (cmd_args.Kd_o/cmd_args.Dd_o)*quatLog(quatProd(Q_robot,quatInv(Q))) + Fdist/cmd_args.Dd;
+    
     %% Update phase variable
 
     dx = can_sys_ptr.get_phaseVar_dot(x);
@@ -275,12 +367,22 @@ while (true)
     
     %% Stopping criteria
     err_p = max(abs(g0-y_robot));
+    err_o = norm(quatLog(quatProd(Qg0,quatInv(Q_robot))));
+    % && err_o < cmd_args.orient_tol_stop ...
     if (err_p <= cmd_args.tol_stop ...
         && t>=tau)
         break; 
     end
 %     t
 %     err_p
+%     err_o
+
+%     if (err_p<0.03)
+%         dy
+%         dz
+%         scaled_forcing_term
+%         pause
+%     end
     
     iters = iters + 1;
     if (iters >= cmd_args.max_iters), break; end
@@ -290,7 +392,11 @@ while (true)
     
     y = y + dy*dt;
     
+    Q = quatProd(quatExp(v_rot*dt), Q);
+    
     z = z + dz*dt;
+    
+    eta = eta + deta*dt;
     
     g = g + dg*dt;
     
@@ -299,13 +405,16 @@ while (true)
     %if (x<0), x=0; end % zero crossing can occur due to numberical integration
     
     y_robot = y_robot + dy_robot*dt;
+    Q_robot = quatProd(quatExp(v_rot_robot*dt),Q_robot);
 
 end
 toc
 
 log_data.u_data = can_sys_ptr.get_shapeVar(log_data.x_data);
 
-save data/dmp_results.mat log_data cmd_args;
+log_data_o.u_data = can_sys_ptr.get_shapeVar(log_data.x_data);
+
+save data/dmp_results.mat log_data log_data_o cmd_args;
     
 
 %% Find mean square error between the signals

@@ -4,11 +4,9 @@ function plot_DMP_sim_results()
 close all;
 clear;
 
-load data/dmp_results.mat log_data log_data_o
+load data/dmp_results.mat log_data
 
 plot_DMP_sim_results_helper(log_data);
-
-% plot_DMP_sim_results_helper(log_data_o);
 
 end
 
@@ -92,13 +90,13 @@ plot_training_data(Time_demo, yd_data, dyd_data, ddyd_data);
 
 
 for i=1:D
-    figure;
-    subplot(2,1,1);
-    plot(Time,y_data(i,:)-g0(i));
-    legend({'$e_{DMP}=p_{DMP}-p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
-    subplot(2,1,2);
-    plot(Time,y_robot_data(i,:)-g0(i));
-    legend({'$e_{robot}=p_{robot}-p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
+%     figure;
+%     subplot(2,1,1);
+%     plot(Time,y_data(i,:)-g0(i));
+%     legend({'$e_{DMP}=p_{DMP}-p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
+%     subplot(2,1,2);
+%     plot(Time,y_robot_data(i,:)-g0(i));
+%     legend({'$e_{robot}=p_{robot}-p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
 
 
     n_splots = 3;
@@ -113,21 +111,21 @@ for i=1:D
     plot(Time,Fdist_data);
     legend({'Disturbance force'},'Interpreter','latex','fontsize',fontsize);
 
-    n_splots = 4;
-    figure;
-    subplot(n_splots,1,1);
-    plot(Time,Fdist_data);
-    legend({'Disturbance force'},'Interpreter','latex','fontsize',fontsize);
-    xlabel('time [$s$]','Interpreter','latex','fontsize',fontsize);
-    subplot(n_splots,1,2);
-    plot(Time,Force_term_data);
-    legend({'Forcing term'},'Interpreter','latex','fontsize',fontsize);
-    subplot(n_splots,1,3);
-    plot(Time,e_track_data(i,:));
-    legend({'$e_{track}$'},'Interpreter','latex','fontsize',fontsize);
-    subplot(n_splots,1,4);
-    plot(Time,dy_robot_data(i,:), Time, dy_data(i,:), Time, z_data(i,:));
-    legend({'$\dot{y}_{robot}$','$\dot{y}_{DMP}$','$z_{DMP}$'},'Interpreter','latex','fontsize',fontsize);
+%     n_splots = 4;
+%     figure;
+%     subplot(n_splots,1,1);
+%     plot(Time,Fdist_data);
+%     legend({'Disturbance force'},'Interpreter','latex','fontsize',fontsize);
+%     xlabel('time [$s$]','Interpreter','latex','fontsize',fontsize);
+%     subplot(n_splots,1,2);
+%     plot(Time,Force_term_data);
+%     legend({'Forcing term'},'Interpreter','latex','fontsize',fontsize);
+%     subplot(n_splots,1,3);
+%     plot(Time,e_track_data(i,:));
+%     legend({'$e_{track}$'},'Interpreter','latex','fontsize',fontsize);
+%     subplot(n_splots,1,4);
+%     plot(Time,dy_robot_data(i,:), Time, dy_data(i,:), Time, z_data(i,:));
+%     legend({'$\dot{y}_{robot}$','$\dot{y}_{DMP}$','$z_{DMP}$'},'Interpreter','latex','fontsize',fontsize);
 
 end
 
@@ -138,7 +136,7 @@ if (OFFLINE_DMP_TRAINING_enable)
         F = F_offline_train_data(i,:);
         Fd = Fd_offline_train_data(i,:);
         scale = 1/max(abs([F Fd]));
-        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_offline_train);
+        x_data_train = dmp{i}.can_sys_ptr.get_phaseVar(Time_offline_train);
         x_data_train = x_data_train(1,:);
         Psi = [];
         for j=1:length(x_data_train)
@@ -269,11 +267,12 @@ plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Pos
 
 
 %% Plot psi activations with respect to phase variable
-for i=1:D
-    f_data = Force_term_data(i,:);
-    plot_psi_activations_and_psiWeightedSum(x_data,Psi_data{i}, f_data, dmp{i}.c, dmp{i}.w);
-end
-% 
+% for i=1:D
+%     f_data = Force_term_data(i,:);
+%     plot_psi_activations_and_psiWeightedSum(x_data,Psi_data{i}, f_data, dmp{i}.c, dmp{i}.w);
+% end
+
+
 %% Plot psi activations with respect to time
 % for i=1:D
 %     figure

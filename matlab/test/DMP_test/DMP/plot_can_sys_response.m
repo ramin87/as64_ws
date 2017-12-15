@@ -4,45 +4,80 @@ clear;
 
 set_matlab_utils_path();
 
-CAN_SYS_TYPE = 'lin';
-tau = 1;
-time_step = 0.002;
-t = 0:time_step:tau;
-x_end = 0.005;
-x0 = 1;
+CAN_CLOCK_TYPE = 'lin';
+CAN_FUN_TYPE = 'sigmoid';
+tau = 2.5;
+dt = 0.002;
+t = 0:dt:tau;
+u_end = 0.99;
+u0 = 1;
 
 fontsize = 14;
 lineWidth = 1.5;
 
-
-if (strcmpi(CAN_SYS_TYPE,'lin'))
-    can_sys_ptr = LinCanonicalSystem(x_end, tau);
-elseif (strcmpi(CAN_SYS_TYPE,'exp'))
-    can_sys_ptr = ExpCanonicalSystem(x_end, tau);
-elseif (strcmpi(CAN_SYS_TYPE,'spring-damper'))
-    can_sys_ptr = SpringDamperCanonicalSystem(x_end, tau);
-    USE_2nd_order_can_sys = true;
-else
-    error('Unsupported canonical system type ''%s''',CAN_SYS_TYPE);
-end
+can_sys_ptr = CanonicalSystem();
+can_sys_ptr.init(CAN_CLOCK_TYPE, CAN_FUN_TYPE, tau, u_end, u0);
 
 
-X = can_sys_ptr.get_continuous_output(t, x0);
+%% ============================================
 
-n_out = size(X,1);
+[x, u] = can_sys_ptr.get_output(t);
 
-x = X(1,:);
-u = x;
-if (n_out == 2)
-    u = X(2,:);
-end
+T0 = t;
+X0 = x;
+U0 = u;
+% figure;
+% plot(t,x,t,u,'LineWidth',lineWidth);
+% legend({'$x$','u'},'Interpreter','latex','fontsize',fontsize);
+% xlabel('time [$s$]','Interpreter','latex','fontsize',fontsize);
+% axis tight
+
+%% ============================================
+
+tau = can_sys_ptr.get_tau();
+
+can_sys_ptr.set_tau(tau*1.0);
+
+x = 0;
+u = can_sys_ptr.get_shapeVar(x);
+t = 0;
+
+x_data = x;
+u_data = u;
+t_data = t;
+
+while (abs(u-u_end)>1e-4 && x<=1)
+
+    [dx, u]=  can_sys_ptr.get_output_dot(x);
+
+%     if (t>0.8 && t<1.5)
+%         dx = 0;
+%     end
+
+    t = t + dt;
+    x = x + dx*dt;
+
+    u_err = abs(u-u_end)
     
+    t_data = [t_data t];
+    x_data = [x_data x];
+    u_data = [u_data u];
+
+end
+
 figure;
-plot(t,x,t,u,'LineWidth',lineWidth);
+subplot(1,2,1);
+plot(T0,X0,T0,U0,'LineWidth',lineWidth);
 legend({'$x$','u'},'Interpreter','latex','fontsize',fontsize);
 xlabel('time [$s$]','Interpreter','latex','fontsize',fontsize);
-
-
+axis tight;
+% axis equal;
+subplot(1,2,2);
+plot(t_data,x_data,t_data,u_data,'LineWidth',lineWidth);
+legend({'$x$','u'},'Interpreter','latex','fontsize',fontsize);
+xlabel('time [$s$]','Interpreter','latex','fontsize',fontsize);
+axis tight;
+% axis equal;
 
 
 

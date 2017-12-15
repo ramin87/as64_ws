@@ -16,18 +16,18 @@ function DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
     dmp.b_z = b_z;
     dmp.can_sys_ptr = can_sys_ptr;
 
-    tau = dmp.get_tau();
-    if (tau > 1)
-      dmp.a_s = 1 / (dmp.can_sys_ptr.tau^2);
-    else
-      dmp.a_s = (dmp.can_sys_ptr.tau^2);
-    end
+%     tau = dmp.get_tau();
+%     if (tau > 1)
+%       dmp.a_s = 1 / (dmp.can_sys_ptr.tau^2);
+%     else
+%       dmp.a_s = (dmp.can_sys_ptr.tau^2);
+%     end
 	dmp.a_s = 1.0/10;
 
     dmp.w = zeros(dmp.N_kernels,1); %rand(dmp.N_kernels,1);
     dmp.set_centers();
     dmp.set_stds(std_K);
 
-    dmp.set_training_params(false, 0, 0.99, 1e6);
+    dmp.set_training_params('LWR', false, 0, 0.99, 1e6);
 
 end

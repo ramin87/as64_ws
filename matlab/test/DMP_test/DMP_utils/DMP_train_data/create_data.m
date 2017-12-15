@@ -11,7 +11,7 @@ Tend = 2;
 Ts = 0.001;
 t = 0:Ts:Tend;
 
-z(1,:) = 0.8*(t - 2*exp(t)) + sin(2*pi*1.5*t) + sin(2*pi*5*t);% + 0.5*sin(2*pi*150*t);
+z(1,:) = 0.8*(t - 2*exp(t)) + sin(2*pi*1.5*t) + t.^2.*exp(-t).*sin(2*pi*1.5*t); % + sin(2*pi*5*t);% + 0.5*sin(2*pi*150*t);
 z(2,:) = cos(12*t) + 2*t.^2 - 3*exp(t);
 z(3,:) = 2*t.^2 - 2*t.^3 - 3*exp(-2*t);
 
@@ -20,9 +20,12 @@ Q(2,:) = -1 + t.^3 - 2*t.^2;
 Q(3,:) = 2 + t.^2 - t.^3;
 Q(4,:) = 0.3*t.^4 - t;
 
-for i=1:size(Q,2)
-    Q(:,i) = Q(:,i)/norm(Q(:,i));
+for k=1:12
+    for i=1:size(Q,2)
+        Q(:,i) = Q(:,i)/norm(Q(:,i));
+    end
 end
+
 
 D = 1;
 y = zeros(D,length(t));
@@ -30,9 +33,11 @@ for i=1:D
     y(i,:) = z(i,:);
 end
 
+
 data = y;
 Q_data = Q;
 save([data_filename '.mat'],'data','Q_data','Ts');
+
 
 save_ascii(data,Ts,data_filename);
 save_binary(data,Ts,data_filename);

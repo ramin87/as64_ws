@@ -4,7 +4,7 @@
 %  @param[in] x: Row vector with the values of the phase variable.
 %  @param[in] s: Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
 %  @param[in] Fd: Row vector with the desired values of the shape attractor.
-function [w, P] = RLWR_train(Psi, s, Fd, lambda, P)
+function [w, P] = RLWR(Psi, s, Fd, lambda, P)
 
     n = length(Fd);
     N_kernels = size(Psi,1);
