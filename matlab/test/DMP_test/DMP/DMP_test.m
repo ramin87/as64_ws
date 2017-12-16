@@ -125,6 +125,7 @@ y = y0;
 t = 0;
 y_robot = y0;
 dy_robot = zeros(D,1);
+ddy_robot = zeros(D,1);
 dz = zeros(D,1);
 z = zeros(D,1);
 scaled_forcing_term = zeros(D,1);
@@ -168,6 +169,7 @@ log_data.shape_attr_data = [];
 log_data.goal_attr_data = [];
 
 
+tau0 = can_sys_ptr.get_tau();
 tau = cmd_args.tau_sim_scale*tau;
 can_sys_ptr.set_tau(tau);
 
@@ -240,7 +242,10 @@ while (true)
         
         [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, y0(i), g0(i), g(i), y_c, z_c);
         
-        dy_robot(i) = dy(i) - (cmd_args.Kd/cmd_args.Dd)*(y_robot(i)-y(i)) + Fdist/cmd_args.Dd; 
+        ddy(i) = dz(i)/dmp{i}.get_v_scale();
+        ddy_robot(i) = ddy(i) + inv(cmd_args.Md) * ( - cmd_args.Dd*(dy_robot(i) - dy(i)) - cmd_args.Kd*(y_robot(i)-y(i)) + Fdist ); 
+        
+        
     end
     
     if (cmd_args.ONLINE_DMP_UPDATE_enable && iters<n_data)
@@ -271,6 +276,8 @@ while (true)
         
         dx = dx*stop_coeff;
         dg = dg*stop_coeff;
+        
+%         can_sys_ptr.set_tau(tau0*stop_coeff);
     end
     
     %% Stopping criteria
@@ -299,6 +306,7 @@ while (true)
     %if (x<0), x=0; end % zero crossing can occur due to numberical integration
     
     y_robot = y_robot + dy_robot*dt;
+    dy_robot = dy_robot + ddy_robot*dt;
 
 end
 toc
@@ -334,17 +342,31 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
    end
 end
 
+Time = log_data.Time;
+Time_demo = log_data.Time_demo;
 y_data = log_data.y_data;
 yd_data = log_data.yd_data;
 
+y_data2 = cell(D,1);
+yd_data2 = cell(D,1);
+
+sim_mse = zeros(D,1);
+for i=1:D
+   [~, y_data2{i}, yd_data2{i}] = temp_align_signals(Time, y_data(i,:), Time_demo, yd_data(i,:)); 
+   sim_mse(i) = norm(y_data2{i} - yd_data2{i});
+end
+
+sim_mse_dtw = zeros(D,1);
 dist_f = @(s1,s2) norm(s1-s2);
-dtw_win = floor(max([size(y_data,2), size(yd_data,2)])/3);
-[dtw_dist, ind_y, ind_yd] = dtw(y_data, yd_data, dtw_win, dist_f);
-sim_mse = dtw_dist/length(ind_y);
+[Time1, z1, Time2, z2] = spatial_align_signals(Time, y_data, Time_demo, yd_data, dist_f);
+for i=1:D
+   sim_mse_dtw(i) = norm(z1(i,:) - z2(i,:))/length(z1(i,:));
+end
 
 offline_train_mse
 online_train_mse
 sim_mse
+sim_mse_dtw
 
 
 % c = dmp{1}.c'

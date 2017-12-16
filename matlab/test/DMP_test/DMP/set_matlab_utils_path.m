@@ -1,9 +1,9 @@
 function set_matlab_utils_path()
 
-% MATLAB_PATH = '/home/user/as64_ws/as64_ws/matlab/utils/';
-MAIN_PATH = '/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
-% MATLAB_PATH = 'C:/Users/Slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
-% MATLAB_PATH = 'C:/Users/Slifer64/Dropbox/64631466/lib/as64_ws/matlab/utils/';
+% MAIN_PATH = '/home/user/as64_ws/as64_ws/matlab/utils/';
+% MAIN_PATH = '/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
+MAIN_PATH = 'C:/Users/Slifer/Dropbox/64631466/lib/as64_ws/matlab/utils/';
+% MAIN_PATH = 'C:/Users/Slifer64/Dropbox/64631466/lib/as64_ws/matlab/utils/';
 
 
 addpath(MAIN_PATH);

@@ -9,7 +9,7 @@ cmd_args.a_z = 40.0;
 cmd_args.b_z = cmd_args.a_z/4;
 
 cmd_args.u0 = 1.0; % starting value of forcing term shaping
-cmd_args.u_end = 0.99; % ending value of forcing term shaping
+cmd_args.u_end = 0.005; % ending value of forcing term shaping
 
 % Do NOT change these
 cmd_args.x0 = 0.0; % start of canonical time
@@ -19,12 +19,12 @@ cmd_args.N_kernels = 100; % number of kernels used in the DMP
 
 cmd_args.std_K = 1.0; % scaling factor for the kernels std
 
-cmd_args.DMP_TYPE = 'DMP-Shannon'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
+cmd_args.DMP_TYPE = 'DMP'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
 
 cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 
 cmd_args.CAN_CLOCK_TYPE = 'lin';
-cmd_args.CAN_FUN_TYPE = 'sigmoid'; % 'lin', 'exp', 'spring-damper', 'sigmoid'
+cmd_args.CAN_FUN_TYPE = 'exp'; % 'lin', 'exp', 'spring-damper', 'sigmoid'
 cmd_args.sigmoid_a_u = 280; % steepness of the sigmoid canonical function (optional)
 
 
@@ -37,8 +37,8 @@ cmd_args.USE_GOAL_FILT_IN_DMP = true;
 cmd_args.USE_GOAL_FILT = true;
 cmd_args.a_g = 10.0;
 cmd_args.USE_PHASE_STOP = true;
-cmd_args.a_px = 100.0; 
-cmd_args.a_py = 80.0;
+cmd_args.a_px = 50.0; 
+cmd_args.a_py = 40.0;
 
 % Parameters for DMP-plus
 cmd_args.k_trunc_kernel = 3; % number of stds beyond which the kernel is truncated
@@ -56,10 +56,13 @@ cmd_args.smooth_points_percent = 0.03; % width of the window used to smooth velo
 
 
 %% Robot controller params
-cmd_args.Kd = 100.0; % translational stiffness
-cmd_args.Dd = 10.0;  % translational damping
+cmd_args.Md = 1.0; % translational inertia
+cmd_args.Kd = 50.0; % translational stiffness
+cmd_args.Dd = 2*sqrt(cmd_args.Kd*cmd_args.Md);  % translational damping
+
+cmd_args.Md_o = 1.0; % rotational inertia
 cmd_args.Kd_o = 4.0; % rotational stiffness
-cmd_args.Dd_o = 1.0; % rotational damping
+cmd_args.Dd_o = 2*sqrt(cmd_args.Kd_o*cmd_args.Md_o); % rotational damping
 
 
 %% Simulation params
