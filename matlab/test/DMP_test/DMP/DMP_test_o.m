@@ -15,9 +15,6 @@ end
 %% Set the matlab utils paths to use custom built utility functions
 set_matlab_utils_path();
 
-USE_2nd_order_can_sys = false;
-use_DMP_SHANNON = false;
-
 %% Load demos and process demos
 load data/data.mat data Q_data Ts
 

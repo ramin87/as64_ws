@@ -78,7 +78,7 @@ classdef DMP_plus < handle % : public DMP
         function dmp = DMP_plus(N_kernels, a_z, b_z, can_sys_ptr, std_K)
             
             dmp.k_trunc_kernel = 3; % set width of truncated kernels to k_trunc_kernel*std
-            dmp.b = zeros(dmp.N_kernels, 1);
+            %dmp.b = zeros(dmp.N_kernels, 1);
             
             if (nargin < 4)
                 return;
@@ -145,9 +145,9 @@ classdef DMP_plus < handle % : public DMP
             g = g0;
             tau = dmp.can_sys_ptr.get_tau();
             
-            x = dmp.can_sys_ptr.get_shapeVar(Time);
-            
-            %s = u*(g0-y0);
+            x = dmp.can_sys_ptr.get_phaseVar(Time);
+            u = dmp.can_sys_ptr.get_shapeVar(x);
+            s = u; %*(g0-y0);
             
             g = g * ones(size(x));
             if (dmp.USE_GOAL_FILT)
@@ -157,9 +157,12 @@ classdef DMP_plus < handle % : public DMP
             v_scale = dmp.get_v_scale();
             ddzd_data = ddyd_data*v_scale^2;
             g_attr_data = - dmp.a_z*(dmp.b_z*(g-yd_data)-dyd_data*v_scale);
-            Fd = (ddzd_data + g_attr_data) / (g0-y0);
+            Fd = (ddzd_data + g_attr_data) ./ ((g-y0) + dmp.zero_tol);
             
-            dmp.train_method = train_method;
+            dmp.w = zeros(dmp.N_kernels, 1);
+            dmp.b = zeros(dmp.N_kernels, 1);
+            
+            train_method = dmp.train_method;
             if (strcmpi(train_method,'LWR'))
                 
                 Psi = activation_function(dmp,x);
@@ -167,10 +170,10 @@ classdef DMP_plus < handle % : public DMP
                 for k=1:dmp.N_kernels
                     
                     psi = Psi(k,:);
-                    Sw = sum(psi); % + dmp.zero_tol?
-                    Sx = dot(psi,x);
-                    Sx2 = dot(psi,x.^2);
-                    Sxy = dot(psi,x.*Fd);
+                    Sw = sum(psi) + dmp.zero_tol; %?
+                    Sx = dot(psi,s);
+                    Sx2 = dot(psi,s.^2);
+                    Sxy = dot(psi,s.*Fd);
                     Sy = dot(psi,Fd);
                     A = [Sx2 Sx; Sx Sw];
                     b = [Sxy; Sy];
@@ -189,9 +192,10 @@ classdef DMP_plus < handle % : public DMP
                 error('Unsopported training method ''%s''', train_method);
             end
             
+            Fd = Fd .* (g-y0);
             F = zeros(size(Fd));
             for i=1:size(F,2)
-                F(i) = dmp.forcing_term(x(i));
+                F(i) = dmp.forcing_term(x(i)) * dmp.forcing_term_scaling(x(i), y0, g(i));
             end
             
             train_error = norm(F-Fd)/length(F);
@@ -237,8 +241,9 @@ classdef DMP_plus < handle % : public DMP
         %  @param[out] f: The normalized weighted sum of Gaussians.
         function f = forcing_term(dmp,x)
             
+            u = dmp.can_sys_ptr.get_shapeVar(x);
             Psi = dmp.activation_function(x);
-            f = dot(Psi,dmp.w*x+dmp.b) / (sum(Psi)+dmp.zero_tol); % add 'zero_tol' to avoid numerical issues
+            f = dot(Psi,dmp.w*u+dmp.b) / (sum(Psi)+dmp.zero_tol); % add 'zero_tol' to avoid numerical issues
             
         end
         

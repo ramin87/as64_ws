@@ -1,5 +1,5 @@
 clc;
-close all;
+% close all;
 clear;
 format compact;
 
@@ -7,6 +7,37 @@ global cmd_args
 
 %% initialize cmd params
 cmd_args = get_cmd_args();
+
+% check if the cmd args are constistent
+
+if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
+    if (cmd_args.USE_GOAL_FILT_IN_DMP == false)
+        msg = sprintf('\ncmd_args.USE_GOAL_FILT_IN_DMP = false.\ncmd_args.DMP_TYPE = %s \nYou should set cmd_args.USE_GOAL_FILT_IN_DMP == true.\n', cmd_args.DMP_TYPE);
+        warning(msg);
+    end
+    
+    if (cmd_args.u_end < 0.9)
+        msg = sprintf('\ncmd_args.u_end = %f.\ncmd_args.DMP_TYPE = %s \ncmd_args.u_end should have a value close to 1.0\n', cmd_args.u_end, cmd_args.DMP_TYPE);
+        warning(msg);
+    end
+    
+    if (~strcmpi(cmd_args.CAN_FUN_TYPE, 'sigmoid'))
+        msg = sprintf('\ncmd_args.CAN_FUN_TYPE = %s.\ncmd_args.DMP_TYPE = %s \ncmd_args.CAN_FUN_TYPE should be %s\n', cmd_args.CAN_FUN_TYPE, cmd_args.DMP_TYPE, 'sigmoid');
+        warning(msg);
+    end
+else
+    if (cmd_args.u_end > 0.1)
+        msg = sprintf('\ncmd_args.u_end = %f.\ncmd_args.DMP_TYPE = %s \ncmd_args.u_end should have a value lower than 0.1\n', cmd_args.u_end, cmd_args.DMP_TYPE);
+        warning(msg);
+    end
+end
+
+if (cmd_args.USE_GOAL_FILT_IN_DMP == true  && cmd_args.USE_GOAL_FILT == false)
+    msg = sprintf('\ncmd_args.USE_GOAL_FILT_IN_DMP = true.\ncmd_args.USE_GOAL_FILT = false.\nYou should set cmd_args.USE_GOAL_FILT == true\n');
+    warning(msg);
+end
+
+
 
 if (~cmd_args.USE_PHASE_STOP)
     cmd_args.a_py = 0;
@@ -114,11 +145,12 @@ n_data
 y0 = yd_data(:,1);
 g0 = cmd_args.goal_scale*yd_data(:,end); 
 g = g0; 
-if (cmd_args.USE_GOAL_FILT), g = y0; end
+if (cmd_args.USE_GOAL_FILT && cmd_args.USE_GOAL_FILT_IN_DMP), g = y0; end
+N_g_change = length(cmd_args.time_goal_change);
+ind_g_chage = 1;
 dg = zeros(D,1);
 x = cmd_args.x0;
 dx = 0;
-
 ddy = zeros(D,1);
 dy = zeros(D,1);
 y = y0;
@@ -235,12 +267,12 @@ while (true)
 
         shape_attr(i) = dmp{i}.shape_attractor(x, g0(i), y0(i));
         goal_attr(i) = dmp{i}.goal_attractor(y(i), dy(i), g(i));
-        scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(x, y0(i), g0(i));
+        scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(x, y0(i), g(i));
         
         y_c = cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
         
-        [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, y0(i), g0(i), g(i), y_c, z_c);
+        [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, y0(i), g(i), g(i), y_c, z_c);
         
         ddy(i) = dz(i)/dmp{i}.get_v_scale();
         ddy_robot(i) = ddy(i) + inv(cmd_args.Md) * ( - cmd_args.Dd*(dy_robot(i) - dy(i)) - cmd_args.Kd*(y_robot(i)-y(i)) + Fdist ); 
@@ -254,10 +286,22 @@ while (true)
         log_data.Fd_online_train_data = [log_data.Fd_online_train_data Fd];
     end
     
+    if (cmd_args.ONLINE_GOAL_CHANGE_ENABLE)
+        if (ind_g_chage <= N_g_change)
+            if (abs((t-cmd_args.time_goal_change(ind_g_chage))) < dt/2.0)
+%                 disp('Goal change')
+%                 t
+                g0 = cmd_args.goal_change(ind_g_chage);
+                ind_g_chage = ind_g_chage + 1;
+            end
+        end
+        
+    end
     
     if (cmd_args.USE_GOAL_FILT)
-        dg = -cmd_args.a_g*(g-g0)/can_sys_ptr.get_tau();
+        dg = cmd_args.a_g*(g0-g)/can_sys_ptr.get_tau();
     else
+        g = g0;
         dg = zeros(size(g));
     end
     

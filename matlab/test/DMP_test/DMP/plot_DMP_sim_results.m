@@ -1,7 +1,7 @@
 function plot_DMP_sim_results()
 
 % clc; 
-close all;
+% close all;
 clear;
 
 load data/dmp_results.mat log_data
@@ -86,7 +86,7 @@ tic
 
 
 %% Plot the training data
-plot_training_data(Time_demo, yd_data, dyd_data, ddyd_data);
+% plot_training_data(Time_demo, yd_data, dyd_data, ddyd_data);
 
 
 for i=1:D
@@ -252,7 +252,7 @@ lineWidth = 1.2;
 
 %% Plot DMP simulation and demo pos, vel, accel
 lineWidth = 1.1;
-plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
+% plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
 plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,yd_data, 'robot', 'demo', 'Position', lineWidth);
 % plot_signals_and_errorSignal(Time,dy_data, Time_demo,dyd_data, 'DMP', 'demo', 'Velocity', lineWidth);
 % plot_signals_and_errorSignal(Time,ddy_data, Time_demo,ddyd_data, 'DMP', 'demo', 'Accelaration', lineWidth);

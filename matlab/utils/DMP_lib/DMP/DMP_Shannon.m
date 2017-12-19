@@ -158,10 +158,14 @@ classdef DMP_Shannon < handle % : public DMP
                 g = y0*exp(-dmp.a_g*Time/tau) + g0*(1 - exp(-dmp.a_g*Time/tau));
             end
             
-            s = dmp.forcing_term_scaling(x, y0, g0);
+%             s = dmp.forcing_term_scaling(x, y0, g0);
+            s = zeros(size(x));
+            for i=1:length(s)
+                s(i) = dmp.forcing_term_scaling(x(i), y0, g(i));
+            end
             if (length(s) == 1), s = ones(size(x))*s(1); end
             
-            Fd = dmp.calc_Fd(yd_data, dyd_data, ddyd_data, x, y0, g0, g);
+            Fd = dmp.calc_Fd(yd_data, dyd_data, ddyd_data, x, y0, g, g) ./(s + dmp.zero_tol); % ./ (u.*(g0-y0) + dmp.zero_tol);
             
             
             Ts = Time(2)-Time(1);
@@ -217,8 +221,8 @@ classdef DMP_Shannon < handle % : public DMP
             
             F = zeros(size(Fd));
             for i=1:size(F,2)
-                Fd(i) = Fd(i) * dmp.forcing_term_scaling(x(i), y0, g0);
-                F(i) = dmp.forcing_term(x(i))*dmp.forcing_term_scaling(x(i), y0, g0);
+                Fd(i) = Fd(i) * dmp.forcing_term_scaling(x(i), y0, g(i));
+                F(i) = dmp.forcing_term(x(i))*dmp.forcing_term_scaling(x(i), y0, g(i));
             end
             
             train_error = norm(F-Fd)/length(F);
@@ -228,14 +232,14 @@ classdef DMP_Shannon < handle % : public DMP
                 Psi = [Psi dmp.activation_function(x(i))];
             end
             
-            %           Fmax
-            %           N_kernels = dmp.N_kernels
-            % %
-            %           [f, P1_filt] = get_single_sided_Fourier(Fd_filt, Fs);
-            %           plot_filtering(filter_b, filter_a, Fs, Fmax, Time, Fd, Fd_filt, f, P1, P1_filt)
-            %           plot_DMP_train(Time, F, Fd, Psi, x);
+                      Fmax
+                      N_kernels = dmp.N_kernels
+            %
+                      [f, P1_filt] = get_single_sided_Fourier(Fd_filt, Fs);
+                      plot_filtering(filter_b, filter_a, Fs, Fmax, Time, Fd, Fd_filt, f, P1, P1_filt)
+                      plot_DMP_train(Time, F, Fd, Psi, x);
             
-            %           error('stop')
+%                       error('stop')
             
         end
         
@@ -285,7 +289,7 @@ classdef DMP_Shannon < handle % : public DMP
             
             u = dmp.can_sys_ptr.get_shapeVar(x);
             v_scale = dmp.get_v_scale();
-            Fd = (ddy*v_scale^2 - dmp.goal_attractor(y, v_scale*dy, g)) ./ (u.*(g0-y0));
+            Fd = (ddy*v_scale^2 - dmp.goal_attractor(y, v_scale*dy, g)); %./ (u.*(g0-y0) + dmp.zero_tol);
             
         end
         

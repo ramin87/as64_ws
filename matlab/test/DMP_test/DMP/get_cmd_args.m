@@ -35,7 +35,7 @@ cmd_args.RLWR_P = 1e8;
 
 cmd_args.USE_GOAL_FILT_IN_DMP = true;
 cmd_args.USE_GOAL_FILT = true;
-cmd_args.a_g = 10.0;
+cmd_args.a_g = 20.0;
 cmd_args.USE_PHASE_STOP = true;
 cmd_args.a_px = 50.0; 
 cmd_args.a_py = 40.0;
@@ -67,14 +67,14 @@ cmd_args.Dd_o = 2*sqrt(cmd_args.Kd_o*cmd_args.Md_o); % rotational damping
 
 %% Simulation params
 cmd_args.dt = 0.002; %simulation time_step;
-cmd_args.tol_stop = 1e-3; % position error tolerance to stop the simulation
+cmd_args.tol_stop = 5e-3; % position error tolerance to stop the simulation
 cmd_args.orient_tol_stop = 1e-2; % orientation error tolerance to stop the simulation
 cmd_args.max_iters = 3000; % maximum iteration steps
 cmd_args.tau_sim_scale = 1.0; % scaling factor for the time of the DMP simulation
 cmd_args.goal_scale = 1.0; % scaling factor for the goal in the DMP simulation
-cmd_args.GOAL_CHANGE_ENABLE = false;
-cmd_args.time_goal_change = 0.5; % vector of timestamps when the goal change occurs
-cmd_args.goal_change_scale = 1.5; % vector of scalings for each goal change
+cmd_args.ONLINE_GOAL_CHANGE_ENABLE = false;
+cmd_args.time_goal_change = [0.5 1.1 1.6]; % vector of timestamps when the goal change occurs
+cmd_args.goal_change = [-12.0 -9.0 -13.0]; % vector of scalings for each goal change
 
 
 %% Apply disturbance force

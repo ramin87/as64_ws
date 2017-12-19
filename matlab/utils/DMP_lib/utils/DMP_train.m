@@ -22,7 +22,11 @@ if (dmp.USE_GOAL_FILT)
     g = y0*exp(-dmp.a_g*Time/tau) + g0*(1 - exp(-dmp.a_g*Time/tau));
 end
 
-s = dmp.forcing_term_scaling(x, y0, g0);
+s = zeros(size(x));
+for i=1:length(s)
+    s(i) = dmp.forcing_term_scaling(x(i), y0, g(i));
+end
+% s = dmp.forcing_term_scaling(x, y0, g0);
 if (length(s) == 1), s = ones(size(x))*s(1); end
 
 Fd = dmp.calc_Fd(yd_data, dyd_data, ddyd_data, x, y0, g0, g);
@@ -48,7 +52,7 @@ end
 
 F = zeros(size(Fd));
 for i=1:size(F,2)
-    F(i) = dmp.forcing_term(x(i))*dmp.forcing_term_scaling(x(i), y0, g0);
+    F(i) = dmp.forcing_term(x(i))*dmp.forcing_term_scaling(x(i), y0, g(i));
 end
 
 %     n_sp = 4;
