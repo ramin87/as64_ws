@@ -15,10 +15,18 @@ z(1,:) = 0.8*(t - 2*exp(t)) + sin(2*pi*1.5*t) + t.^2.*exp(-t).*sin(2*pi*1.5*t); 
 z(2,:) = cos(12*t) + 2*t.^2 - 3*exp(t);
 z(3,:) = 2*t.^2 - 2*t.^3 - 3*exp(-2*t);
 
-Q(1,:) = 1 + t.^2 - 0.3*t.^3;
-Q(2,:) = -1 + t.^3 - 2*t.^2;
-Q(3,:) = 2 + t.^2 - t.^3;
-Q(4,:) = 0.3*t.^4 - t;
+% Q(1,:) = 1 + t.^2 - 0.3*t.^3;
+% Q(2,:) = -1 + t.^3 - 2*t.^2;
+% Q(3,:) = 2 + t.^2 - t.^3;
+% Q(4,:) = 0.3*t.^4 - t;
+
+
+Q(1,:) = z(1,:);
+Q(2,:) = z(2,:);
+Q(3,:) = z(3,:);
+Q(4,:) = z(1,:) - z(2,:);
+
+
 
 for k=1:12
     for i=1:size(Q,2)
@@ -35,8 +43,8 @@ end
 
 
 data = y;
-Q_data = Q;
-save([data_filename '.mat'],'data','Q_data','Ts');
+Qd_data = Q;
+save([data_filename '.mat'],'data','Qd_data','Ts');
 
 
 save_ascii(data,Ts,data_filename);

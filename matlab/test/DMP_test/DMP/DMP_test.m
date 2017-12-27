@@ -11,11 +11,6 @@ cmd_args = get_cmd_args();
 % check if the cmd args are constistent
 
 if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
-    if (cmd_args.USE_GOAL_FILT_IN_DMP == false)
-        msg = sprintf('\ncmd_args.USE_GOAL_FILT_IN_DMP = false.\ncmd_args.DMP_TYPE = %s \nYou should set cmd_args.USE_GOAL_FILT_IN_DMP == true.\n', cmd_args.DMP_TYPE);
-        warning(msg);
-    end
-    
     if (cmd_args.u_end < 0.9)
         msg = sprintf('\ncmd_args.u_end = %f.\ncmd_args.DMP_TYPE = %s \ncmd_args.u_end should have a value close to 1.0\n', cmd_args.u_end, cmd_args.DMP_TYPE);
         warning(msg);
@@ -32,12 +27,6 @@ else
     end
 end
 
-if (cmd_args.USE_GOAL_FILT_IN_DMP == true  && cmd_args.USE_GOAL_FILT == false)
-    msg = sprintf('\ncmd_args.USE_GOAL_FILT_IN_DMP = true.\ncmd_args.USE_GOAL_FILT = false.\nYou should set cmd_args.USE_GOAL_FILT == true\n');
-    warning(msg);
-end
-
-
 
 if (~cmd_args.USE_PHASE_STOP)
     cmd_args.a_py = 0;
@@ -48,11 +37,11 @@ set_matlab_utils_path();
 
 
 %% Load demos and process demos
-load data/data.mat data Q_data Ts
+load data/data.mat data Qd_data Ts
 
 % calculate numerically the 1st and 2nd derivatives
 [yd_data, dyd_data, ddyd_data] = process_data(data, Ts, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
-[Qd_data, v_rot_d_data, dv_rot_d_data] = process_Q_data(Q_data, Ts, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
+% [Qd_data, v_rot_d_data, dv_rot_d_data] = process_Q_data(Q_data, Ts, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
 
 n_data = size(yd_data,2); % number of points in each dimension
 Time_demo = ((1:n_data)-1)*Ts;
@@ -78,6 +67,14 @@ end
 can_sys_ptr.init(cmd_args.CAN_CLOCK_TYPE, cmd_args.CAN_FUN_TYPE, tau, cmd_args.u_end, cmd_args.u0);
 
 
+extraArgNames = cell(0);
+extraArgValues = cell(0);
+extraArgNames{1} = 'k_trunc_kernel';     extraArgValues{1} = cmd_args.k_trunc_kernel;
+extraArgNames{2} = 'Wmin';               extraArgValues{2} = cmd_args.Wmin;
+extraArgNames{3} = 'Freq_min';           extraArgValues{3} = cmd_args.Freq_min;
+extraArgNames{4} = 'Freq_max';           extraArgValues{4} = cmd_args.Freq_max;
+extraArgNames{5} = 'P1_min';             extraArgValues{5} = cmd_args.P1_min;
+
 dmp = cell(D,1);
 for i=1:D
     if (strcmpi(cmd_args.DMP_TYPE,'DMP'))
@@ -86,18 +83,18 @@ for i=1:D
         dmp{i} = DMP_bio();
     elseif (strcmpi(cmd_args.DMP_TYPE,'DMP-plus'))
         dmp{i} = DMP_plus();
-        dmp{i}.k_trunc_kernel = cmd_args.k_trunc_kernel;
+%         dmp{i}.k_trunc_kernel = cmd_args.k_trunc_kernel;
     elseif (strcmpi(cmd_args.DMP_TYPE,'DMP-Shannon'))
         dmp{i} = DMP_Shannon();
-        dmp{i}.Wmin = cmd_args.Wmin;
-        dmp{i}.Freq_min = cmd_args.Freq_min;
-        dmp{i}.Freq_max = cmd_args.Freq_max;
-        dmp{i}.P1_min = cmd_args.P1_min;
+%         dmp{i}.Wmin = cmd_args.Wmin;
+%         dmp{i}.Freq_min = cmd_args.Freq_min;
+%         dmp{i}.Freq_max = cmd_args.Freq_max;
+%         dmp{i}.P1_min = cmd_args.P1_min;
     else
         error('Unsupported DMP type ''%s''', cmd_args.DMP_TYPE);
     end
     
-    dmp{i}.init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K);
+    dmp{i}.init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K, extraArgNames, extraArgValues);
 end
 
 F_offline_train_data = [];
@@ -124,7 +121,7 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
         dyd = dyd_data(i,ind);
         ddyd = ddyd_data(i,ind);
 
-        dmp{i}.set_training_params(cmd_args.train_method, cmd_args.USE_GOAL_FILT_IN_DMP, cmd_args.a_g, cmd_args.RLWR_lambda, cmd_args.RLWR_P);
+        dmp{i}.set_training_params(cmd_args.train_method, cmd_args.RLWR_lambda, cmd_args.RLWR_P);
         [offline_train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0);      
 
         F_offline_train_data = [F_offline_train_data; F_train];
@@ -145,7 +142,6 @@ n_data
 y0 = yd_data(:,1);
 g0 = cmd_args.goal_scale*yd_data(:,end); 
 g = g0; 
-if (cmd_args.USE_GOAL_FILT && cmd_args.USE_GOAL_FILT_IN_DMP), g = y0; end
 N_g_change = length(cmd_args.time_goal_change);
 ind_g_chage = 1;
 dg = zeros(D,1);
@@ -230,6 +226,7 @@ while (true)
     
     log_data.y_robot_data = [log_data.y_robot_data y_robot];
     log_data.dy_robot_data = [log_data.dy_robot_data dy_robot];
+    log_data.ddy_robot_data = [log_data.ddy_robot_data ddy_robot];
     
     log_data.Fdist_data = [log_data.Fdist_data Fdist];
     
@@ -255,24 +252,24 @@ while (true)
             yd = yd_data(i,iters+1);
             dyd = dyd_data(i,iters+1);
             ddyd = ddyd_data(i,iters+1);
-            P_lwr{i} = dmp{i}.update_weights(x, yd, dyd, ddyd, y0(i), g0(i), g(i), P_lwr{i}, cmd_args.RLWR_lambda); 
+            P_lwr{i} = dmp{i}.update_weights(x, yd, dyd, ddyd, y0(i), g(i), P_lwr{i}, cmd_args.RLWR_lambda); 
 
-            F(i) = dmp{i}.calc_Fd(y(i), dy(i), ddy(i), x, y0(i), g0(i), g(i));
-            Fd(i) = dmp{i}.calc_Fd(yd, dyd, ddyd, x, y0(i), g0(i), g(i));
+            F(i) = dmp{i}.calc_Fd(x, y(i), dy(i), ddy(i), y0(i), g(i));
+            Fd(i) = dmp{i}.calc_Fd(x, yd, dyd, ddyd, y0(i), g(i));
             
         end
         
         Psi = dmp{i}.activation_function(x);
         log_data.Psi_data{i} = [log_data.Psi_data{i} Psi(:)];
 
-        shape_attr(i) = dmp{i}.shape_attractor(x, g0(i), y0(i));
-        goal_attr(i) = dmp{i}.goal_attractor(y(i), dy(i), g(i));
+        shape_attr(i) = dmp{i}.shape_attractor(x, y0(i), g(i));
+        goal_attr(i) = dmp{i}.goal_attractor(x, y(i), dy(i), g(i));
         scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(x, y0(i), g(i));
         
         y_c = cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
         
-        [dy(i), dz(i)] = dmp{i}.get_states_dot(y(i), z(i), x, y0(i), g(i), g(i), y_c, z_c);
+        [dy(i), dz(i)] = dmp{i}.get_states_dot(x, y(i), z(i), y0(i), g(i), y_c, z_c);
         
         ddy(i) = dz(i)/dmp{i}.get_v_scale();
         ddy_robot(i) = ddy(i) + inv(cmd_args.Md) * ( - cmd_args.Dd*(dy_robot(i) - dy(i)) - cmd_args.Kd*(y_robot(i)-y(i)) + Fdist ); 
@@ -334,7 +331,10 @@ while (true)
 %     err_p
     
     iters = iters + 1;
-    if (iters >= cmd_args.max_iters), break; end
+    if (t>=tau && iters>=cmd_args.max_iters)
+        warning('Iteration limit reached. Stopping simulation...\n');
+        break;
+    end
     
     %% Numerical integration
     t = t + dt;

@@ -5,6 +5,7 @@
 function f = DMP_forcing_term(dmp,x)
 
     Psi = dmp.activation_function(x);
+    
     f = dot(Psi,dmp.w) / (sum(Psi)+dmp.zero_tol); % add 'zero_tol' to avoid numerical issues
 
 end

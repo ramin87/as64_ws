@@ -46,6 +46,7 @@ classdef DMP_Shannon < handle % : public DMP
         b_z % parameter 'b_z' relating to the spring-damper system
         
         can_sys_ptr % handle (pointer) to the canonical system
+        can_fun % handle to canonical function multiplying the linear term in the transformation system
         
         w % N_kernelsx1 vector with the weights of the DMP
         c % N_kernelsx1 vector with the kernel centers of the DMP
@@ -57,9 +58,6 @@ classdef DMP_Shannon < handle % : public DMP
         
         % training params
         train_method % training method for weights of the DMP forcing term
-        
-        USE_GOAL_FILT % flag indicating whether to apply goal filtering in training or not
-        a_g % filtering gain in goal filtering
         
         lambda % forgetting factor in recursive training methods
         P_rlwr% Initial value of covariance matrix in recursive training methods
@@ -78,18 +76,22 @@ classdef DMP_Shannon < handle % : public DMP
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
         %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
         %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
-        function dmp = DMP_Shannon(N_kernels, a_z, b_z, can_sys_ptr, std_K)
-            
-            dmp.Wmin = 0.98;
-            dmp.Freq_min = 50;
-            dmp.Freq_max = 180;
-            dmp.P1_min = 0.05;
+        %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
+        %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
+        function dmp = DMP_Shannon(N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
+
+            dmp.can_fun = LinCanonicalFunction(0.01, 1.0);
+%             dmp.can_fun = ExpCanonicalFunction(0.01, 1.0);
             
             if (nargin < 4)
                 return;
             else
                 if (nargin < 5), std_K=1; end
-                dmp.init(N_kernels, a_z, b_z, can_sys_ptr, std_K);
+                if (nargin < 6)
+                    extraArgName = [];
+                    extraArgValue = [];
+                end
+                dmp.init(N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue);
             end
             
         end
@@ -101,9 +103,16 @@ classdef DMP_Shannon < handle % : public DMP
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
         %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
         %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
-        function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
+        %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
+        %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
+        function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
             
-            DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K);
+            if (nargin < 6), std_K=1; end
+            if (nargin < 7)
+                extraArgName = [];
+                extraArgValue = [];
+            end
+            DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue);
             
         end
         
@@ -140,33 +149,37 @@ classdef DMP_Shannon < handle % : public DMP
         %  @param[in] dyd_data: Row vector with the desired velocity.
         %  @param[in] ddyd_data: Row vector with the desired accelaration.
         %  @param[in] y0: Initial position.
-        %  @param[in] g0: Target-goal position.
+        %  @param[in] g: Target-goal position.
         %
         %  \note The timestamps in \a Time and the corresponding position,
         %  velocity and acceleration data in \a yd_data, \a dyd_data and \a
         %  ddyd_data MUST be sequantial in time and sampled with the same frequency.
-        function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0)
+        function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g)
             
-            g = g0;
+%             dmp.Wmin = 0.995;
+%             dmp.Freq_min = 60;
+%             dmp.Freq_max = 150;
+%             dmp.P1_min = 0.1;
+            
+%             dmp.a_z = 10.0;
+%             dmp.b_z = dmp.a_z/4;
+%             u0 = 1.0;
+%             u_end = 0.01;
+%             dmp.can_fun = LinCanonicalFunction(u_end, u0);
+%             dmp.can_fun = ExpCanonicalFunction(u_end, u0);
+            
+            dmp.a_s = 1.0/dmp.get_tau(); % 10.0/10;
+            
             tau = dmp.can_sys_ptr.get_tau();
-            
             x = dmp.can_sys_ptr.get_phaseVar(Time);
-            u = dmp.can_sys_ptr.get_shapeVar(x);
-            
-            g = g * ones(size(x));
-            if (dmp.USE_GOAL_FILT)
-                g = y0*exp(-dmp.a_g*Time/tau) + g0*(1 - exp(-dmp.a_g*Time/tau));
-            end
-            
-%             s = dmp.forcing_term_scaling(x, y0, g0);
+
             s = zeros(size(x));
             for i=1:length(s)
-                s(i) = dmp.forcing_term_scaling(x(i), y0, g(i));
+                s(i) = dmp.forcing_term_scaling(x(i), y0, g);
             end
             if (length(s) == 1), s = ones(size(x))*s(1); end
             
-            Fd = dmp.calc_Fd(yd_data, dyd_data, ddyd_data, x, y0, g, g) ./(s + dmp.zero_tol); % ./ (u.*(g0-y0) + dmp.zero_tol);
-            
+            Fd = dmp.calc_Fd(x, yd_data, dyd_data, ddyd_data, y0, g) ./ s;
             
             Ts = Time(2)-Time(1);
             Fs = 1/Ts;
@@ -176,9 +189,6 @@ classdef DMP_Shannon < handle % : public DMP
             
             % find the maximum required frequency to get at least 'Wmin' percent of the
             % total signal's energy
-            
-            %           ind = find(f<=dmp.Freq_max);
-            
             W = sum(P1(f<=Freq_max).^2);
             W_temp = 0;
             k = 0;
@@ -187,8 +197,11 @@ classdef DMP_Shannon < handle % : public DMP
                 W_temp = W_temp + P1(k)^2;
             end
             
-            while (k <= length(f))
-                k = k+1;
+            Freq1 = f(k);
+            fprintf('Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n', dmp.Wmin, Freq1);
+            
+            
+            while (k <= length(f))  
                 if (f(k) >= Freq_max)
                     break;
                 end
@@ -198,15 +211,20 @@ classdef DMP_Shannon < handle % : public DMP
                 if (P1(k) < dmp.P1_min)
                     break;
                 end
+                k = k+1;
             end
             
             Fmax = f(k);
             
-            Freq = max(Fmax, 50);
+            Freq = Fmax; %max(Fmax, 50);
+            
+            Freq2 = Freq;
+            fprintf('Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n', dmp.P1_min, Freq2);
             
             % ==> Filter the signal retaining at least 'Wmin' energy
-            [filter_b, filter_a] = butter(6, Freq/(Fs/2));
+            [filter_b, filter_a] = butter(6, Freq/(Fs/2), 'low');
             Fd_filt = filtfilt(filter_b, filter_a, Fd);
+            
             %[f, P1_filt] = get_single_sided_Fourier(Fd_filt, Fs);
             T1 = 1/(2*Fmax);
             %N_sync = ceil(tau/T1);
@@ -218,41 +236,156 @@ classdef DMP_Shannon < handle % : public DMP
             dmp.h = T1/tau;
             w_sync = interp1(Time, Fd_filt, T_sync);
             dmp.w = w_sync(:);
-            
+              
             F = zeros(size(Fd));
             for i=1:size(F,2)
-                Fd(i) = Fd(i) * dmp.forcing_term_scaling(x(i), y0, g(i));
-                F(i) = dmp.forcing_term(x(i))*dmp.forcing_term_scaling(x(i), y0, g(i));
+                Fd(i) = Fd(i) * dmp.forcing_term_scaling(x(i), y0, g);
+                F(i) = dmp.forcing_term(x(i))*dmp.forcing_term_scaling(x(i), y0, g);
             end
             
             train_error = norm(F-Fd)/length(F);
             
-            Psi = [];
-            for i=1:length(x)
-                Psi = [Psi dmp.activation_function(x(i))];
-            end
             
-                      Fmax
-                      N_kernels = dmp.N_kernels
-            %
-                      [f, P1_filt] = get_single_sided_Fourier(Fd_filt, Fs);
-                      plot_filtering(filter_b, filter_a, Fs, Fmax, Time, Fd, Fd_filt, f, P1, P1_filt)
-                      plot_DMP_train(Time, F, Fd, Psi, x);
             
-%                       error('stop')
+%             fprintf('Number of kernels/sincs: %i\n', dmp.N_kernels);
+%             
+%             Fd0 = dmp.calc_Fd2(x, yd_data, dyd_data, ddyd_data, y0, g) ./ s;
+%             [f0, P0] = get_single_sided_Fourier(Fd0, Fs);
+%             
+%             [f1_filt, P1_filt] = get_single_sided_Fourier(Fd_filt, Fs);
+%             
+%             lineWidth = 1.2;
+%             fontsize = 14;
+% 
+% %             plot_training_data(Time, yd_data, dyd_data, ddyd_data);
+%             
+%             goal_attr_s = dmp.can_fun.get_output(x);
+%             figure;
+%             subplot(1,2,1);
+%             plot(Time, Fd0, Time, Fd,'LineWidth',lineWidth);
+%             legend({'$F_0$','$F_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(1,2,2);
+%             plot(Time, (1-goal_attr_s),'LineWidth',lineWidth);
+%             legend({'$goal.attr.scale$'}, 'Interpreter','latex', 'fontsize',fontsize);
+% 
+%             figure;
+%             subplot(3,4,1);
+%             plot(f0,P0, f,P1, 'LineWidth',lineWidth);
+%             legend({'$P_0$','$P_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,4,2);
+%             plot(f,P0-P1, 'Color',[1 0 0] ,'LineWidth',lineWidth);
+%             legend({'$P_0-P_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,4,3);
+%             plot(Time,Fd0, Time,Fd, 'LineWidth',lineWidth);
+%             legend({'$F_0$','$F_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,4,4);
+%             plot(Time,Fd0-Fd, 'Color',[1 0 0], 'LineWidth',lineWidth);
+%             legend({'$F_0-F_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             
+%             subplot(3,4,5);
+%             plot(f0,P0, f1_filt,P1_filt, 'LineWidth',lineWidth);
+%             legend({'$P_0$','$P_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,4,6);
+%             plot(f,P0-P1_filt, 'Color',[1 0 0] ,'LineWidth',lineWidth);
+%             legend({'$P_0-P_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,4,7);
+%             plot(Time,Fd0, Time,Fd_filt, 'LineWidth',lineWidth);
+%             legend({'$F_0$','$F_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,4,8);
+%             plot(Time,Fd0-Fd_filt, 'Color',[1 0 0], 'LineWidth',lineWidth);
+%             legend({'$F_0-F_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             
+%             subplot(3,4,9);
+%             plot(f,P1, f1_filt,P1_filt, 'LineWidth',lineWidth);
+%             legend({'$P_1$','$P_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,4,10);
+%             plot(f,P1-P1_filt, 'Color',[1 0 0] ,'LineWidth',lineWidth);
+%             legend({'$P_1-P_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,4,11);
+%             plot(Time,Fd, Time,Fd_filt, 'LineWidth',lineWidth);
+%             legend({'$F_1$','$F_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,4,12);
+%             plot(Time,Fd-Fd_filt, 'Color',[1 0 0], 'LineWidth',lineWidth);
+%             legend({'$F_1-F_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
+% 
+%             %
+%             Psi = [];
+%             for i=1:length(x)
+%                 Psi = [Psi dmp.activation_function(x(i))];
+%             end
+%             [f, P1_filt] = get_single_sided_Fourier(Fd_filt, Fs);
+%             plot_filtering(filter_b, filter_a, Fs, Fmax, Time, Fd, Fd_filt, f, P1, P1_filt)
+%             
+%             
+%             
+%             plot_DMP_train(Time, F, Fd, Psi, x);
+%             
+%             
+%             y_data = zeros(size(yd_data));
+%             dy_data = zeros(size(dyd_data));
+%             ddy_data = zeros(size(yd_data));
+%             z_data = zeros(size(y_data));
+%             dz_data = zeros(size(y_data));
+%             x_data = zeros(size(Time));
+%             u_data = zeros(size(Time));
+%             s_data = zeros(size(Time));
+%             
+%             y = y0;
+%             dy = 0;
+%             g = g0;
+%             z = 0;
+%             dz = 0;
+%             dt = Ts;
+%             x = 0;
+%             u = dmp.can_sys_ptr.get_shapeVar(x);
+%             s = 0;
+%             
+%             for i=1:length(Time)
+%                 t = Time(i);
+%                 
+%                 y_data(i) = y;
+%                 dy_data(i) = dy;
+%                 z_data(i) = z;
+%                 dz_data(i) = dz;
+%                 x_data(i) = x;
+%                 u_data(i) = u;
+%                 s_data(i) = s;
+%                 
+%                 x = dmp.can_sys_ptr.get_phaseVar(t);
+%                 [dy, dz] = dmp.get_states_dot(x, y, z, y0, g, 0, 0);
+%                 
+%                 y = y + dy*dt;
+%                 z = z + dz*dt;
+%                 
+%                 
+%             end
+%             
+%             ddy_data = dz_data/dmp.get_v_scale();
+%             
+%             figure;
+%             subplot(3,1,1);
+%             plot(Time,y_data, Time, yd_data, 'LineWidth',lineWidth);
+%             legend({'$y$','$y_d$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,1,2);
+%             plot(Time,dy_data, Time, dyd_data, 'LineWidth',lineWidth);
+%             legend({'$\dot{y}$','$\dot{y}_d$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             subplot(3,1,3);
+%             plot(Time,ddy_data, Time, ddyd_data, 'LineWidth',lineWidth);
+%             legend({'$\ddot{y}$','$\ddot{y}_d$'}, 'Interpreter','latex', 'fontsize',fontsize);
+%             
+%             
+%             error('stop')
             
         end
         
         
         %% Sets the high level training parameters of the DMP
         %  @param[in] train_method: Method used to train the DMP weights.
-        %  @param[in] USE_GOAL_FILT: Flag indicating whether to use goal filtering.
-        %  @param[in] a_g: Goal filtering gain.
         %  @param[in] lambda: Forgetting factor for recursive training methods.
         %  @param[in] P_rlwr: Covariance matrix 'P' for recursive training methods.
-        function set_training_params(dmp, train_method, USE_GOAL_FILT, a_g, lambda, P_rlwr)
+        function set_training_params(dmp, train_method, lambda, P_rlwr)
             
-            DMP_set_training_params(dmp, train_method, USE_GOAL_FILT, a_g, lambda, P_rlwr);
+            DMP_set_training_params(dmp, train_method, lambda, P_rlwr);
             
         end
         
@@ -260,36 +393,47 @@ classdef DMP_Shannon < handle % : public DMP
         %% Updates the DMP weights using RLWR (Recursive Locally Weighted Regression)
         %  @param[in] dmp: DMP object.
         %  @param[in] x: The phase variable.
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
         %  @param[in] y: Position.
         %  @param[in] dy: Velocity.
         %  @param[in] ddy: Acceleration.
         %  @param[in] y0: Initial position.
-        %  @param[in] g0: Final goal.
-        %  @param[in] g: Current goal.
+        %  @param[in] g: Goal position. 
         %  @param[in,out] P: \a P matrix of RLWR.
         %  @param[in] lambda: Forgetting factor.
-        function [P] = update_weights(dmp, x, y, dy, ddy, y0, g0, g, P, lambda)
+        function [P] = update_weights(dmp, x, y, dy, ddy, y0, g, P, lambda)
             
-            P = RLWR_update(dmp, x, y, dy, ddy, y0, g0, g, P, lambda);
+            P = RLWR_update(dmp, x, y, dy, ddy, y0, g, P, lambda);
             
         end
         
         
         %% Calculates the desired values of the scaled forcing term.
+        %  @param[in] x: The phase variable.
         %  @param[in] y: Position.
         %  @param[in] dy: Velocity.
         %  @param[in] ddy: Acceleration.
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
         %  @param[in] y0: initial position.
-        %  @param[in] g0: final goal.
-        %  @param[in] g: current goal (if for instance the transition from y0 to g0 is done using a filter).
-        %  @param[out] Fd: Desired value of the scaled forcing term.
-        function Fd = calc_Fd(dmp, y, dy, ddy, x, y0, g0, g)
+        %  @param[in] g: Goal position.
+        %  @param[in] g: current goal (if for instance the transition from y0 to g0 is done using a filter)        %  @param[out] Fd: Desired value of the scaled forcing term.
+        function Fd = calc_Fd(dmp, x, y, dy, ddy, y0, g)
             
             u = dmp.can_sys_ptr.get_shapeVar(x);
             v_scale = dmp.get_v_scale();
-            Fd = (ddy*v_scale^2 - dmp.goal_attractor(y, v_scale*dy, g)); %./ (u.*(g0-y0) + dmp.zero_tol);
+            Fd = (ddy*v_scale^2 - dmp.goal_attractor(x, y, v_scale*dy, g)); %./ (u.*(g0-y0) + dmp.zero_tol);
+            
+        end
+        
+        function Fd = calc_Fd2(dmp, x, y, dy, ddy, y0, g)
+            
+            u = dmp.can_sys_ptr.get_shapeVar(x);
+            v_scale = dmp.get_v_scale();
+            Fd = (ddy*v_scale^2 - dmp.goal_attractor2(x, y, v_scale*dy, g)); %./ (u.*(g0-y0) + dmp.zero_tol);
+            
+        end
+        
+        function goal_attr = goal_attractor2(dmp, x, y, z, g)
+            
+            goal_attr = DMP_goal_attractor(dmp, y, z, g);
             
         end
         
@@ -306,63 +450,63 @@ classdef DMP_Shannon < handle % : public DMP
         
         
         %% Returns the scaling factor of the forcing term.
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+        %  @param[in] x: The phase variable.
         %  @param[in] y0: initial position.
-        %  @param[in] g0: final goal.
+        %  @param[in] g: Goal position.
         %  @param[out] f_scale: The scaling factor of the forcing term.
-        function f_scale = forcing_term_scaling(dmp, x, y0, g0)
+        function f_scale = forcing_term_scaling(dmp, x, y0, g)
             
             u = dmp.can_sys_ptr.get_shapeVar(x);
-            f_scale = (g0-y0).*u;
+            f_scale = (g-y0).*u;
             
         end
         
         
         %% Returns the goal attractor of the DMP.
+        %  @param[in] x: The phase variable.
         %  @param[in] y: \a y state of the DMP.
         %  @param[in] z: \a z state of the DMP.
         %  @param[in] g: Goal position.
         %  @param[out] goal_attr: The goal attractor of the DMP.
-        function goal_attr = goal_attractor(dmp, y, z, g)
+        function goal_attr = goal_attractor(dmp, x, y, z, g)
             
-            goal_attr = DMP_goal_attractor(dmp, y, z, g);
+            s = dmp.can_fun.get_output(x); 
+            goal_attr = (1-s).*(dmp.a_z*dmp.b_z*(g-y)) + dmp.a_z*(-z);
+%             goal_attr = (1-s).*DMP_goal_attractor(dmp, y, z, g);
             
         end
         
         
         %% Returns the shape attractor of the DMP.
         %  @param[in] x: The phase variable.
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
-        %  @param[in] y0: initial position.
-        %  @param[in] g0: final goal.
+        %  @param[in] y0: Initial position.
+        %  @param[in] g: Goal position.
         %  @param[out] shape_attr: The shape_attr of the DMP.
-        function shape_attr = shape_attractor(dmp, x, y0, g0)
+        function shape_attr = shape_attractor(dmp, x, y0, g)
             
             f = dmp.forcing_term(x);
-            f_scale = dmp.forcing_term_scaling(x, y0, g0);
+            f_scale = dmp.forcing_term_scaling(x, y0, g);
             shape_attr = f * f_scale;
             
         end
         
         
         %% Returns the derivatives of the DMP states
+        %  @param[in] x: phase variable.
         %  @param[in] y: \a y state of the DMP.
         %  @param[in] z: \a z state of the DMP.
-        %  @param[in] x: phase variable.
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
         %  @param[in] y0: initial position.
-        %  @param[in] g0: final goal.
-        %  @param[in] g: current goal (if for instance the transition from y0 to g0 is done using a filter).
+        %  @param[in] g: Goal position.
         %  @param[in] y_c: coupling term for the dynamical equation of the \a y state.
         %  @param[in] z_c: coupling term for the dynamical equation of the \a z state.
         %  @param[out] dy: derivative of the \a y state of the DMP.
         %  @param[out] dz: derivative of the \a z state of the DMP.
-        function [dy, dz] = get_states_dot(dmp, y, z, x, y0, g0, g, y_c, z_c)
+        function [dy, dz] = get_states_dot(dmp, x, y, z, y0, g, y_c, z_c)
             
             if (nargin < 10), z_c=0; end
             if (nargin < 9), y_c=0; end
             
-            [dy, dz] = DMP_get_states_dot(dmp, y, z, x, y0, g0, g, y_c, z_c);
+            [dy, dz] = DMP_get_states_dot(dmp, x, y, z, y0, g, y_c, z_c);
             
         end
         
@@ -392,6 +536,31 @@ classdef DMP_Shannon < handle % : public DMP
             
             tau = DMP_get_tau(dmp);
             
+        end
+        
+        %% Parse extra arguments of the DMP
+        %  @param[in] extraArgName: Names of extra arguments.
+        %  @param[in] extraArgValue: Values of extra arguemnts.
+        function parseExtraArgs(dmp, extraArgName, extraArgValue)
+
+            dmp.Wmin = 0.95;
+            dmp.Freq_min = 10;
+            dmp.Freq_max = 200;
+            dmp.P1_min = 0.5;
+
+            for i=1:length(extraArgName)
+                if (strcmp(extraArgName{i},'Wmin'))
+                    dmp.Wmin = extraArgValue{i};
+                elseif (strcmp(extraArgName{i},'Freq_min'))
+                    dmp.Freq_min = extraArgValue{i};
+                elseif (strcmp(extraArgName{i},'Freq_max'))
+                    dmp.Freq_max = extraArgValue{i};
+                elseif (strcmp(extraArgName{i},'P1_min'))
+                    dmp.P1_min = extraArgValue{i}; 
+                end
+            end
+            
+            % to do: check if arguemnts are positive
         end
         
         

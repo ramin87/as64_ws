@@ -7,11 +7,20 @@
 function w = LWR(Psi, s, Fd, zero_tol)
   
   N_kernels = size(Psi,1);
-  w = zeros(N_kernels,1);
+  w_dim = size(s,1);
+  
+  w = zeros(N_kernels, w_dim);
 
   for k=1:N_kernels
 	  temp = s.*Psi(k,:);
 	  w(k) = (temp*Fd(:)) / (temp*s' + zero_tol);
+      
+%       psi = Psi(k,:);
+%       
+%       Y = s*(psi.* Fd)';
+%       
+%       X = s*s';
+      
 	  %Psi = diag( exp(-dmp.h(k)*(x-dmp.c(k)).^2) );
 	  %dmp.w(k) = (s'*Psi*Fd(:)) / (s'*Psi*s + dmp.zero_tol);
   end

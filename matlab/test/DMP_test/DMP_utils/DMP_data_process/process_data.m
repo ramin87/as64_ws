@@ -23,5 +23,20 @@ for i=1:D
     end
 end
 
+y = yd_data(:,1);
+dy = dyd_data(:,1);
+dt = time_step;
+
+for i=1:size(ddyd_data,2)
+    yd_data(:,i) = y;
+    dyd_data(:,i) = dy;
+    
+    ddy = ddyd_data(:,i);
+    
+    y = y + dy*dt;
+    dy = dy + ddy*dt;
+    
+end
+
 end
 

@@ -5,16 +5,20 @@
 %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
 %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
 %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
-function DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
+%  @param[in] extraArgName: Names of extra arguments.
+%  @param[in] extraArgValue: Values of extra arguemnts.
+function DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
 
-    dmp.zero_tol = 1e-20;%realmin;
+    dmp.zero_tol = 1e-30;%realmin;
 
-    if (nargin < 5), std_K = 1; end
+    if (nargin < 6), std_K = 1; end
 
     dmp.N_kernels = N_kernels;
     dmp.a_z = a_z;
     dmp.b_z = b_z;
     dmp.can_sys_ptr = can_sys_ptr;
+    
+    dmp.parseExtraArgs(extraArgName, extraArgValue);
 
 %     tau = dmp.get_tau();
 %     if (tau > 1)
@@ -22,12 +26,13 @@ function DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
 %     else
 %       dmp.a_s = (dmp.can_sys_ptr.tau^2);
 %     end
-	dmp.a_s = 1.0/10;
+% 	dmp.a_s = 1.0/10;
+    dmp.a_s = 1.0/can_sys_ptr.get_tau();
 
     dmp.w = zeros(dmp.N_kernels,1); %rand(dmp.N_kernels,1);
     dmp.set_centers();
     dmp.set_stds(std_K);
 
-    dmp.set_training_params('LWR', false, 0, 0.99, 1e6);
+    dmp.set_training_params('LWR', 0.99, 1e6);
 
 end

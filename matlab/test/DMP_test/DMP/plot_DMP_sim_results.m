@@ -19,6 +19,7 @@ yd_data = log_data.yd_data;
 dyd_data = log_data.dyd_data;
 ddyd_data = log_data.ddyd_data;
 
+
 D = log_data.D;
 Ts = log_data.Ts;
 g0 = log_data.g0;
@@ -33,6 +34,7 @@ Fd_online_train_data = log_data.Fd_online_train_data;
 Time = log_data.Time;
 y_data = log_data.y_data;
 dy_data = log_data.dy_data;
+ddy_data = log_data.ddy_data;
 z_data = log_data.z_data;
 dz_data = log_data.dz_data;
 x_data = log_data.x_data;
@@ -40,6 +42,7 @@ u_data = log_data.u_data;
 
 y_robot_data = log_data.y_robot_data;
 dy_robot_data = log_data.dy_robot_data;
+ddy_robot_data = log_data.ddy_robot_data;
 
 Fdist_data = log_data.Fdist_data;
 
@@ -86,7 +89,7 @@ tic
 
 
 %% Plot the training data
-% plot_training_data(Time_demo, yd_data, dyd_data, ddyd_data);
+plot_training_data(Time_demo, yd_data, dyd_data, ddyd_data);
 
 
 for i=1:D
@@ -142,7 +145,7 @@ if (OFFLINE_DMP_TRAINING_enable)
         for j=1:length(x_data_train)
             Psi = [Psi dmp{i}.activation_function(x_data_train(j))];
         end
-
+        
         figure;
         subplot(2,2,1);
         plot(Time_offline_train,F,Time_offline_train,Fd, 'LineWidth',1.2);
@@ -161,9 +164,10 @@ if (OFFLINE_DMP_TRAINING_enable)
         end
         axis tight;
         hold off;
-
+       
     end
 end
+
 
 %% Plot 'F' online training
 if (ONLINE_DMP_UPDATE_enable)
@@ -250,12 +254,23 @@ lineWidth = 1.2;
 %    hold off;
 % end
 
+
+
+
+
 %% Plot DMP simulation and demo pos, vel, accel
-lineWidth = 1.1;
-% plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
+lineWidth = 1.2;
+% plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,y_data, 'robot', 'DMP', 'Position', lineWidth);
+% plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dy_data, 'robot', 'DMP', 'Velocity', lineWidth);
+% plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddy_data, 'robot', 'DMP', 'Acceleration', lineWidth);
+
 plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,yd_data, 'robot', 'demo', 'Position', lineWidth);
+plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dyd_data, 'robot', 'demo', 'Velocity', lineWidth);
+plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddyd_data, 'robot', 'demo', 'Acceleration', lineWidth);
+
+% plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
 % plot_signals_and_errorSignal(Time,dy_data, Time_demo,dyd_data, 'DMP', 'demo', 'Velocity', lineWidth);
-% plot_signals_and_errorSignal(Time,ddy_data, Time_demo,ddyd_data, 'DMP', 'demo', 'Accelaration', lineWidth);
+% plot_signals_and_errorSignal(Time,ddy_data, Time_demo,ddyd_data, 'DMP', 'demo', 'Acceleration', lineWidth);
 
 
 %% Plot shape attractor
@@ -295,6 +310,7 @@ for i=1:D
     legend({'$F_{d_{train}}$','$F_{train}$','$F_{sim}$'},'Interpreter','latex','fontsize',fontsize);
     hold off;
 end
+
 
 toc
 

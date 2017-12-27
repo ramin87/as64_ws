@@ -58,9 +58,6 @@ classdef DMP_bio < handle % : public DMP_
         % training params
         train_method % training method for weights of the DMP forcing term
         
-        USE_GOAL_FILT % flag indicating whether to apply goal filtering in training or not
-        a_g % filtering gain in goal filtering
-        
         lambda % forgetting factor in recursive training methods
         P_rlwr% Initial value of covariance matrix in recursive training methods
     end
@@ -72,13 +69,19 @@ classdef DMP_bio < handle % : public DMP_
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
         %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
         %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
-        function dmp = DMP_bio(N_kernels, a_z, b_z, can_sys_ptr, std_K)
+        %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
+        %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
+        function dmp = DMP_bio(N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
             
             if (nargin < 4)
                 return;
             else
                 if (nargin < 5), std_K=1; end
-                dmp.init(N_kernels, a_z, b_z, can_sys_ptr, std_K);
+                if (nargin < 6)
+                    extraArgName = [];
+                    extraArgValue = [];
+                end
+                dmp.init(N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue);
             end
             
         end
@@ -90,9 +93,16 @@ classdef DMP_bio < handle % : public DMP_
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
         %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
         %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
-        function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K)
+        %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
+        %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
+        function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
             
-            DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K);
+            if (nargin < 6), std_K=1; end
+            if (nargin < 7)
+                extraArgName = [];
+                extraArgValue = [];
+            end
+            DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue);
             
         end
         
@@ -129,27 +139,25 @@ classdef DMP_bio < handle % : public DMP_
         %  @param[in] dyd_data: Row vector with the desired velocity.
         %  @param[in] ddyd_data: Row vector with the desired accelaration.
         %  @param[in] y0: Initial position.
-        %  @param[in] g0: Target-goal position.
+        %  @param[in] g: Target-goal position.
         %
         %  \note The timestamps in \a Time and the corresponding position,
         %  velocity and acceleration data in \a yd_data, \a dyd_data and \a
         %  ddyd_data need not be sequantial in time.
-        function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0)
+        function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g)
             
-            [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g0);
+            [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g);
             
         end
         
         
         %% Sets the high level training parameters of the DMP
         %  @param[in] train_method: Method used to train the DMP weights.
-        %  @param[in] USE_GOAL_FILT: Flag indicating whether to use goal filtering.
-        %  @param[in] a_g: Goal filtering gain.
         %  @param[in] lambda: Forgetting factor for recursive training methods.
         %  @param[in] P_rlwr: Covariance matrix 'P' for recursive training methods.
-        function set_training_params(dmp, train_method, USE_GOAL_FILT, a_g, lambda, P_rlwr)
+        function set_training_params(dmp, train_method, lambda, P_rlwr)
             
-            DMP_set_training_params(dmp, train_method, USE_GOAL_FILT, a_g, lambda, P_rlwr);
+            DMP_set_training_params(dmp, train_method, lambda, P_rlwr);
             
         end
         
@@ -157,37 +165,34 @@ classdef DMP_bio < handle % : public DMP_
         %% Updates the DMP weights using RLWR (Recursive Locally Weighted Regression)
         %  @param[in] dmp: DMP object.
         %  @param[in] x: The phase variable.
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
         %  @param[in] y: Position.
         %  @param[in] dy: Velocity.
         %  @param[in] ddy: Acceleration.
         %  @param[in] y0: Initial position.
-        %  @param[in] g0: Final goal.
-        %  @param[in] g: Current goal.
+        %  @param[in] g: Goal position.
         %  @param[in,out] P: \a P matrix of RLWR.
         %  @param[in] lambda: Forgetting factor.
-        function [P] = update_weights(dmp, x, y, dy, ddy, y0, g0, g, P, lambda)
+        function [P] = update_weights(dmp, x, y, dy, ddy, y0, g, P, lambda)
             
-            P = RLWR_update(dmp, x, y, dy, ddy, y0, g0, g, P, lambda);
+            P = RLWR_update(dmp, x, y, dy, ddy, y0, g, P, lambda);
             
         end
         
         
         %% Calculates the desired values of the scaled forcing term.
+        %  @param[in] x: The phase variable.
         %  @param[in] y: Position.
         %  @param[in] dy: Velocity.
         %  @param[in] ddy: Acceleration.
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
         %  @param[in] y0: initial position.
-        %  @param[in] g0: final goal.
-        %  @param[in] g: current goal (if for instance the transition from y0 to g0 is done using a filter).
+        %  @param[in] g: Goal position.
         %  @param[out] Fd: Desired value of the scaled forcing term.
-        function Fd = calc_Fd(dmp, y, dy, ddy, x, y0, g0, g)
+        function Fd = calc_Fd(dmp, x, y, dy, ddy, y0, g)
             
             u = dmp.can_sys_ptr.get_shapeVar(x);
             v_scale = dmp.get_v_scale();
             K = dmp.a_z * dmp.b_z;
-            Fd = (ddy*v_scale^2 - dmp.goal_attractor(y, v_scale*dy, g) + K*(g0-y0)*u);
+            Fd = (ddy*v_scale^2 - dmp.goal_attractor(x, y, v_scale*dy, g) + K*(g-y0).*u);
             
         end
         
@@ -203,11 +208,11 @@ classdef DMP_bio < handle % : public DMP_
         
         
         %% Returns the scaling factor of the forcing term.
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
+        %  @param[in] x: The phase variable.
         %  @param[in] y0: initial position.
-        %  @param[in] g0: final goal.
+        %  @param[in] g: Goal position.
         %  @param[out] f_scale: The scaling factor of the forcing term.
-        function f_scale = forcing_term_scaling(dmp, x, y0, g0)
+        function f_scale = forcing_term_scaling(dmp, x, y0, g)
             
             u = dmp.can_sys_ptr.get_shapeVar(x);
             K = dmp.a_z*dmp.b_z;
@@ -217,11 +222,12 @@ classdef DMP_bio < handle % : public DMP_
         
         
         %% Returns the goal attractor of the DMP.
+        %  @param[in] x: The phase variable.
         %  @param[in] y: \a y state of the DMP.
         %  @param[in] z: \a z state of the DMP.
         %  @param[in] g: Goal position.
         %  @param[out] goal_attr: The goal attractor of the DMP.
-        function goal_attr = goal_attractor(dmp, y, z, g)
+        function goal_attr = goal_attractor(dmp, x, y, z, g)
             
             goal_attr = DMP_goal_attractor(dmp, y, z, g);
             
@@ -230,39 +236,36 @@ classdef DMP_bio < handle % : public DMP_
         
         %% Returns the shape attractor of the DMP.
         %  @param[in] x: The phase variable.
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
         %  @param[in] y0: initial position.
-        %  @param[in] g0: final goal.
+        %  @param[in] g: Goal position.
         %  @param[out] shape_attr: The shape_attr of the DMP.
-        function shape_attr = shape_attractor(dmp, x, y0, g0)
+        function shape_attr = shape_attractor(dmp, x, y0, g)
             
             u = dmp.can_sys_ptr.get_shapeVar(x);
             f = dmp.forcing_term(x);
-            f_scale = dmp.forcing_term_scaling(x, y0, g0);
+            f_scale = dmp.forcing_term_scaling(x, y0, g);
             K = dmp.a_z * dmp.b_z;
-            shape_attr = f * f_scale - K*(g0-y0)*u;
+            shape_attr = f * f_scale - K*(g-y0)*u;
             
         end
         
         
         %% Returns the derivatives of the DMP states
+        %  @param[in] x: phase variable
         %  @param[in] y: 'y' state of the DMP
         %  @param[in] z: 'z' state of the DMP
-        %  @param[in] x: phase variable
-        %  @param[in] u: multiplier of the forcing term ensuring its convergens to zero at the end of the motion
         %  @param[in] y0: initial position
-        %  @param[in] g0: final goal
-        %  @param[in] g: current goal (if for instance the transition from y0 to g0 is done using a filter)
+        %  @param[in] g: Goal position
         %  @param[in] y_c: coupling term for the dynamical equation of the 'y' state
         %  @param[in] z_c: coupling term for the dynamical equation of the 'z' state
         %  @param[out] dy: derivative of the 'y' state of the DMP
         %  @param[out] dz: derivative of the 'z' state of the DMP
-        function [dy, dz] = get_states_dot(dmp, y, z, x, y0, g0, g, y_c, z_c)
+        function [dy, dz] = get_states_dot(dmp, x, y, z, y0, g, y_c, z_c)
             
             if (nargin < 10), z_c=0; end
             if (nargin < 9), y_c=0; end
             
-            [dy, dz] = DMP_get_states_dot(dmp, y, z, x, y0, g0, g, y_c, z_c);
+            [dy, dz] = DMP_get_states_dot(dmp, x, y, z, y0, g, y_c, z_c);
             
         end
         
@@ -294,6 +297,12 @@ classdef DMP_bio < handle % : public DMP_
             
         end
         
+        %% Parse extra arguments of the DMP
+        %  @param[in] extraArgName: Names of extra arguments.
+        %  @param[in] extraArgValue: Values of extra arguemnts.
+        function parseExtraArgs(dmp, extraArgName, extraArgValue)
+
+        end
         
     end
 end
