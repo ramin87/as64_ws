@@ -283,6 +283,7 @@ while (true)
         log_data.Fd_online_train_data = [log_data.Fd_online_train_data Fd];
     end
     
+    %% Goal change
     if (cmd_args.ONLINE_GOAL_CHANGE_ENABLE)
         if (ind_g_chage <= N_g_change)
             if (abs((t-cmd_args.time_goal_change(ind_g_chage))) < dt/2.0)
@@ -295,11 +296,11 @@ while (true)
         
     end
     
+    %% Goal filtering
     if (cmd_args.USE_GOAL_FILT)
         dg = cmd_args.a_g*(g0-g)/can_sys_ptr.get_tau();
     else
-        g = g0;
-        dg = zeros(size(g));
+        dg = zeros(size(dg));
     end
     
     %% Update phase variable
@@ -310,6 +311,7 @@ while (true)
     if (cmd_args.APPLY_DISTURBANCE)
         Fdist = Fdist_fun(t);
     end
+    
      
     %% Phase stopping
     if (cmd_args.USE_PHASE_STOP)
@@ -339,18 +341,15 @@ while (true)
     %% Numerical integration
     t = t + dt;
     
-    y = y + dy*dt;
-    
-    z = z + dz*dt;
-    
-    g = g + dg*dt;
-    
     x = x + dx*dt;
-    % allow the time to evolve
-    %if (x<0), x=0; end % zero crossing can occur due to numberical integration
+    
+    y = y + dy*dt;
+    z = z + dz*dt;
     
     y_robot = y_robot + dy_robot*dt;
     dy_robot = dy_robot + ddy_robot*dt;
+    
+    g = g + dg*dt;
 
 end
 toc

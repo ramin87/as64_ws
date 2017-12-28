@@ -59,7 +59,7 @@ extraArgNames{5} = 'P1_min';             extraArgValues{5} = cmd_args.P1_min;
 
 
 
-dmpo = DMPo();
+dmpo = DMP_orient();
 dmpo.init(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K, extraArgNames, extraArgValues);
 
 
@@ -90,7 +90,12 @@ end
 x = cmd_args.x0;
 dx = 0;
 Q0 = Qd_data(:,1);
-Qg = Qd_data(:,end);
+Qg0 = Qd_data(:,end);
+Qg = Qg0;
+Qg2 = Qg;
+dg = zeros(3,1);
+N_g_change = length(cmd_args.time_goal_change);
+ind_g_chage = 1;
 
 v_rot = zeros(3,1);
 dv_rot = zeros(3,1);
@@ -161,7 +166,7 @@ while (true)
  
     log_data.Time = [log_data.Time t];
     
-    log_data.y_data = [log_data.y_data quat2Vel(Qg,Q)];
+    log_data.y_data = [log_data.y_data quat2Vel(Qg0,Q)];
     log_data.dy_data = [log_data.dy_data v_rot];   
     log_data.ddy_data = [log_data.ddy_data dv_rot];   
     log_data.z_data = [log_data.z_data eta];
@@ -169,7 +174,7 @@ while (true)
         
     log_data.x_data = [log_data.x_data x];
     
-    log_data.y_robot_data = [log_data.y_robot_data quat2Vel(Qg,Q_robot)];
+    log_data.y_robot_data = [log_data.y_robot_data quat2Vel(Qg0,Q_robot)];
     log_data.dy_robot_data = [log_data.dy_robot_data v_rot_robot];
     log_data.ddy_robot_data = [log_data.ddy_robot_data dv_rot_robot];
     
@@ -177,7 +182,7 @@ while (true)
     
     log_data.Force_term_data = [log_data.Force_term_data scaled_forcing_term];
     
-    log_data.g_data = [log_data.g_data quat2Vel(Qg,Qg)];
+    log_data.g_data = [log_data.g_data quat2Vel(Qg0,Qg)];
     
     log_data.shape_attr_data = [log_data.shape_attr_data shape_attr];
     log_data.goal_attr_data = [log_data.goal_attr_data goal_attr];
@@ -189,15 +194,36 @@ while (true)
     scaled_forcing_term = dmpo.forcing_term(x).*dmpo.forcing_term_scaling(x, Q0, Qg);
 %     scaled_forcing_term =  dmpo.shape_attractor(x, Q0, Qg);
     
-    Q_c = 0; %cmd_args.a_py*quatLog(quatProd(Q_robot,quatInv(Q)));
+    Q_c = cmd_args.a_py*quatLog(quatProd(Q_robot,quatInv(Q)));
     eta_c = 0;
     [dQ, deta] = dmpo.get_states_dot(x, Q, eta, Q0, Qg, Q_c, eta_c);
     v_rot_temp = 2*quatProd(dQ,quatInv(Q));
     
     v_rot = v_rot_temp(2:4);
     dv_rot = deta / dmpo.get_v_scale();    
-    dv_rot_robot = dv_rot + inv(cmd_args.Md) * ( - cmd_args.Dd*(v_rot_robot - v_rot) - cmd_args.Kd*quatLog(quatProd(Q_robot,quatInv(Q))) + Fdist ); 
+    dv_rot_robot = dv_rot + inv(cmd_args.Md_o) * ( - cmd_args.Dd_o*(v_rot_robot - v_rot) - cmd_args.Kd_o*quatLog(quatProd(Q_robot,quatInv(Q))) + Fdist ); 
     
+    
+    %% Goal filtering
+    if (cmd_args.USE_GOAL_FILT)
+        dg = cmd_args.a_g*quatLog(quatProd(Qg2,quatInv(Qg)))/can_sys_ptr.get_tau();
+    else
+        dg = zeros(dg);
+    end
+    
+    
+    %% Goal change
+    if (cmd_args.ONLINE_GOAL_CHANGE_ENABLE)
+        if (ind_g_chage <= N_g_change)
+            if (abs((t-cmd_args.time_goal_change(ind_g_chage))) < dt/2.0)
+%                 disp('Goal change')
+%                 t
+                Qg2 = cmd_args.orient_goal_change(:,ind_g_chage);
+                ind_g_chage = ind_g_chage + 1;
+            end
+        end
+        
+    end
     
     %% Update phase variable
         
@@ -211,11 +237,10 @@ while (true)
      
     %% Phase stopping
     if (cmd_args.USE_PHASE_STOP)
-%         stop_coeff = 1/(1+cmd_args.a_px*norm(y-y_robot)^2);
-%         
-%         dx = dx*stop_coeff;
-%         du = du*stop_coeff;
-%         dg = dg*stop_coeff;
+        stop_coeff = 1/(1+cmd_args.a_px*norm(quatLog(quatProd(Q_robot,quatInv(Q))))^2);
+        
+        dx = dx*stop_coeff;
+        dg = dg*stop_coeff;
     end
     
     %% Stopping criteria
@@ -233,11 +258,16 @@ while (true)
     
     %% Numerical integration
     t = t + dt; 
+    
     x = x + dx*dt;
+    
     Q = quatProd(quatExp(v_rot*dt), Q);
     eta = eta + deta*dt;
+    
     Q_robot = quatProd(quatExp(v_rot_robot*dt),Q_robot);
     v_rot_robot = v_rot_robot + dv_rot_robot*dt;
+    
+    Qg = quatProd(quatExp(dg*dt),Qg);
 
 end
 toc

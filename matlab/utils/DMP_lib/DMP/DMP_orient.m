@@ -1,4 +1,4 @@
-%% DMP class
+%% DMP orientation class
 %  Implements an 1-D DMP.
 %  The DMP is driven by a canonical system. An example of an exponential
 %  canonical system is:
@@ -38,7 +38,7 @@
 %   is, the faster the convergence).
 %
 
-classdef DMPo < handle
+classdef DMP_orient < handle
     properties
         dmp % vector 3x1 
         can_sys_ptr % handle (pointer) to the canonical system
@@ -54,7 +54,7 @@ classdef DMPo < handle
         %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
-        function dmp_o = DMPo(DMP_TYPE, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
+        function dmp_o = DMP_orient(DMP_TYPE, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
                 
             if (nargin < 5)
                 return;
