@@ -61,6 +61,7 @@ void read_mat(arma::mat &m, std::istream &in, bool binary)
 
   read_scalar(n_rows, in, binary);
   read_scalar(n_cols, in, binary);
+
   read_mat(m, n_rows, n_cols, in, binary);
 }
 

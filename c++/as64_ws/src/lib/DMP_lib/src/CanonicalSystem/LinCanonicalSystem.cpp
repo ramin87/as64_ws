@@ -3,7 +3,7 @@
 
 namespace as64
 {
-	
+
 LinCanonicalSystem::LinCanonicalSystem()
 {}
 
@@ -18,9 +18,9 @@ arma::vec LinCanonicalSystem::get_derivative(const arma::vec &X)
 {
   arma::vec dX(1);
   double tau = get_tau();
-  
+
   dX(0) = -a_x/tau;
-  
+
   return dX;
 }
 
@@ -29,11 +29,15 @@ arma::mat LinCanonicalSystem::get_continuous_output(const arma::rowvec &t)
 {
   arma::mat x;
   double tau = get_tau();
-  
+
   x = x0 - a_x*t/tau;
+
+	// std::cout << "t = " << t << "\n";
+	// std::cout << "x0 = " << x0 << "\n";
+	// std::cout << "a_x = " << a_x << "\n";
+	// std::cout << "x = " << x << "\n";
 
   return x;
 }
 
 }  // namespace as64
-

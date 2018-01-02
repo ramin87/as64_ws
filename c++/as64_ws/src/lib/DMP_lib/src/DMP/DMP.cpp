@@ -23,9 +23,9 @@ double DMP::forcing_term_scaling(double u, double y0, double g0)
 double DMP::shape_attractor(const arma::vec &X, double g0, double y0)
 {
   double x,u;
-  
+
   x = X(0);
-  
+
   if (X.n_elem == 1) u = x;
   else u = X(1);
 
@@ -37,10 +37,11 @@ double DMP::shape_attractor(const arma::vec &X, double g0, double y0)
 double DMP::calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0)
 {
   double v_scale = this->get_v_scale();
-	
-  double g_attr = -this->goal_attractor(y, v_scale*dy, g);
-  double Fd = ddy * std::pow(v_scale, 2) + g_attr;
-	
+
+  double g_attr = this->goal_attractor(y, v_scale*dy, g);
+  double Fd = ddy * std::pow(v_scale, 2) - g_attr;
+
 	return Fd;
 }
+
 }  // namespace as64

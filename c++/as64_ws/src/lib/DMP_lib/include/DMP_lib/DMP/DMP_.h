@@ -14,6 +14,7 @@
 #include <cmath>
 #include <vector>
 #include <cstring>
+#include <iomanip>
 #include <memory>
 #include <exception>
 #include <armadillo>
@@ -43,10 +44,10 @@ public:
 
 	bool USE_GOAL_FILT; ///<
 	double a_g; ///<
-	
+
 	double lambda; ///<
 	double P_rlwr; ///<
-	
+
     DMP_();
 
     /** \brief DMP constructor.
@@ -55,28 +56,28 @@ public:
     *  @param[in] b_z Parameter \a b_z relating to the spring-damper system.
     *  @param[in] can_sys_ptr Pointer to a DMP canonical system object.
     *  @param[in] std_K Scales the std of each kernel (optional, default = 1).
-    */ 
+    */
     DMP_(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
 
- 
+
     /** \brief Initializes the DMP.
      * @param[in] N_kernels The number of kernels.
      * @param[in] a_z Parameter \a a_z relating to the spring-damper system.
      * @param[in] b_z Parameter \a b_z relating to the spring-damper system.
      * @param[in] can_sys_ptr Pointer to a DMP canonical system object.
      * @param[in] std_K Scales the std of each kernel (optional, default = 1).
-     */ 
+     */
     virtual void init(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
-	
+
 	/** \brief Sets the centers for the activation functions of the DMP according to the partition method specified.
 	 *  @param[in] part_type Partitioning method for the kernel centers (optional, default = "").
-	 */ 
+	 */
 	void set_centers(const std::string  &part_type="");
-	
+
 	/** \brief Sets the standard deviations for the activation functions  of the DMP.
 	 *  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
 	 *  @param[in] s Scales the variance of each kernel by \a s (optional, default = 1).
-	 */ 
+	 */
 	void set_stds(double s=1);
 
 	/** \brief Trains the DMP
@@ -97,14 +98,14 @@ public:
    virtual double train(const arma:: rowvec &Time, const arma::rowvec &yd_data, const arma::rowvec &dyd_data,
                         const arma::rowvec &ddyd_data, double y0, double g0, const std::string &train_method,
                         arma::rowvec *Fd_ptr=NULL, arma::rowvec *F_ptr=NULL);
-	
-  
+
+
     /** \brief Sets training parameters of the DMP.
      *  @param[in] USE_GOAL_FILT Flag for enabling goal filtering.
      *  @param[in] a_g Goal filtering gain.
      *	@param[in] lambda Forgetting factor for RLWR.
      *	@param[in] P_rlwr Initial value of covarience matrix for RLWR.
-     */ 
+     */
     void set_training_params(bool USE_GOAL_FILT, double a_g, double lambda, double P_rlwr);
 
     /** \brief Returns the scaling factor of the forcing term.
@@ -114,7 +115,7 @@ public:
      *	\return The scaling factor of the forcing term.
      */
     virtual double forcing_term_scaling(double u, double y0, double g0) = 0;
-	
+
     /** Returns the shape attractor of the DMP.
      *  @param[in] x The phase variable.
      *  @param[in] u Multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
@@ -183,32 +184,32 @@ public:
      *  @param[in] g0 final goal.
      *  @param[in] g current goal (if for instance the transition from y0 to g0 is done using a filter).
      *  \return Desired value of the scaled forcing term.
-     */ 
+     */
     virtual double calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0) = 0;
 
     /** \brief Returns the time cycle of the DMP
-     *  \return The time cycle of the DMP.  
+     *  \return The time cycle of the DMP.
      */
     double get_tau();
 
     /** Returns the scaling factor of the DMP
      *  \return The scaling factor of the DMP.
-     */ 
+     */
     double get_v_scale();
 
 protected:
-	
+
     /** \brief Helper function for DMP initialization
      * @param[in] N_kernels the number of kernels
      * @param[in] a_z Parameter \a a_z relating to the spring-damper system.
      * @param[in] b_z Parameter \a b_z relating to the spring-damper system.
      * @param[in] can_sys_ptr Pointer to a DMP canonical system object.
      * @param[in] std_K Scales the std of each kernel (optional, default = 1).
-     */ 
+     */
     void init_helper(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
 
     /** \brief Trains the DMP weights using LWR (Locally Weighted Regression)
-     *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s), 
+     *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s),
      *  where Psi = exp(-h(k)*(x-c(k)).^2)
      *  @param[in] x Row vector with the values of the phase variable.
      *  @param[in] s Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
@@ -217,8 +218,8 @@ protected:
     void train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
 
     /** Trains the DMP weights using RLWR (Recursive Locally Weighted Regression)
-     *  For the i-th data point the k-th weight is updated as w_k = w_k+Psi*P_k*s_i*e_i, 
-     *  where Psi = exp(-h(k)*(x_i-c(k)).^2), e_i = Fd_i-w_k*s_i, 
+     *  For the i-th data point the k-th weight is updated as w_k = w_k+Psi*P_k*s_i*e_i,
+     *  where Psi = exp(-h(k)*(x_i-c(k)).^2), e_i = Fd_i-w_k*s_i,
      *  P_k = P_k - (P_k^2*s_i^2/((l/Psi)+P_k*s_i))/l
      *  P_k is initialized in 1 and lambda is a forgetting factor in (0, 1].
      *  @param[in] x Row vector with the values of the phase variable.
@@ -229,7 +230,7 @@ protected:
 
 
     /** Trains the DMP weights using LS (Least Squares)
-     *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s), 
+     *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s),
      *  where Psi = exp(-h(k)*(x-c(k)).^2)
      *  @param[in] x Row vector with the values of the phase variable.
      *  @param[in] s Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.

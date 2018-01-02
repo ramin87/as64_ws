@@ -1,13 +1,13 @@
 # ====  Set up DMP params  ====
 a_z: 40
-b_z: 10 # default: set to a_z/4 
+b_z: 10 # default: set to a_z/4
 x0: 1
 x_end: 0.005
-N_kernels: 10
+N_kernels: 30
 std_K: 0.95
-DMP_TYPE: "DMP" # "DMP", "DMP-bio", "DMP-plus"
+DMP_TYPE: "DMP-bio" # "DMP", "DMP-bio", "DMP-plus"
 train_method: "LWR" # "LWR", "LS", "RLS" , "RLWR"
-CAN_SYS_TYPE: "lin" # "lin", "exp", "spring-damper"
+CAN_SYS_TYPE: "spring-damper" # "lin", "exp", "spring-damper"
 
 OFFLINE_DMP_TRAINING_enable: true
 ONLINE_DMP_UPDATE_enable: false
@@ -15,7 +15,7 @@ ONLINE_DMP_UPDATE_enable: false
 RLWR_lambda: 0.99
 RLWR_P: 1e8
 
-USE_GOAL_FILT: false
+USE_GOAL_FILT: true
 a_g: 10
 USE_PHASE_STOP: true
 a_px: 100
@@ -28,7 +28,7 @@ smooth_points_percent: 0.03
 # ====  Robot controller params  ====
 Kd: 100
 Dd: 10
-     
+
 # ====  Simulation params  ====
 sim_time_step: 0.002
 sim_tol_stop: 0.001
@@ -38,13 +38,13 @@ goal_sim_scale: 1
 
 # ====  Apply disturbance force  ====
 APPLY_DISTURBANCE: false
-Fdist_min: 0
+Fdist_min: 5
 Fdist_max: 200
 t1_fdist: 0.4
 t2_fdist: 2.2
 
 # ====  Path to input-output data  ====
-binary: false
+binary: true
 data_input_path: "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/"
 data_output_path: "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/"
 
