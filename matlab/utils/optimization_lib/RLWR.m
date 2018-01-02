@@ -42,7 +42,7 @@ end
 %   
 %   for i = 1:n
 %       
-%       psi = dmp.activation_function(x(i));
+%       psi = dmp.kernel_function(x(i));
 %       
 %       w_dot = -Gamma*(P.*dmp.w - Q);
 %       P_dot = -lambda*P + psi*s(i)^2;

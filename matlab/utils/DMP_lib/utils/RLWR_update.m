@@ -12,7 +12,7 @@ function [P] = RLWR_update(dmp, x, y, dy, ddy, y0, g, P, lambda)
 
     Fd = dmp.calc_Fd(y, dy, ddy, x, y0, g);
     s = dmp.forcing_term_scaling(x, y0, g);
-    psi = dmp.activation_function(x);
+    psi = dmp.kernel_function(x);
     
     error = Fd - dmp.w*s;
     

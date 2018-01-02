@@ -3,6 +3,6 @@
 %  @param[out] tau: The time cycle of the DMP.
 function tau = DMP_get_tau(dmp)
 
-    tau = dmp.can_sys_ptr.get_tau();
+    tau = dmp.canClock_ptr.get_tau();
 
 end

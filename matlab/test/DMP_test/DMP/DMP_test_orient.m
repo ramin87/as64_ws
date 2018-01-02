@@ -43,7 +43,7 @@ can_sys_ptr.can_clock.x_end = cmd_args.x_end;
 
 % Optionally, one can set the steepness of the sigmoid, but in this case 'init' must be called again
 if (strcmpi(cmd_args.CAN_FUN_TYPE,'sigmoid'))
-    can_sys_ptr.can_fun.a_u = 500;
+    can_sys_ptr.forcingTermGatingFun.a_u = 500;
 end
 
 can_sys_ptr.init(cmd_args.CAN_CLOCK_TYPE, cmd_args.CAN_FUN_TYPE, tau, cmd_args.u_end, cmd_args.u0);
@@ -53,7 +53,7 @@ extraArgNames = {'k_trunc_kernel', 'Wmin', 'Freq_min', 'Freq_max', 'P1_min'};
 extraArgValues = {cmd_args.k_trunc_kernel, cmd_args.Wmin, cmd_args.Freq_min, cmd_args.Freq_max, cmd_args.P1_min};
 
 dmpo = DMP_orient();
-dmpo.init(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_scale_factor, extraArgNames, extraArgValues);
+dmpo.init(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.kernel_std_scaling, extraArgNames, extraArgValues);
 
 
 Time_offline_train = [];

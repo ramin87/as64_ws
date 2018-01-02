@@ -234,7 +234,7 @@ if (strcmpi(flag,'init'))
 
     % Activate sp1 so that the legend command 'legend('e_x','e_y','e_z');' will assign 
     % the legend to this subplot. The animeLines are already assigned so if we were to 
-    % omit the activation of sp1, the lines would be still plotted in the right subplot.
+    % omit the kernel of sp1, the lines would be still plotted in the right subplot.
     subplot(sp1H) 
     for k=1:3
         addpoints(animeLineH(k),t(1),X(k));
@@ -244,7 +244,7 @@ if (strcmpi(flag,'init'))
     
     % Activate sp2 so that the legend command 'legend('e0_1','e0_2','e0_3');' will assign 
     % the legend to this subplot. The animeLines are already assigned so if we were to 
-    % omit the activation of sp1, the lines would be still plotted in the right subplot.
+    % omit the kernel of sp1, the lines would be still plotted in the right subplot.
     subplot(sp2H)
     for k=4:6
         addpoints(animeLineH(k),t(1),X(k));

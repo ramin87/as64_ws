@@ -1,4 +1,4 @@
-function plot_psi_activations_and_psiWeightedSum(x_data,Psi_data, f_data, c, w)
+function plot_psi_kernels_and_psiWeightedSum(x_data,Psi_data, f_data, c, w)
 
 lineWidth = 2;
 fontsize = 14;
@@ -11,7 +11,7 @@ for i=1:N_kernels
     plot((x_data),(Psi_data(i,:)));
     axis tight;
 end
-title('Psi activations','Interpreter','latex','fontsize',fontsize);
+title('Psi kernels','Interpreter','latex','fontsize',fontsize);
 set(gca,'Xdir','reverse');
 hold off;
 subplot(2,1,2);

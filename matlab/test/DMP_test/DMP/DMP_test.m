@@ -10,22 +10,22 @@ cmd_args = get_cmd_args();
 
 % check if the cmd args are constistent
 
-if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
-    if (cmd_args.u_end < 0.9)
-        msg = sprintf('\ncmd_args.u_end = %f.\ncmd_args.DMP_TYPE = %s \ncmd_args.u_end should have a value close to 1.0\n', cmd_args.u_end, cmd_args.DMP_TYPE);
-        warning(msg);
-    end
-    
-    if (~strcmpi(cmd_args.CAN_FUN_TYPE, 'sigmoid'))
-        msg = sprintf('\ncmd_args.CAN_FUN_TYPE = %s.\ncmd_args.DMP_TYPE = %s \ncmd_args.CAN_FUN_TYPE should be %s\n', cmd_args.CAN_FUN_TYPE, cmd_args.DMP_TYPE, 'sigmoid');
-        warning(msg);
-    end
-else
-    if (cmd_args.u_end > 0.1)
-        msg = sprintf('\ncmd_args.u_end = %f.\ncmd_args.DMP_TYPE = %s \ncmd_args.u_end should have a value lower than 0.1\n', cmd_args.u_end, cmd_args.DMP_TYPE);
-        warning(msg);
-    end
-end
+% if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
+%     if (cmd_args.u_end < 0.9)
+%         msg = sprintf('\ncmd_args.u_end = %f.\ncmd_args.DMP_TYPE = %s \ncmd_args.u_end should have a value close to 1.0\n', cmd_args.u_end, cmd_args.DMP_TYPE);
+%         warning(msg);
+%     end
+%     
+%     if (~strcmpi(cmd_args.CAN_FUN_TYPE, 'sigmoid'))
+%         msg = sprintf('\ncmd_args.CAN_FUN_TYPE = %s.\ncmd_args.DMP_TYPE = %s \ncmd_args.CAN_FUN_TYPE should be %s\n', cmd_args.CAN_FUN_TYPE, cmd_args.DMP_TYPE, 'sigmoid');
+%         warning(msg);
+%     end
+% else
+%     if (cmd_args.u_end > 0.1)
+%         msg = sprintf('\ncmd_args.u_end = %f.\ncmd_args.DMP_TYPE = %s \ncmd_args.u_end should have a value lower than 0.1\n', cmd_args.u_end, cmd_args.DMP_TYPE);
+%         warning(msg);
+%     end
+% end
 
 
 if (~cmd_args.USE_PHASE_STOP)
@@ -52,21 +52,63 @@ n_data = size(yd_data,2); % number of training points
 %% Set up DMP params
 tau = (n_data-1)*Ts;
 
-% Init canonical system
-can_sys_ptr = CanonicalSystem();
+%% ========================================================
+%% Init canonical clock
+if (strcmpi(cmd_args.CAN_CLOCK_TYPE,'lin'))
+    canClock_ptr = LinCanonicalClock();
+else
+    error('Unsupported canonical clock type ''%s''', cmd_args.CAN_CLOCK_TYPE);
+end
+canClock_ptr.init(tau);
 
-% Optionally, one can set the clock's starting and end value, but in this case 'init' must be called again
-can_sys_ptr.can_clock.x0 = cmd_args.x0;
-can_sys_ptr.can_clock.x_end = cmd_args.x_end;
+
+%% ========================================================
+%% Init shape attractor gating function
+if (strcmpi(cmd_args.SHAPE_ATTR_GATTING_TYPE,'lin'))
+    shapeAttrGating_ptr = LinGatingFunction();
+elseif (strcmpi(cmd_args.SHAPE_ATTR_GATTING_TYPE,'exp'))
+    shapeAttrGating_ptr = ExpGatingFunction();
+elseif (strcmpi(cmd_args.SHAPE_ATTR_GATTING_TYPE,'sigmoid'))
+    shapeAttrGating_ptr = SigmoidGatingFunction();
+elseif (strcmpi(cmd_args.SHAPE_ATTR_GATTING_TYPE,'spring-damper'))
+    shapeAttrGating_ptr = SpringDamperGatingFunction();
+elseif (strcmpi(cmd_args.SHAPE_ATTR_GATTING_TYPE,'constant'))
+    shapeAttrGating_ptr = ConstGatingFunction();
+else
+    error('Unsupported gating function type ''%s''', cmd_args.SHAPE_ATTR_GATTING_TYPE);
+end
+shapeAttrGating_ptr.init(cmd_args.SHAPE_ATTR_GATTING_u0, cmd_args.SHAPE_ATTR_GATTING_u_end);
 
 % Optionally, one can set the steepness of the sigmoid, but in this case 'init' must be called again
-if (strcmpi(cmd_args.CAN_FUN_TYPE,'sigmoid'))
-    can_sys_ptr.can_fun.a_u = 500;
+if (strcmpi(cmd_args.GOAL_ATTR_GATTING_TYPE,'sigmoid'))
+    shapeAttrGating_ptr.a_u = 500;
 end
 
-can_sys_ptr.init(cmd_args.CAN_CLOCK_TYPE, cmd_args.CAN_FUN_TYPE, tau, cmd_args.u_end, cmd_args.u0);
+%% ========================================================
+%% Init goal attractor gating function
+if (strcmpi(cmd_args.GOAL_ATTR_GATTING_TYPE,'lin'))
+    goalAttrGating_ptr = LinGatingFunction();
+elseif (strcmpi(cmd_args.GOAL_ATTR_GATTING_TYPE,'exp'))
+    goalAttrGating_ptr = ExpGatingFunction();
+elseif (strcmpi(cmd_args.GOAL_ATTR_GATTING_TYPE,'sigmoid'))
+    goalAttrGating_ptr = SigmoidGatingFunction();
+elseif (strcmpi(cmd_args.GOAL_ATTR_GATTING_TYPE,'spring-damper'))
+    goalAttrGating_ptr = SpringDamperGatingFunction();
+elseif (strcmpi(cmd_args.GOAL_ATTR_GATTING_TYPE,'constant'))
+    goalAttrGating_ptr = ConstGatingFunction();
+else
+    error('Unsupported gating function type ''%s''', cmd_args.GOAL_ATTR_GATTING_TYPE);
+end
+goalAttrGating_ptr.init(cmd_args.GOAL_ATTR_GATTING_u0, cmd_args.GOAL_ATTR_GATTING_u_end);
+
+% Optionally, one can set the steepness of the sigmoid, but in this case 'init' must be called again
+if (strcmpi(cmd_args.GOAL_ATTR_GATTING_TYPE,'sigmoid'))
+    goalAttrGating_ptr.a_u = 500;
+end
 
 
+%% ========================================================
+%% Extra args for the DMP
 extraArgNames = {'k_trunc_kernel', 'Wmin', 'Freq_min', 'Freq_max', 'P1_min'};
 extraArgValues = {cmd_args.k_trunc_kernel, cmd_args.Wmin, cmd_args.Freq_min, cmd_args.Freq_max, cmd_args.P1_min};
 
@@ -84,8 +126,9 @@ for i=1:D
         error('Unsupported DMP type ''%s''', cmd_args.DMP_TYPE);
     end
     
-    dmp{i}.init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_scale_factor, extraArgNames, extraArgValues);
+    dmp{i}.init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, canClock_ptr, shapeAttrGating_ptr, goalAttrGating_ptr,cmd_args.kernel_std_scaling, extraArgNames, extraArgValues);
 end
+
 
 F_offline_train_data = [];
 Fd_offline_train_data = [];
@@ -128,6 +171,8 @@ end
 number_of_kernels = dmp{1}.N_kernels
 n_data
 
+offline_train_mse
+
 
 %% DMP simulation
 % set initial values
@@ -138,12 +183,12 @@ g2 = g0;
 N_g_change = length(cmd_args.time_goal_change);
 ind_g_chage = 1;
 dg = zeros(D,1);
-x = cmd_args.x0;
-dx = 0;
+x = 0.0;
+dx = 0.0;
 ddy = zeros(D,1);
 dy = zeros(D,1);
 y = y0;
-t = 0;
+t = 0.0;
 y_robot = y0;
 dy_robot = zeros(D,1);
 ddy_robot = zeros(D,1);
@@ -190,9 +235,9 @@ log_data.shape_attr_data = [];
 log_data.goal_attr_data = [];
 
 
-tau0 = can_sys_ptr.get_tau();
+tau0 = canClock_ptr.get_tau();
 tau = cmd_args.tau_sim_scale*tau;
-can_sys_ptr.set_tau(tau);
+canClock_ptr.set_tau(tau);
 
 iters = 0;
 
@@ -252,12 +297,12 @@ while (true)
             
         end
         
-        Psi = dmp{i}.activation_function(x);
+        Psi = dmp{i}.kernel_function(x);
         log_data.Psi_data{i} = [log_data.Psi_data{i} Psi(:)];
 
         shape_attr(i) = dmp{i}.shape_attractor(x, y0(i), g(i));
         goal_attr(i) = dmp{i}.goal_attractor(x, y(i), dy(i), g(i));
-        scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(x, y0(i), g(i));
+        scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(y0(i), g(i)) * dmp{i}.shapeAttrGating_ptr.get_output(x);
         
         y_c = cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
@@ -291,7 +336,7 @@ while (true)
     
     %% Goal filtering
     if (cmd_args.USE_GOAL_FILT)
-        dg = cmd_args.a_g*(g2-g)/can_sys_ptr.get_tau();
+        dg = cmd_args.a_g*(g2-g)/canClock_ptr.get_tau();
     else
         g = g2;
         dg = zeros(size(dg));
@@ -299,7 +344,7 @@ while (true)
     
     %% Update phase variable
 
-    dx = can_sys_ptr.get_phaseVar_dot(x);
+    dx = canClock_ptr.get_phase_dot(x);
     
     %% Update disturbance force
     if (cmd_args.APPLY_DISTURBANCE)
@@ -314,7 +359,7 @@ while (true)
         dx = dx*stop_coeff;
         dg = dg*stop_coeff;
         
-%         can_sys_ptr.set_tau(tau0*stop_coeff);
+%         canClock_ptr.set_tau(tau0*stop_coeff);
     end
     
     %% Stopping criteria
@@ -353,7 +398,8 @@ while (true)
 end
 toc
 
-log_data.u_data = can_sys_ptr.get_shapeVar(log_data.x_data);
+log_data.shapeAttrGating_data = shapeAttrGating_ptr.get_output(log_data.x_data);
+log_data.goalAttrGating_data = goalAttrGating_ptr.get_output(log_data.x_data);
 
 save data/dmp_results.mat log_data cmd_args;
     

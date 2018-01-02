@@ -38,7 +38,8 @@ ddy_data = log_data.ddy_data;
 z_data = log_data.z_data;
 dz_data = log_data.dz_data;
 x_data = log_data.x_data;
-u_data = log_data.u_data;
+shapeAttrGating_data = log_data.shapeAttrGating_data;
+goalAttrGating_data = log_data.goalAttrGating_data;
 
 y_robot_data = log_data.y_robot_data;
 dy_robot_data = log_data.dy_robot_data;
@@ -69,10 +70,10 @@ disp('Ploting results...')
 tic
 
 % for i=1:D
-%     X = dmp{i}.can_sys_ptr.get_continuous_output(Time_offline_train, 1);
+%     X = dmp{i}.canClock_ptr.get_continuous_output(Time_offline_train, 1);
 %     x = X(1,:);
 %     
-%     Psi_train_data = dmp{i}.activation_function(x);
+%     Psi_train_data = dmp{i}.kernel_function(x);
 % 
 %     N_kernels = size(Psi_train_data,1);
 %     figure;
@@ -83,7 +84,7 @@ tic
 %     end
 %     plot((Time_offline_train),(F_offline_train_data(i,:)/max(abs(F_offline_train_data(i,:)))),'LineWidth',1.5);
 %     plot((Time_offline_train),(Fd_offline_train_data(i,:)/max(abs(Fd_offline_train_data(i,:)))),'LineWidth',3);
-%     title('Psi activations','Interpreter','latex','fontsize',fontsize);
+%     title('Psi kernels','Interpreter','latex','fontsize',fontsize);
 %     hold off;
 % end
 
@@ -105,8 +106,8 @@ for i=1:D
     n_splots = 3;
     figure;
     subplot(n_splots,1,1);
-    plot(Time,x_data, Time,u_data);
-    legend({'$x$','$u$'},'Interpreter','latex','fontsize',fontsize);
+    plot(Time,x_data, Time,shapeAttrGating_data, Time, goalAttrGating_data);
+    legend({'$x$','$shapeAttrGating$', '$goalAttrGating$'},'Interpreter','latex','fontsize',fontsize);
     subplot(n_splots,1,2);
     plot(Time,y_robot_data(i,:), Time,y_data(i,:), Time_demo,yd_data(i,:), Time,g_data(i,:), '--', Time(end),g0(i),'r*','Markersize',10);
     legend({'$p_{robot}$','$p_{DMP}$','$p_{train}$','goal evolution','$p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
@@ -139,11 +140,11 @@ if (OFFLINE_DMP_TRAINING_enable)
         F = F_offline_train_data(i,:);
         Fd = Fd_offline_train_data(i,:);
         scale = 1/max(abs([F Fd]));
-        x_data_train = dmp{i}.can_sys_ptr.get_phaseVar(Time_offline_train);
+        x_data_train = dmp{i}.canClock_ptr.get_phase(Time_offline_train);
         x_data_train = x_data_train(1,:);
         Psi = [];
         for j=1:length(x_data_train)
-            Psi = [Psi dmp{i}.activation_function(x_data_train(j))];
+            Psi = [Psi dmp{i}.kernel_function(x_data_train(j))];
         end
         
         figure;
@@ -175,11 +176,11 @@ if (ONLINE_DMP_UPDATE_enable)
         F = F_online_train_data(i,:);
         Fd = Fd_online_train_data(i,:);
         scale = 1/max(abs([F Fd]));
-        x_data_train = dmp{i}.can_sys_ptr.get_continuous_output(Time_online_train, 1);
+        x_data_train = dmp{i}.canClock_ptr.get_continuous_output(Time_online_train, 1);
         x_data_train = x_data_train(1,:);
         Psi = [];
         for j=1:length(x_data_train)
-            Psi = [Psi dmp{i}.activation_function(x_data_train(j))];
+            Psi = [Psi dmp{i}.kernel_function(x_data_train(j))];
         end
 
         figure;
@@ -282,14 +283,14 @@ plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddyd_data, 'robot', 
 % end
 
 
-%% Plot psi activations with respect to phase variable
+%% Plot psi kernels with respect to phase variable
 % for i=1:D
 %     f_data = Force_term_data(i,:);
-%     plot_psi_activations_and_psiWeightedSum(x_data,Psi_data{i}, f_data, dmp{i}.c, dmp{i}.w);
+%     plot_psi_kernels_and_psiWeightedSum(x_data,Psi_data{i}, f_data, dmp{i}.c, dmp{i}.w);
 % end
 
 
-%% Plot psi activations with respect to time
+%% Plot psi kernels with respect to time
 % for i=1:D
 %     figure
 %     plot(Time, Psi_data{i});

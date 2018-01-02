@@ -4,37 +4,34 @@ cmd_args = struct();
 
 %% Set up DMP params
 
-% Do NOT change these
-cmd_args.x0 = 0.0; % start of canonical time
-cmd_args.x_end = 1.0; % end of canonical time
-
 % Parameters of the linear part of the DMP (spring-damper)
 cmd_args.a_z = 20.0;
 cmd_args.b_z = cmd_args.a_z/4;
 
 cmd_args.DMP_TYPE = 'DMP'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
 
-cmd_args.u0 = 1.0; % starting value of forcing term shaping
-if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
-    cmd_args.u_end = 0.9995; % ending value of forcing term shaping
-else
-    cmd_args.u_end = 0.005; % ending value of forcing term shaping
-end
-
-
 cmd_args.N_kernels = 100; % number of kernels used in the DMP
 
-cmd_args.std_scale_factor = 1.0; % scaling factor for the kernels std
+cmd_args.kernel_std_scaling = 1.0; % scaling factor for the kernels std
 
 cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 
 cmd_args.CAN_CLOCK_TYPE = 'lin';
-if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
-    cmd_args.CAN_FUN_TYPE = 'sigmoid'; % 'lin', 'exp', 'spring-damper', 'sigmoid'
-else
-    cmd_args.CAN_FUN_TYPE = 'exp'; % 'lin', 'exp', 'spring-damper', 'sigmoid'
-end
-cmd_args.sigmoid_a_u = 280; % steepness of the sigmoid canonical function (optional)
+
+cmd_args.SHAPE_ATTR_GATTING_TYPE = 'exp'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
+cmd_args.SHAPE_ATTR_GATTING_u0 = 1.0; % starting value of the shape attractor gating
+cmd_args.SHAPE_ATTR_GATTING_u_end = 0.005; % ending value of the shape attractor gating
+
+cmd_args.GOAL_ATTR_GATTING_TYPE = 'lin'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
+cmd_args.GOAL_ATTR_GATTING_u0 = 1.0; % starting value of the goal attractor gating
+cmd_args.GOAL_ATTR_GATTING_u_end = 1.0; % ending value of the goal attractor gating
+
+% if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
+%     cmd_args.CAN_FUN_TYPE = 'sigmoid'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
+% else
+%     cmd_args.CAN_FUN_TYPE = 'exp'; % 'lin', 'exp', 'spring-damper', 'sigmoid'
+% end
+cmd_args.sigmoid_a_u = 280; % steepness of the sigmoid gating function (optional)
 
 
 cmd_args.OFFLINE_DMP_TRAINING_enable = true;

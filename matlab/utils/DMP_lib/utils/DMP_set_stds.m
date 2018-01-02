@@ -1,4 +1,4 @@
-%% Sets the standard deviations for the activation functions  of the DMP
+%% Sets the standard deviations for the kernel functions  of the DMP
 %  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
 %  @param[in] dmp: The DMP object.
 %  @param[in] s: Scales the variance of each kernel by 's' (optional, default = 1).

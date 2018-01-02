@@ -12,16 +12,19 @@
 %  ddyd_data need not be sequantial in time.
 function [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g)
 
-    x = dmp.can_sys_ptr.get_phaseVar(Time);
+    x = dmp.canClock_ptr.get_phase(Time);
 
     s = zeros(size(x));
     for i=1:length(s)
-        s(i) = dmp.forcing_term_scaling(x(i), y0, g);
+        s(i) = dmp.forcing_term_scaling(y0, g) * dmp.shapeAttrGating_ptr.get_output(x(i));
     end
 
-    Fd = dmp.calc_Fd(x, yd_data, dyd_data, ddyd_data, y0, g);
+    Fd = zeros(1,length(Time));
+    for i=1:length(Fd)
+        Fd(i) = dmp.calc_Fd(x(i), yd_data(i), dyd_data(i), ddyd_data(i), y0, g);
+    end
 
-    Psi = dmp.activation_function(x);
+    Psi = dmp.kernel_function(x);
 
     train_method = dmp.train_method;
     if (strcmpi(train_method,'LWR'))
@@ -42,7 +45,7 @@ function [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_dat
 
     F = zeros(size(Fd));
     for i=1:size(F,2)
-        F(i) = dmp.forcing_term(x(i))*dmp.forcing_term_scaling(x(i), y0, g);
+        F(i) = dmp.forcing_term(x(i))*dmp.forcing_term_scaling(y0, g)*dmp.shapeAttrGating_ptr.get_output(x(i));
     end
 
 
