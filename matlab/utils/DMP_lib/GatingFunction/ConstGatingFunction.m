@@ -20,7 +20,7 @@ classdef ConstGatingFunction < handle
       function gating_fun = ConstGatingFunction(u0, u_end)
 
           if (nargin < 1), u0 = 1.0; end
-          % if (nargin < 2), u_end = 1.0; end
+          if (nargin < 2), u_end = u0; end
 
           gating_fun.init(u0, u_end);
 

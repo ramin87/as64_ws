@@ -1,41 +1,36 @@
 %% DMP class
 %  Implements an 1-D DMP.
-%  The DMP is driven by a canonical system. An example of an exponential
-%  canonical system is:
-%     dx = -ax*x/tau
-%  where x is the phase variable and ax the decay term. Other types of
-%  canonical systems, such as a linear canonical system, can be used.
+%  The DMP is driven by a canonical clock. It outputs the phase varialbe 
+%  'x' which serves as a substitute for time. Typically, it evolves from 
+%  x0=0 at t=0 to x_end=1, at t=tau, where tau is the total movement's 
+%  duration. An example of a linear canonical clock is:
+%     dx = -ax/tau
+%  where x is the phase variable and ax the evolution factor. Other types 
+%  of canonical clocks, such as exponential, can be used. However, keeping
+%  a linear mapping between the phase variable 'x' and time 't' is more
+%  intuitive.
 %
-%  The DMP has the following form:
+%  The DMP has the in general the following form:
 %
-%     tau*dz = ( a_z*(b_z*(g-y) - z ) + f*s + z_c
+%     tau*dz = g1(x)*( a_z*(b_z*(g-y) - z ) + g2(x)*fs*f(x) + z_c
 %     tau*dy = z + y_c;
 %
-%  Or equivalently:
-%     ddy = ( a_z*(b_z*(g-y)-dy*tau) + f*x*(g-y0) ) / tau^2;
+%  Assuming y_c=z_c=0, we can write equivalently:
+%     ddy = g1(x)*( a_z*(b_z*(g-y)-dy*tau) + 2(x)*fs*f(x) ) / tau^2;
 %
 %  where
-%     tau: is scaling factor defining the duration (time cycle) of the motion
+%     tau: is scaling factor defining the duration of the motion
 %     a_z, b_z: constants relating to a spring-damper system
-%     g0: the final goal
-%     g: the continuous goal (or the final goal in case no goal-filtering is used)
+%     fs: scaling of the forcing term (typically fs = g0-y0)
+%     g: the goal-final position
 %     y0: the initial position
 %     x: the phase variable
 %     y,dy,ddy: the position, velocity and accelaration of the motion
-%     f: the forcing term defined by the weighted sum of the kernel
-%        functions (gaussian kernels), i.e.:
-%        f = w'*Psi/ sum(Psi);
-%     s: the scaling of the forcing term. It could be for instance
-%        s = u*(g0-y0), where u=x or some other variable that reaches zero
-%        as x approaches its final value (which is also close to zero).
-%        Another case is s = u*K, where K is the spring-damper stiffness.
-%
-%   Optionally the goal 'g' fed to the DMP can be filtered to ensure smooth transitions
-%   in the accelaration produced by the DMP. The filtering is donce as follows:
-%     tau*dg = a_g*(g0 - g)
-%   where 'g0' is the DMP goal, 'g' is the continuous goal variable and 'a_g'
-%   a time contant determining how fast 'g' converges to 'g0' (the higher 'a_g'
-%   is, the faster the convergence).
+%     f(x): the forcing term defined by the normalized weighted sum of the 
+%        kernel functions (gaussian kernels), i.e.:
+%        f(x) = w'*Psi(x)/ sum(Psi(x));
+%     g1(x): the gating factor of the spring-damper term
+%     g2(x): the gating factor of non-linear forcing term
 %
 
 classdef DMP < handle % : public DMP_
@@ -63,9 +58,6 @@ classdef DMP < handle % : public DMP_
         lambda % forgetting factor in recursive training methods
         P_cov% Initial value of covariance matrix in recursive training methods
 
-        DISABLE_SHAPE_ATTR_SCALING % disables the scaling of the forcing term
-
-
     end
 
     methods
@@ -76,7 +68,7 @@ classdef DMP < handle % : public DMP_
         %  @param[in] canClock_ptr: Pointer to a DMP canonical system object.
         %  @param[in] shapeAttrGating_ptr: Pointer to gating function for the shape attractor.
         %  @param[in] goalAttrGating_ptr: Pointer to gating function for the goal attractor.
-        %  @param[in] kernel_std_scaling: Scales the std of each kernel (optional, default = 1).
+        %  @param[in] kernel_std_scaling: Scales the std of each kernel (optional, default = 1.0).
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
         function dmp = DMP(N_kernels, a_z, b_z, canClock_ptr, shapeAttrGating_ptr, goalAttrGating_ptr, kernel_std_scaling, extraArgName, extraArgValue)
@@ -84,7 +76,7 @@ classdef DMP < handle % : public DMP_
             if (nargin < 6)
                 return;
             else
-                if (nargin < 7), kernel_std_scaling=1; end
+                if (nargin < 7), kernel_std_scaling=1.0; end
                 if (nargin < 8)
                     extraArgName = [];
                     extraArgValue = [];
@@ -107,7 +99,7 @@ classdef DMP < handle % : public DMP_
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
         function init(dmp, N_kernels, a_z, b_z, canClock_ptr, shapeAttrGating_ptr, goalAttrGating_ptr, kernel_std_scaling, extraArgName, extraArgValue)
 
-            if (nargin < 8), kernel_std_scaling=1; end
+            if (nargin < 8), kernel_std_scaling=1.0; end
             if (nargin < 9)
                 extraArgName = [];
                 extraArgValue = [];
@@ -128,7 +120,7 @@ classdef DMP < handle % : public DMP_
 
         %% Sets the standard deviations for the kernel functions  of the DMP
         %  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
-        %  @param[in] kernel_std_scaling: Scales the std of each kernel by 'kernel_std_scaling' (optional, default = 1).
+        %  @param[in] kernel_std_scaling: Scales the std of each kernel by 'kernel_std_scaling' (optional, default = 1.0).
         function set_stds(dmp, kernel_std_scaling)
 
             DMP_set_stds(dmp, kernel_std_scaling);
@@ -267,8 +259,8 @@ classdef DMP < handle % : public DMP_
         %  @param[out] dz: derivative of the \a z state of the DMP.
         function [dy, dz] = get_states_dot(dmp, x, y, z, y0, g, y_c, z_c)
 
-            if (nargin < 8), z_c=0; end
-            if (nargin < 7), y_c=0; end
+            if (nargin < 8), z_c=0.0; end
+            if (nargin < 7), y_c=0.0; end
 
             [dy, dz] = DMP_get_states_dot(dmp, x, y, z, y0, g, y_c, z_c);
 

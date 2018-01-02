@@ -18,12 +18,12 @@ cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 
 cmd_args.CAN_CLOCK_TYPE = 'lin';
 
-cmd_args.SHAPE_ATTR_GATTING_TYPE = 'exp'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
+cmd_args.SHAPE_ATTR_GATTING_TYPE = 'sigmoid'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
 cmd_args.SHAPE_ATTR_GATTING_u0 = 1.0; % starting value of the shape attractor gating
-cmd_args.SHAPE_ATTR_GATTING_u_end = 0.005; % ending value of the shape attractor gating
+cmd_args.SHAPE_ATTR_GATTING_u_end = 0.995; % ending value of the shape attractor gating
 
 cmd_args.GOAL_ATTR_GATTING_TYPE = 'lin'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
-cmd_args.GOAL_ATTR_GATTING_u0 = 1.0; % starting value of the goal attractor gating
+cmd_args.GOAL_ATTR_GATTING_u0 = 0.001; % starting value of the goal attractor gating
 cmd_args.GOAL_ATTR_GATTING_u_end = 1.0; % ending value of the goal attractor gating
 
 % if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
@@ -49,10 +49,10 @@ cmd_args.a_py = 0*40; %2*cmd_args.a_z;
 cmd_args.k_trunc_kernel = 3; % number of stds beyond which the kernel is truncated
 
 % Parameters for DMP-Shannon
-cmd_args.Wmin = 0.9999;
+cmd_args.Wmin = 0.999;
 cmd_args.Freq_min = 60;
 cmd_args.Freq_max = 150;
-cmd_args.P1_min = 0.05;
+cmd_args.P1_min = 0.02;
 
 
 %% demos preprocess params

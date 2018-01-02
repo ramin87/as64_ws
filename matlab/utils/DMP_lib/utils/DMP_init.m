@@ -13,7 +13,7 @@ function DMP_init(dmp, N_kernels, a_z, b_z, canClock_ptr, shapeAttrGating_ptr, g
 
     dmp.zero_tol = 1e-30;%realmin;
 
-    if (nargin < 6), kernel_std_scaling = 1; end
+    if (nargin < 8), kernel_std_scaling = 1.0; end
 
     dmp.shapeAttrGating_ptr = shapeAttrGating_ptr;
     dmp.goalAttrGating_ptr = goalAttrGating_ptr;
