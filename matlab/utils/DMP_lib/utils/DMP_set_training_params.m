@@ -1,12 +1,25 @@
 %% Sets the high level training parameters of the DMP
 %  @param[in] dmp: The DMP object.
 %  @param[in] train_method: Method used to train the DMP weights.
-%  @param[in] lambda: Forgetting factor for recursive training methods.
-%  @param[in] P_rlwr: Covariance matrix 'P' for recursive training methods.
-function DMP_set_training_params(dmp, train_method, lambda, P_rlwr)
+%  @param[in] extraArgName: Names of extra arguments (optional, default = []).
+%  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
+%
+%  \remark The extra argument names can be the following:
+%  'lambda': Forgetting factor for recursive training methods.
+%  'P_cov': Initial value of the covariance matrix for recursive training methods.
+function DMP_set_training_params(dmp, train_method, extraArgName, extraArgValue)
 
 dmp.train_method = train_method;
-dmp.lambda = lambda;
-dmp.P_rlwr = P_rlwr;
+
+dmp.lambda = 0.995;
+dmp.P_cov = 1e6;
+
+for i=1:length(extraArgName)
+   if (strcmp(extraArgName{i}, 'lambda'))
+       dmp.lambda = extraArgValue{i};
+   elseif (strcmp(extraArgName{i}, 'P_cov'))
+       dmp.P_cov = extraArgValue{i};
+   end
+end
 
 end

@@ -59,7 +59,7 @@ classdef DMP_bio < handle % : public DMP_
         train_method % training method for weights of the DMP forcing term
         
         lambda % forgetting factor in recursive training methods
-        P_rlwr% Initial value of covariance matrix in recursive training methods
+        P_cov% Initial value of covariance matrix in recursive training methods
     end
     
     methods
@@ -68,20 +68,20 @@ classdef DMP_bio < handle % : public DMP_
         %  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
         %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
-        %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
+        %  @param[in] std_scale_factor: Scales the std of each kernel (optional, default = 1).
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
-        function dmp = DMP_bio(N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
+        function dmp = DMP_bio(N_kernels, a_z, b_z, can_sys_ptr, std_scale_factor, extraArgName, extraArgValue)
             
             if (nargin < 4)
                 return;
             else
-                if (nargin < 5), std_K=1; end
+                if (nargin < 5), std_scale_factor=1; end
                 if (nargin < 6)
                     extraArgName = [];
                     extraArgValue = [];
                 end
-                dmp.init(N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue);
+                dmp.init(N_kernels, a_z, b_z, can_sys_ptr, std_scale_factor, extraArgName, extraArgValue);
             end
             
         end
@@ -92,17 +92,17 @@ classdef DMP_bio < handle % : public DMP_
         %  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
         %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
-        %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
+        %  @param[in] std_scale_factor: Scales the std of each kernel (optional, default = 1).
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
-        function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
+        function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_scale_factor, extraArgName, extraArgValue)
             
-            if (nargin < 6), std_K=1; end
+            if (nargin < 6), std_scale_factor=1; end
             if (nargin < 7)
                 extraArgName = [];
                 extraArgValue = [];
             end
-            DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue);
+            DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_scale_factor, extraArgName, extraArgValue);
             
         end
         
@@ -111,14 +111,6 @@ classdef DMP_bio < handle % : public DMP_
         function set_centers(dmp)
             
             DMP_set_centers(dmp);
-            
-        end
-        
-        
-        %% Sets the kernels of the DMP using the EM algorithm
-        function set_kernels_with_EM(dmp, Time, yd_data)
-            
-            DMP_set_kernels_with_EM(dmp, Time, yd_data)
             
         end
         
@@ -153,11 +145,19 @@ classdef DMP_bio < handle % : public DMP_
         
         %% Sets the high level training parameters of the DMP
         %  @param[in] train_method: Method used to train the DMP weights.
-        %  @param[in] lambda: Forgetting factor for recursive training methods.
-        %  @param[in] P_rlwr: Covariance matrix 'P' for recursive training methods.
-        function set_training_params(dmp, train_method, lambda, P_rlwr)
+        %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
+        %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
+        %
+        %  \remark The extra argument names can be the following:
+        %  'lambda': Forgetting factor for recursive training methods.
+        %  'P_cov': Initial value of the covariance matrix for recursive training methods.
+        function set_training_params(dmp, train_method, extraArgName, extraArgValue)
             
-            DMP_set_training_params(dmp, train_method, lambda, P_rlwr);
+            if (nargin < 3)
+                extraArgName = [];
+                extraArgValue = [];
+            end
+            DMP_set_training_params(dmp, train_method, extraArgName, extraArgValue);
             
         end
         
@@ -262,8 +262,8 @@ classdef DMP_bio < handle % : public DMP_
         %  @param[out] dz: derivative of the 'z' state of the DMP
         function [dy, dz] = get_states_dot(dmp, x, y, z, y0, g, y_c, z_c)
             
-            if (nargin < 10), z_c=0; end
-            if (nargin < 9), y_c=0; end
+            if (nargin < 8), z_c=0; end
+            if (nargin < 7), y_c=0; end
             
             [dy, dz] = DMP_get_states_dot(dmp, x, y, z, y0, g, y_c, z_c);
             

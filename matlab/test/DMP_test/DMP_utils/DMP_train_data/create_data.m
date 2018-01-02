@@ -44,7 +44,8 @@ end
 
 data = y;
 Qd_data = Q;
-save([data_filename '.mat'],'data','Qd_data','Ts');
+Yd_data = z(1:3,:);
+save([data_filename '.mat'],'data','Yd_data','Qd_data','Ts');
 
 
 save_ascii(data,Ts,data_filename);
@@ -60,19 +61,41 @@ if (norm(data(:)-data2(:)) > 1e-50)
     error('Error reading Ts');
 end
 
+lineWidth = 1.2;
+fontsize = 14;
+
 figure;
 for i=1:D
     subplot(D,1,i);
-    plot(t,y(i,:));
+    plot(t,y(i,:), 'LineWidth',lineWidth);
+    if (i==D)
+        xlabel({'time [$s$]'}, 'Interpreter','latex', 'fontsize',fontsize);
+    end
 end
 
 figure;
 hold on;
-plot(t,Q(1,:));
-plot(t,Q(2,:));
-plot(t,Q(3,:));
-plot(t,Q(4,:));
+plot(t,Qd_data(1,:), 'LineWidth',lineWidth);
+plot(t,Qd_data(2,:), 'LineWidth',lineWidth);
+plot(t,Qd_data(3,:), 'LineWidth',lineWidth);
+plot(t,Qd_data(4,:), 'LineWidth',lineWidth);
+legend({'$\eta$', '$\epsilon_1$', '$\epsilon_2$', '$\epsilon_3$'}, 'Interpreter','latex', 'fontsize',fontsize);
+title({'Orientation as Unit Quaternion'}, 'Interpreter','latex', 'fontsize',fontsize);
+xlabel({'time [$s$]'}, 'Interpreter','latex', 'fontsize',fontsize);
 hold off;
+
+
+figure;
+hold on;
+plot(t,Yd_data(1,:), 'LineWidth',lineWidth);
+plot(t,Yd_data(2,:), 'LineWidth',lineWidth);
+plot(t,Yd_data(3,:), 'LineWidth',lineWidth);
+legend({'$x$', '$y$', '$z$'}, 'Interpreter','latex', 'fontsize',fontsize);
+title({'Cartesian Position'}, 'Interpreter','latex', 'fontsize',fontsize);
+xlabel({'time [$s$]'}, 'Interpreter','latex', 'fontsize',fontsize);
+ylabel({'Position [$m$]'}, 'Interpreter','latex', 'fontsize',fontsize);
+hold off;
+
 
 end
 

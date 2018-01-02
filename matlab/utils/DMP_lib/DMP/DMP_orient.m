@@ -55,7 +55,7 @@ classdef DMP_orient < handle
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
         function dmp_o = DMP_orient(DMP_TYPE, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
-                
+
             if (nargin < 5)
                 return;
             else
@@ -118,14 +118,6 @@ classdef DMP_orient < handle
         end
         
         
-        %% Sets the kernels of the DMP using the EM algorithm
-        function set_kernels_with_EM(dmp_o, Time, yd_data)
-            
-%             DMP_set_kernels_with_EM(dmp, Time, yd_data)
-            
-        end
-        
-        
         %% Sets the standard deviations for the activation functions  of the DMP
         %  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
         %  @param[in] s: Scales the variance of each kernel by 's' (optional, default = 1).
@@ -140,24 +132,24 @@ classdef DMP_orient < handle
         
         %% Trains the DMP
         %  @param[in] Time: Row vector with the timestamps of the training data points.
-        %  @param[in] yd_data: Row vector with the desired potition.
-        %  @param[in] dyd_data: Row vector with the desired velocity.
-        %  @param[in] ddyd_data: Row vector with the desired accelaration.
-        %  @param[in] y0: Initial position.
-        %  @param[in] g: Target-goal position.
+        %  @param[in] Q_data: Matrix where each column expresses the orientation as a unit quaternion.
+        %  @param[in] v_rot_data: Matrix where each column expresses the desired angular velocity.
+        %  @param[in] dv_rot_data: Matrix where each column expresses the desired angular acceleration.
+        %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
+        %  @param[in] Qg: Target-goal orientation as 4x1 unit quaternion.
         %
         %  \note The timestamps in \a Time and the corresponding position,
-        %  velocity and acceleration data in \a yd_data, \a dyd_data and \a
-        %  ddyd_data need not be sequantial in time.
-        function [train_error, F, Fd] = train(dmp_o, Time, Qd_data, v_rot_data, dv_rot_data, Q0, Qg)
+        %  velocity and acceleration data in \a Q_data, \a v_rot_data and \a
+        %  dv_rot_data need not be sequantial in time.
+        function [train_error, F, Fd] = train(dmp_o, Time, Q_data, v_rot_data, dv_rot_data, Q0, Qg)
             
             train_error = zeros(3,1);
             F = zeros(3, length(Time));
             Fd = zeros(3, length(Time));
             
-            yd_data = zeros(3, size(Qd_data,2));
+            yd_data = zeros(3, size(Q_data,2));
             for i=1:size(yd_data,2)
-               yd_data(:,i) = -quatLog(quatProd(Qg,quatInv(Qd_data(:,i))));
+               yd_data(:,i) = -quatLog(quatProd(Qg,quatInv(Q_data(:,i))));
             end
             
             y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
@@ -284,12 +276,16 @@ classdef DMP_orient < handle
         
         %% Sets the high level training parameters of the DMP
         %  @param[in] train_method: Method used to train the DMP weights.
-        %  @param[in] lambda: Forgetting factor for recursive training methods.
-        %  @param[in] P_rlwr: Covariance matrix 'P' for recursive training methods.
-        function set_training_params(dmp_o, train_method, lambda, P_rlwr)
+        %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
+        %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
+        %
+        %  \remark The extra argument names can be the following:
+        %  'lambda': Forgetting factor for recursive training methods.
+        %  'P_cov': Initial value of the covariance matrix for recursive training methods.
+        function set_training_params(dmp_o, train_method, extraArgName, extraArgValue)
             
             for i=1:3
-                dmp_o.dmp{i}.set_training_params(train_method, lambda, P_rlwr);
+                dmp_o.dmp{i}.set_training_params(train_method, extraArgName, extraArgValue);
             end
             
         end
@@ -313,26 +309,23 @@ classdef DMP_orient < handle
         
         %% Calculates the desired values of the scaled forcing term.
         %  @param[in] x: The phase variable.
-        %  @param[in] y: Position.
-        %  @param[in] dy: Velocity.
-        %  @param[in] ddy: Acceleration.
-        %  @param[in] y0: Initial position.
-        %  @param[in] g: Goal position.
+        %  @param[in] Q: Orientation as 4x1 unit quaternion.
+        %  @param[in] v_rot: Angular velocity.
+        %  @param[in] dv_rot: Angular acceleration.
+        %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
+        %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] Fd: Desired value of the scaled forcing term.
-        function Fd = calc_Fd(dmp_o, x, Q, v_rot, ddv_rot, Q0, Qg)
-            
-%             v_scale = dmp_o.get_v_scale();
-%             Fd = (ddv_rot*v_scale^2 - dmp_o.goal_attractor(x, Q, v_scale*v_rot, Qg));
+        function Fd = calc_Fd(dmp_o, x, Q, v_rot, dv_rot, Q0, Qg)
 
             y = -quatLog(quatProd(Qg,quatInv(Q)));
             y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
             g = zeros(3,1);
             dy = v_rot;
-            ddy = ddv_rot;
+            ddy = dv_rot;
             
             Fd = zeros(3, 1);
             for i=1:3
-                Fd(i) = dmp_o.dmp{i}.calc_Fd(x, y(i), dy(i), ddy(i), y0(i), g);
+                Fd(i) = dmp_o.dmp{i}.calc_Fd(x, y(i), dy(i), ddy(i), y0(i), g(i));
             end
             
         end
@@ -352,14 +345,11 @@ classdef DMP_orient < handle
         
         %% Returns the scaling factor of the forcing term.
         %  @param[in] x: The phase variable.
-        %  @param[in] y0: Initial position.
-        %  @param[in] g: Goal position.
+        %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
+        %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] f_scale: The scaling factor of the forcing term.
         function f_scale = forcing_term_scaling(dmp_o, x, Q0, Qg)
-            
-%             u = dmp_o.can_sys_ptr.get_shapeVar(x);
-%             f_scale = quatLog(quatProd(Qg,quatInv(Q0)))*u;
-            
+
             y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
             g = zeros(3,1);
             
@@ -372,9 +362,9 @@ classdef DMP_orient < handle
         
         %% Returns the goal attractor of the DMP.
         %  @param[in] x: The phase variable.
-        %  @param[in] y: \a y state of the DMP.
-        %  @param[in] z: \a z state of the DMP.
-        %  @param[in] g: Goal position.
+        %  @param[in] Q: \a Q state of the DMP.
+        %  @param[in] eta: \a eta state of the DMP.
+        %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] goal_attr: The goal attractor of the DMP.
         function goal_attr = goal_attractor(dmp_o, x, Q, eta, Qg)
             
@@ -389,8 +379,8 @@ classdef DMP_orient < handle
         
         %% Returns the shape attractor of the DMP.
         %  @param[in] x: The phase variable.
-        %  @param[in] y0: Initial position.
-        %  @param[in] g: Goal position.
+        %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
+        %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] shape_attr: The shape_attr of the DMP.
         function shape_attr = shape_attractor(dmp_o, x, Q0, Qg)
 
@@ -402,28 +392,23 @@ classdef DMP_orient < handle
                 shape_attr(i) = dmp_o.dmp{i}.shape_attractor(x, y0(i), g(i));
             end
             
-%             f = dmp_o.forcing_term(x);
-%             f_scale = dmp_o.forcing_term_scaling(x, Q0, Qg);
-%             shape_attr = f .* f_scale;
-            
         end
         
         
         %% Returns the derivatives of the DMP states
         %  @param[in] x: The phase variable.
-        %  @param[in] y: \a y state of the DMP.
-        %  @param[in] z: \a z state of the DMP.
-        %  @param[in] y0: Initial position.
-        %  @param[in] g: Goal position.
-        %  @param[in] y_c: Coupling term for the dynamical equation of the \a y state.
-        %  @param[in] z_c: Coupling term for the dynamical equation of the \a z state.
-        %  @param[out] dy: Derivative of the \a y state of the DMP.
-        %  @param[out] dz: Derivative of the \a z state of the DMP.
+        %  @param[in] Q: \a Q state of the DMP.
+        %  @param[in] eta: \a eta state of the DMP.
+        %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
+        %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
+        %  @param[in] Q_c: Coupling term for the dynamical equation of the \a Q state.
+        %  @param[in] eta_c: Coupling term for the dynamical equation of the \a eta state.
+        %  @param[out] dQ: Derivative of the \a Q state of the DMP.
+        %  @param[out] deta: Derivative of the \a eta state of the DMP.
         function [dQ, deta] = get_states_dot(dmp_o, x, Q, eta, Q0, Qg, Q_c, eta_c)
             
-            if (nargin < 10), eta_c=0; end
-            if (nargin < 9), Q_c=0; end
-            %if (nargin < 8), g=g0; end
+            if (nargin < 8), eta_c=0; end
+            if (nargin < 7), Q_c=0; end
             
             v_scale = dmp_o.get_v_scale();
             shape_attr = dmp_o.shape_attractor(x, Q0, Qg);

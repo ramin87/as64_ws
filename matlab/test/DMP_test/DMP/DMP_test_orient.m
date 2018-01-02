@@ -49,18 +49,11 @@ end
 can_sys_ptr.init(cmd_args.CAN_CLOCK_TYPE, cmd_args.CAN_FUN_TYPE, tau, cmd_args.u_end, cmd_args.u0);
 
 
-extraArgNames = cell(0);
-extraArgValues = cell(0);
-extraArgNames{1} = 'k_trunc_kernel';     extraArgValues{1} = cmd_args.k_trunc_kernel;
-extraArgNames{2} = 'Wmin';               extraArgValues{2} = cmd_args.Wmin;
-extraArgNames{3} = 'Freq_min';           extraArgValues{3} = cmd_args.Freq_min;
-extraArgNames{4} = 'Freq_max';           extraArgValues{4} = cmd_args.Freq_max;
-extraArgNames{5} = 'P1_min';             extraArgValues{5} = cmd_args.P1_min;
-
-
+extraArgNames = {'k_trunc_kernel', 'Wmin', 'Freq_min', 'Freq_max', 'P1_min'};
+extraArgValues = {cmd_args.k_trunc_kernel, cmd_args.Wmin, cmd_args.Freq_min, cmd_args.Freq_max, cmd_args.P1_min};
 
 dmpo = DMP_orient();
-dmpo.init(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K, extraArgNames, extraArgValues);
+dmpo.init(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_scale_factor, extraArgNames, extraArgValues);
 
 
 Time_offline_train = [];
@@ -76,7 +69,10 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
 
     Q0 = Qd_data(:,1);
     Qg = Qd_data(:,end);
-    dmpo.set_training_params(cmd_args.train_method, cmd_args.RLWR_lambda, cmd_args.RLWR_P);
+    
+    trainParamsName = {'lambda', 'P_cov'};
+    trainParamsValue = {cmd_args.lambda, cmd_args.P_cov};
+    dmpo.set_training_params(cmd_args.train_method, trainParamsName, trainParamsValue);
     [offline_train_o_mse, F_o_offline_train_data, Fd_o_offline_train_data] = dmpo.train(Time, Qd_data, v_rot_d_data, dv_rot_d_data, Q0, Qg);   
     
     Time_offline_train = (0:(size(F_o_offline_train_data,2)-1))*Ts;
@@ -93,19 +89,19 @@ Q0 = Qd_data(:,1);
 Qg0 = Qd_data(:,end);
 Qg = Qg0;
 Qg2 = Qg;
-dg = zeros(3,1);
+dg = zeros(D,1);
 N_g_change = length(cmd_args.time_goal_change);
 ind_g_chage = 1;
 
-v_rot = zeros(3,1);
-dv_rot = zeros(3,1);
+v_rot = zeros(D,1);
+dv_rot = zeros(D,1);
 Q = Q0;
 t = 0;
 Q_robot = Q0;
-v_rot_robot = zeros(3,1);
-dv_rot_robot = zeros(3,1);
-deta = zeros(3,1);
-eta = zeros(3,1);
+v_rot_robot = zeros(D,1);
+dv_rot_robot = zeros(D,1);
+deta = zeros(D,1);
+eta = zeros(D,1);
 scaled_forcing_term = zeros(D,1);
 shape_attr = zeros(D,1);
 goal_attr = zeros(D,1);
@@ -117,15 +113,15 @@ Fdist = 0;
 
 log_data = get_logData_struct(); 
 log_data = get_logData_struct();   
-log_data.dmp = cell(3,1);
-for i=1:3, log_data.dmp{i} = dmpo.dmp{i}; end
+log_data.dmp = cell(D,1);
+for i=1:D, log_data.dmp{i} = dmpo.dmp{i}; end
 
 log_data.Time_demo = Time_demo;
 log_data.yd_data = quat2Vel(repmat(Qd_data(:,end),1,size(Qd_data,2)), Qd_data);
 log_data.dyd_data = v_rot_d_data;
 log_data.ddyd_data = dv_rot_d_data;
 
-log_data.D = 3;
+log_data.D = D;
 log_data.Ts = Ts;
 log_data.g0 = quat2Vel(Qg, Qg);
 
@@ -208,7 +204,8 @@ while (true)
     if (cmd_args.USE_GOAL_FILT)
         dg = cmd_args.a_g*quatLog(quatProd(Qg2,quatInv(Qg)))/can_sys_ptr.get_tau();
     else
-        dg = zeros(dg);
+        Qg = Qg2;
+        dg = zeros(size(dg));
     end
     
     

@@ -33,6 +33,8 @@ function DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, ex
     dmp.set_centers();
     dmp.set_stds(std_K);
 
-    dmp.set_training_params('LWR', 0.99, 1e6);
+    trainParamsName = {'lambda', 'P_cov'};
+    trainParamsValue = {0.99, 1e6};
+    dmp.set_training_params('LWR', trainParamsName, trainParamsValue);
 
 end

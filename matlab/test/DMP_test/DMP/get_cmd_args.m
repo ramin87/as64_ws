@@ -12,7 +12,7 @@ cmd_args.x_end = 1.0; % end of canonical time
 cmd_args.a_z = 20.0;
 cmd_args.b_z = cmd_args.a_z/4;
 
-cmd_args.DMP_TYPE = 'DMP-bio'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
+cmd_args.DMP_TYPE = 'DMP'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
 
 cmd_args.u0 = 1.0; % starting value of forcing term shaping
 if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
@@ -22,9 +22,9 @@ else
 end
 
 
-cmd_args.N_kernels = 150; % number of kernels used in the DMP
+cmd_args.N_kernels = 100; % number of kernels used in the DMP
 
-cmd_args.std_K = 1.0; % scaling factor for the kernels std
+cmd_args.std_scale_factor = 1.0; % scaling factor for the kernels std
 
 cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 
@@ -39,14 +39,14 @@ cmd_args.sigmoid_a_u = 280; % steepness of the sigmoid canonical function (optio
 
 cmd_args.OFFLINE_DMP_TRAINING_enable = true;
 cmd_args.ONLINE_DMP_UPDATE_enable = false;
-cmd_args.RLWR_lambda = 0.99;
-cmd_args.RLWR_P = 1e8;
+cmd_args.lambda = 0.99; % forgetting factor for recursive training methods
+cmd_args.P_cov = 1e8; % initial value of covariance matrix for recursive training methods
 
 cmd_args.USE_GOAL_FILT = true;
 cmd_args.a_g = 20.0;
 cmd_args.USE_PHASE_STOP = true;
 cmd_args.a_px = 50.0; 
-cmd_args.a_py = 40.0;
+cmd_args.a_py = 0*40; %2*cmd_args.a_z;
 
 % Parameters for DMP-plus
 cmd_args.k_trunc_kernel = 3; % number of stds beyond which the kernel is truncated
@@ -69,9 +69,15 @@ cmd_args.Md = 1.0; % translational inertia
 cmd_args.Kd = 50.0; % translational stiffness
 cmd_args.Dd = 2*sqrt(cmd_args.Kd*cmd_args.Md);  % translational damping
 
-cmd_args.Md_o = 1.0; % rotational inertia
-cmd_args.Kd_o = 50.0; % rotational stiffness
-cmd_args.Dd_o = 2*sqrt(cmd_args.Kd_o*cmd_args.Md_o); % rotational damping
+% Cartesian Position
+cmd_args.Md_p = eye(3,3)*1.0; % rotational inertia
+cmd_args.Kd_p = eye(3,3)*50.0; % rotational stiffness
+cmd_args.Dd_p = eye(3,3)*2*sqrt(cmd_args.Kd_p*cmd_args.Md_p); % rotational damping
+
+% Orientation
+cmd_args.Md_o = eye(3,3)*1.0; % rotational inertia
+cmd_args.Kd_o = eye(3,3)*50.0; % rotational stiffness
+cmd_args.Dd_o = eye(3,3)*2*sqrt(cmd_args.Kd_o*cmd_args.Md_o); % rotational damping
 
 
 %% Simulation params
@@ -81,13 +87,19 @@ cmd_args.orient_tol_stop = 2e-3; % orientation error tolerance to stop the simul
 cmd_args.max_iters = 3000; % maximum iteration steps
 cmd_args.tau_sim_scale = 1.0; % scaling factor for the time of the DMP simulation
 cmd_args.goal_scale = 1.0; % scaling factor for the goal in the DMP simulation
-cmd_args.ONLINE_GOAL_CHANGE_ENABLE = true;
+cmd_args.ONLINE_GOAL_CHANGE_ENABLE = false;
 cmd_args.time_goal_change = [0.5 1.1 1.6]; % vector of timestamps when the goal change occurs
 cmd_args.goal_change = [-12.0 -9.0 -13.0]; % vector of scalings for each goal change
+
 cmd_args.orient_goal_change = [0.2  0.6  0.3
                                0.6  0.3  0.7
                                0.4  0.1  0.5
                                0.7  0.2  0.3];
+
+cmd_args.CartPos_goal_change = [ -9.2  -12.6  -13.3
+                                -12.4   -8.3  -14.7
+                                -13.9  -11.1  -10.5];
+
                            
 for i=1:size(cmd_args.orient_goal_change,2)
     cmd_args.orient_goal_change(:,i) = cmd_args.orient_goal_change(:,i) / norm(cmd_args.orient_goal_change(:,i));
@@ -96,10 +108,10 @@ end
 
 %% Apply disturbance force
 cmd_args.APPLY_DISTURBANCE = false; % Flag enabling/disabling the introduction of a disturbance in the robot system
-cmd_args.Fdist_min = 5.0; % Minimum disturbance value
-cmd_args.Fdist_max = 200.0; % Maximum disturbance value
+cmd_args.Fdist_min = 2.0; % Minimum disturbance value
+cmd_args.Fdist_max = 20.0; % Maximum disturbance value
 cmd_args.t1_fdist = 0.4; % Start of Fdist_max
-cmd_args.t2_fdist = 3.8; % End of Fdist_max
+cmd_args.t2_fdist = 2.2; % End of Fdist_max
 
 
 %% Plotting params

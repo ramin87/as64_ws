@@ -60,7 +60,7 @@ classdef DMP_Shannon < handle % : public DMP
         train_method % training method for weights of the DMP forcing term
         
         lambda % forgetting factor in recursive training methods
-        P_rlwr% Initial value of covariance matrix in recursive training methods
+        P_cov% Initial value of covariance matrix in recursive training methods
         
         Freq_min % minimum allowable filter frequency to avoid instabilities with filtering
         Freq_max % filter out all frequencies beyond 'Freq_max'
@@ -75,10 +75,10 @@ classdef DMP_Shannon < handle % : public DMP
         %  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
         %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
-        %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
+        %  @param[in] std_scale_factor: Scales the std of each kernel (optional, default = 1).
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
-        function dmp = DMP_Shannon(N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
+        function dmp = DMP_Shannon(N_kernels, a_z, b_z, can_sys_ptr, std_scale_factor, extraArgName, extraArgValue)
 
             dmp.can_fun = LinCanonicalFunction(0.01, 1.0);
 %             dmp.can_fun = ExpCanonicalFunction(0.01, 1.0);
@@ -86,12 +86,12 @@ classdef DMP_Shannon < handle % : public DMP
             if (nargin < 4)
                 return;
             else
-                if (nargin < 5), std_K=1; end
+                if (nargin < 5), std_scale_factor=1; end
                 if (nargin < 6)
                     extraArgName = [];
                     extraArgValue = [];
                 end
-                dmp.init(N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue);
+                dmp.init(N_kernels, a_z, b_z, can_sys_ptr, std_scale_factor, extraArgName, extraArgValue);
             end
             
         end
@@ -102,17 +102,17 @@ classdef DMP_Shannon < handle % : public DMP
         %  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
         %  @param[in] can_sys_ptr: Pointer to a DMP canonical system object.
-        %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
+        %  @param[in] std_scale_factor: Scales the std of each kernel (optional, default = 1).
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
-        function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue)
+        function init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_scale_factor, extraArgName, extraArgValue)
             
-            if (nargin < 6), std_K=1; end
+            if (nargin < 6), std_scale_factor=1; end
             if (nargin < 7)
                 extraArgName = [];
                 extraArgValue = [];
             end
-            DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_K, extraArgName, extraArgValue);
+            DMP_init(dmp, N_kernels, a_z, b_z, can_sys_ptr, std_scale_factor, extraArgName, extraArgValue);
             
         end
         
@@ -121,14 +121,6 @@ classdef DMP_Shannon < handle % : public DMP
         function set_centers(dmp)
             
             DMP_set_centers(dmp);
-            
-        end
-        
-        
-        %% Sets the kernels of the DMP using the EM algorithm
-        function set_kernels_with_EM(dmp, Time, yd_data)
-            
-            DMP_set_kernels_with_EM(dmp, Time, yd_data)
             
         end
         
@@ -155,20 +147,6 @@ classdef DMP_Shannon < handle % : public DMP
         %  velocity and acceleration data in \a yd_data, \a dyd_data and \a
         %  ddyd_data MUST be sequantial in time and sampled with the same frequency.
         function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g)
-            
-%             dmp.Wmin = 0.995;
-%             dmp.Freq_min = 60;
-%             dmp.Freq_max = 150;
-%             dmp.P1_min = 0.1;
-            
-%             dmp.a_z = 10.0;
-%             dmp.b_z = dmp.a_z/4;
-%             u0 = 1.0;
-%             u_end = 0.01;
-%             dmp.can_fun = LinCanonicalFunction(u_end, u0);
-%             dmp.can_fun = ExpCanonicalFunction(u_end, u0);
-            
-            dmp.a_s = 1.0/dmp.get_tau(); % 10.0/10;
             
             tau = dmp.can_sys_ptr.get_tau();
             x = dmp.can_sys_ptr.get_phaseVar(Time);
@@ -198,7 +176,7 @@ classdef DMP_Shannon < handle % : public DMP
             end
             
             Freq1 = f(k);
-            fprintf('Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n', dmp.Wmin, Freq1);
+%             fprintf('Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n', dmp.Wmin, Freq1);
             
             
             while (k <= length(f))  
@@ -219,7 +197,7 @@ classdef DMP_Shannon < handle % : public DMP
             Freq = Fmax; %max(Fmax, 50);
             
             Freq2 = Freq;
-            fprintf('Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n', dmp.P1_min, Freq2);
+%             fprintf('Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n', dmp.P1_min, Freq2);
             
             % ==> Filter the signal retaining at least 'Wmin' energy
             [filter_b, filter_a] = butter(6, Freq/(Fs/2), 'low');
@@ -246,146 +224,24 @@ classdef DMP_Shannon < handle % : public DMP
             train_error = norm(F-Fd)/length(F);
             
             
-            
-%             fprintf('Number of kernels/sincs: %i\n', dmp.N_kernels);
-%             
-%             Fd0 = dmp.calc_Fd2(x, yd_data, dyd_data, ddyd_data, y0, g) ./ s;
-%             [f0, P0] = get_single_sided_Fourier(Fd0, Fs);
-%             
-%             [f1_filt, P1_filt] = get_single_sided_Fourier(Fd_filt, Fs);
-%             
-%             lineWidth = 1.2;
-%             fontsize = 14;
-% 
-% %             plot_training_data(Time, yd_data, dyd_data, ddyd_data);
-%             
-%             goal_attr_s = dmp.can_fun.get_output(x);
-%             figure;
-%             subplot(1,2,1);
-%             plot(Time, Fd0, Time, Fd,'LineWidth',lineWidth);
-%             legend({'$F_0$','$F_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(1,2,2);
-%             plot(Time, (1-goal_attr_s),'LineWidth',lineWidth);
-%             legend({'$goal.attr.scale$'}, 'Interpreter','latex', 'fontsize',fontsize);
-% 
-%             figure;
-%             subplot(3,4,1);
-%             plot(f0,P0, f,P1, 'LineWidth',lineWidth);
-%             legend({'$P_0$','$P_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,4,2);
-%             plot(f,P0-P1, 'Color',[1 0 0] ,'LineWidth',lineWidth);
-%             legend({'$P_0-P_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,4,3);
-%             plot(Time,Fd0, Time,Fd, 'LineWidth',lineWidth);
-%             legend({'$F_0$','$F_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,4,4);
-%             plot(Time,Fd0-Fd, 'Color',[1 0 0], 'LineWidth',lineWidth);
-%             legend({'$F_0-F_1$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             
-%             subplot(3,4,5);
-%             plot(f0,P0, f1_filt,P1_filt, 'LineWidth',lineWidth);
-%             legend({'$P_0$','$P_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,4,6);
-%             plot(f,P0-P1_filt, 'Color',[1 0 0] ,'LineWidth',lineWidth);
-%             legend({'$P_0-P_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,4,7);
-%             plot(Time,Fd0, Time,Fd_filt, 'LineWidth',lineWidth);
-%             legend({'$F_0$','$F_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,4,8);
-%             plot(Time,Fd0-Fd_filt, 'Color',[1 0 0], 'LineWidth',lineWidth);
-%             legend({'$F_0-F_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             
-%             subplot(3,4,9);
-%             plot(f,P1, f1_filt,P1_filt, 'LineWidth',lineWidth);
-%             legend({'$P_1$','$P_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,4,10);
-%             plot(f,P1-P1_filt, 'Color',[1 0 0] ,'LineWidth',lineWidth);
-%             legend({'$P_1-P_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,4,11);
-%             plot(Time,Fd, Time,Fd_filt, 'LineWidth',lineWidth);
-%             legend({'$F_1$','$F_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,4,12);
-%             plot(Time,Fd-Fd_filt, 'Color',[1 0 0], 'LineWidth',lineWidth);
-%             legend({'$F_1-F_{1-filt}$'}, 'Interpreter','latex', 'fontsize',fontsize);
-% 
-%             %
-%             Psi = [];
-%             for i=1:length(x)
-%                 Psi = [Psi dmp.activation_function(x(i))];
-%             end
-%             [f, P1_filt] = get_single_sided_Fourier(Fd_filt, Fs);
-%             plot_filtering(filter_b, filter_a, Fs, Fmax, Time, Fd, Fd_filt, f, P1, P1_filt)
-%             
-%             
-%             
-%             plot_DMP_train(Time, F, Fd, Psi, x);
-%             
-%             
-%             y_data = zeros(size(yd_data));
-%             dy_data = zeros(size(dyd_data));
-%             ddy_data = zeros(size(yd_data));
-%             z_data = zeros(size(y_data));
-%             dz_data = zeros(size(y_data));
-%             x_data = zeros(size(Time));
-%             u_data = zeros(size(Time));
-%             s_data = zeros(size(Time));
-%             
-%             y = y0;
-%             dy = 0;
-%             g = g0;
-%             z = 0;
-%             dz = 0;
-%             dt = Ts;
-%             x = 0;
-%             u = dmp.can_sys_ptr.get_shapeVar(x);
-%             s = 0;
-%             
-%             for i=1:length(Time)
-%                 t = Time(i);
-%                 
-%                 y_data(i) = y;
-%                 dy_data(i) = dy;
-%                 z_data(i) = z;
-%                 dz_data(i) = dz;
-%                 x_data(i) = x;
-%                 u_data(i) = u;
-%                 s_data(i) = s;
-%                 
-%                 x = dmp.can_sys_ptr.get_phaseVar(t);
-%                 [dy, dz] = dmp.get_states_dot(x, y, z, y0, g, 0, 0);
-%                 
-%                 y = y + dy*dt;
-%                 z = z + dz*dt;
-%                 
-%                 
-%             end
-%             
-%             ddy_data = dz_data/dmp.get_v_scale();
-%             
-%             figure;
-%             subplot(3,1,1);
-%             plot(Time,y_data, Time, yd_data, 'LineWidth',lineWidth);
-%             legend({'$y$','$y_d$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,1,2);
-%             plot(Time,dy_data, Time, dyd_data, 'LineWidth',lineWidth);
-%             legend({'$\dot{y}$','$\dot{y}_d$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             subplot(3,1,3);
-%             plot(Time,ddy_data, Time, ddyd_data, 'LineWidth',lineWidth);
-%             legend({'$\ddot{y}$','$\ddot{y}_d$'}, 'Interpreter','latex', 'fontsize',fontsize);
-%             
-%             
-%             error('stop')
-            
         end
         
         
         %% Sets the high level training parameters of the DMP
         %  @param[in] train_method: Method used to train the DMP weights.
-        %  @param[in] lambda: Forgetting factor for recursive training methods.
-        %  @param[in] P_rlwr: Covariance matrix 'P' for recursive training methods.
-        function set_training_params(dmp, train_method, lambda, P_rlwr)
+        %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
+        %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
+        %
+        %  \remark The extra argument names can be the following:
+        %  'lambda': Forgetting factor for recursive training methods.
+        %  'P_cov': Initial value of the covariance matrix for recursive training methods.
+        function set_training_params(dmp, train_method, extraArgName, extraArgValue)
             
-            DMP_set_training_params(dmp, train_method, lambda, P_rlwr);
+            if (nargin < 3)
+                extraArgName = [];
+                extraArgValue = [];
+            end
+            DMP_set_training_params(dmp, train_method, extraArgName, extraArgValue);
             
         end
         
@@ -503,8 +359,8 @@ classdef DMP_Shannon < handle % : public DMP
         %  @param[out] dz: derivative of the \a z state of the DMP.
         function [dy, dz] = get_states_dot(dmp, x, y, z, y0, g, y_c, z_c)
             
-            if (nargin < 10), z_c=0; end
-            if (nargin < 9), y_c=0; end
+            if (nargin < 8), z_c=0; end
+            if (nargin < 7), y_c=0; end
             
             [dy, dz] = DMP_get_states_dot(dmp, x, y, z, y0, g, y_c, z_c);
             

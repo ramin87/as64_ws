@@ -11,9 +11,8 @@
 %  @param[out] dz: derivative of the 'z' state of the DMP.
 function [dy, dz] = DMP_get_states_dot(dmp, x, y, z, y0, g, y_c, z_c)
 
-    if (nargin < 10), z_c=0; end
-    if (nargin < 9), y_c=0; end
-    %if (nargin < 8), g=g0; end
+    if (nargin < 8), y_c=0; end
+    if (nargin < 7), z_c=0; end
 
     v_scale = dmp.get_v_scale();
 

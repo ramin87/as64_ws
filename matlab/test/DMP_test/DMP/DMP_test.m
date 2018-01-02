@@ -67,13 +67,8 @@ end
 can_sys_ptr.init(cmd_args.CAN_CLOCK_TYPE, cmd_args.CAN_FUN_TYPE, tau, cmd_args.u_end, cmd_args.u0);
 
 
-extraArgNames = cell(0);
-extraArgValues = cell(0);
-extraArgNames{1} = 'k_trunc_kernel';     extraArgValues{1} = cmd_args.k_trunc_kernel;
-extraArgNames{2} = 'Wmin';               extraArgValues{2} = cmd_args.Wmin;
-extraArgNames{3} = 'Freq_min';           extraArgValues{3} = cmd_args.Freq_min;
-extraArgNames{4} = 'Freq_max';           extraArgValues{4} = cmd_args.Freq_max;
-extraArgNames{5} = 'P1_min';             extraArgValues{5} = cmd_args.P1_min;
+extraArgNames = {'k_trunc_kernel', 'Wmin', 'Freq_min', 'Freq_max', 'P1_min'};
+extraArgValues = {cmd_args.k_trunc_kernel, cmd_args.Wmin, cmd_args.Freq_min, cmd_args.Freq_max, cmd_args.P1_min};
 
 dmp = cell(D,1);
 for i=1:D
@@ -83,18 +78,13 @@ for i=1:D
         dmp{i} = DMP_bio();
     elseif (strcmpi(cmd_args.DMP_TYPE,'DMP-plus'))
         dmp{i} = DMP_plus();
-%         dmp{i}.k_trunc_kernel = cmd_args.k_trunc_kernel;
     elseif (strcmpi(cmd_args.DMP_TYPE,'DMP-Shannon'))
         dmp{i} = DMP_Shannon();
-%         dmp{i}.Wmin = cmd_args.Wmin;
-%         dmp{i}.Freq_min = cmd_args.Freq_min;
-%         dmp{i}.Freq_max = cmd_args.Freq_max;
-%         dmp{i}.P1_min = cmd_args.P1_min;
     else
         error('Unsupported DMP type ''%s''', cmd_args.DMP_TYPE);
     end
     
-    dmp{i}.init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_K, extraArgNames, extraArgValues);
+    dmp{i}.init(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.std_scale_factor, extraArgNames, extraArgValues);
 end
 
 F_offline_train_data = [];
@@ -121,7 +111,9 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
         dyd = dyd_data(i,ind);
         ddyd = ddyd_data(i,ind);
 
-        dmp{i}.set_training_params(cmd_args.train_method, cmd_args.RLWR_lambda, cmd_args.RLWR_P);
+        trainParamsName = {'lambda', 'P_cov'};
+        trainParamsValue = {cmd_args.lambda, cmd_args.P_cov};
+        dmp{i}.set_training_params(cmd_args.train_method, trainParamsName, trainParamsValue);
         [offline_train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0);      
 
         F_offline_train_data = [F_offline_train_data; F_train];
@@ -142,6 +134,7 @@ n_data
 y0 = yd_data(:,1);
 g0 = cmd_args.goal_scale*yd_data(:,end); 
 g = g0; 
+g2 = g0;
 N_g_change = length(cmd_args.time_goal_change);
 ind_g_chage = 1;
 dg = zeros(D,1);
@@ -162,7 +155,7 @@ goal_attr = zeros(D,1);
 
 P_lwr = cell(D,1);
 for i=1:D
-    P_lwr{i} = ones(cmd_args.N_kernels,1)*cmd_args.RLWR_P;
+    P_lwr{i} = ones(cmd_args.N_kernels,1)*cmd_args.P_cov;
 end
 F = zeros(D,1);
 Fd = zeros(D,1);
@@ -289,7 +282,7 @@ while (true)
             if (abs((t-cmd_args.time_goal_change(ind_g_chage))) < dt/2.0)
 %                 disp('Goal change')
 %                 t
-                g0 = cmd_args.goal_change(ind_g_chage);
+                g2 = cmd_args.goal_change(ind_g_chage);
                 ind_g_chage = ind_g_chage + 1;
             end
         end
@@ -298,8 +291,9 @@ while (true)
     
     %% Goal filtering
     if (cmd_args.USE_GOAL_FILT)
-        dg = cmd_args.a_g*(g0-g)/can_sys_ptr.get_tau();
+        dg = cmd_args.a_g*(g2-g)/can_sys_ptr.get_tau();
     else
+        g = g2;
         dg = zeros(size(dg));
     end
     
@@ -324,7 +318,7 @@ while (true)
     end
     
     %% Stopping criteria
-    err_p = max(abs(g0-y_robot));
+    err_p = max(abs(g2-y_robot));
     if (err_p <= cmd_args.tol_stop ...
         && t>=tau)
         break; 
@@ -337,6 +331,11 @@ while (true)
         warning('Iteration limit reached. Stopping simulation...\n');
         break;
     end
+    
+%     if (t>0.4 && t<2.2)
+%         dy_robot = 0;
+%         ddy_robot = 0;
+%     end
     
     %% Numerical integration
     t = t + dt;
