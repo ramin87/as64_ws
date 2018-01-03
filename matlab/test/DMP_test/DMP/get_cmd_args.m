@@ -8,7 +8,7 @@ cmd_args = struct();
 cmd_args.a_z = 20.0;
 cmd_args.b_z = cmd_args.a_z/4;
 
-cmd_args.DMP_TYPE = 'DMP'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
+cmd_args.DMP_TYPE = 'DMP-Shannon'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
 
 cmd_args.N_kernels = 100; % number of kernels used in the DMP
 
@@ -49,10 +49,10 @@ cmd_args.a_py = 0*40; %2*cmd_args.a_z;
 cmd_args.k_trunc_kernel = 3; % number of stds beyond which the kernel is truncated
 
 % Parameters for DMP-Shannon
-cmd_args.Wmin = 0.999;
+cmd_args.Wmin = 0.9999;
 cmd_args.Freq_min = 60;
 cmd_args.Freq_max = 150;
-cmd_args.P1_min = 0.02;
+cmd_args.P1_min = 0.008;
 
 
 %% demos preprocess params

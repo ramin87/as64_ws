@@ -123,10 +123,11 @@ classdef DMP_plus < handle % : public DMP
 
         %% Sets the standard deviations for the kernel functions  of the DMP
         %  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
-        %  @param[in] s: Scales the variance of each kernel by 's' (optional, default = 1).
-        function set_stds(dmp, s)
+        %  @param[in] kernel_std_scaling: Scales the std of each kernel by 'kernel_std_scaling' (optional, default = 1.0).
+        function set_stds(dmp, kernel_std_scaling)
 
-            DMP_set_stds(dmp, s)
+            if (nargin < 2), kernel_std_scaling=1.0; end
+            DMP_set_stds(dmp, kernel_std_scaling);
 
         end
 
@@ -357,7 +358,7 @@ classdef DMP_plus < handle % : public DMP
 
 
         %% Returns the time cycle of the DMP
-        %  @param[out] tau: The time cycle of the DMP.
+        %  @param[out] tau: The time duration of the DMP.
         function tau = get_tau(dmp)
 
             tau = DMP_get_tau(dmp);

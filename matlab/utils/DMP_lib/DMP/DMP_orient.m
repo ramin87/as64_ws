@@ -1,108 +1,66 @@
 %% DMP orientation class
-%  Implements an 1-D DMP.
-%  The DMP is driven by a canonical system. An example of an exponential
-%  canonical system is:
-%     dx = -ax*x/tau
-%  where x is the phase variable and ax the decay term. Other types of
-%  canonical systems, such as a linear canonical system, can be used.
+%  The DMP is driven by a canonical clock. It outputs the phase varialbe 
+%  'x' which serves as a substitute for time. Typically, it evolves from 
+%  x0=0 at t=0 to x_end=1, at t=tau, where tau is the total movement's 
+%  duration. An example of a linear canonical clock is:
+%     dx = -ax/tau
+%  where x is the phase variable and ax the evolution factor. Other types 
+%  of canonical clocks, such as exponential, can be used. However, keeping
+%  a linear mapping between the phase variable 'x' and time 't' is more
+%  intuitive.
 %
-%  The DMP has the following form:
+%  The DMP has the in general the following form:
 %
-%     tau*dz = ( a_z*(b_z*(g-y) - z ) + f*s + z_c
+%     tau*dz = g1(x)*( a_z*(b_z*(g-y) - z ) + g2(x)*fs*f(x) + z_c
 %     tau*dy = z + y_c;
 %
-%  Or equivalently:
-%     ddy = ( a_z*(b_z*(g-y)-dy*tau) + f*x*(g-y0) ) / tau^2;
+%  Assuming y_c=z_c=0, we can write equivalently:
+%     ddy = g1(x)*( a_z*(b_z*(g-y)-dy*tau) + 2(x)*fs*f(x) ) / tau^2;
 %
 %  where
-%     tau: is scaling factor defining the duration (time cycle) of the motion
+%     tau: is scaling factor defining the duration of the motion
 %     a_z, b_z: constants relating to a spring-damper system
-%     g0: the final goal
-%     g: the continuous goal (or the final goal in case no goal-filtering is used)
+%     fs: scaling of the forcing term (typically fs = g0-y0)
+%     g: the goal-final position
 %     y0: the initial position
 %     x: the phase variable
 %     y,dy,ddy: the position, velocity and accelaration of the motion
-%     f: the forcing term defined by the weighted sum of the kernel
-%        functions (gaussian kernels), i.e.:
-%        f = w'*Psi/ sum(Psi);
-%     s: the scaling of the forcing term. It could be for instance
-%        s = u*(g0-y0), where u=x or some other variable that reaches zero
-%        as x approaches its final value (which is also close to zero).
-%        Another case is s = u*K, where K is the spring-damper stiffness.
-%
-%   Optionally the goal 'g' fed to the DMP can be filtered to ensure smooth transitions
-%   in the accelaration produced by the DMP. The filtering is donce as follows:
-%     tau*dg = a_g*(g0 - g)
-%   where 'g0' is the DMP goal, 'g' is the continuous goal variable and 'a_g'
-%   a time contant determining how fast 'g' converges to 'g0' (the higher 'a_g'
-%   is, the faster the convergence).
+%     f(x): the forcing term defined by the normalized weighted sum of the 
+%        kernel functions (gaussian kernels), i.e.:
+%        f(x) = w'*Psi(x)/ sum(Psi(x));
+%     g1(x): the gating factor of the spring-damper term
+%     g2(x): the gating factor of non-linear forcing term
 %
 
 classdef DMP_orient < handle
     properties
-        dmp % vector 3x1
-        canClock_ptr % handle (pointer) to the canonical clock
+        dmp % vector 3x1 of DMPs
+        D % dimensionality of the DMP_CartPos (= 3, constant)
     end
 
     methods
         %% DMP constructor
-        %  @param[in] DMP_TYPE: the type of DMP, i.e. 'DMP', 'DMP-bio' etc.
-        %  @param[in] N_kernels: the number of kernels
-        %  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
-        %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
-        %  @param[in] canClock_ptr: Pointer to a DMP canonical system object.
-        %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
-        %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
-        %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
-        function dmp_o = DMP_orient(DMP_TYPE, N_kernels, a_z, b_z, canClock_ptr, std_K, extraArgName, extraArgValue)
+        %  @param[in] vec3D_dmp: 3x1 cell array of 1D DMPs.
+        function dmp_o = DMP_orient(vec3D_dmp)
 
-            if (nargin < 5)
+            if (nargin < 1)
                 return;
             else
-                if (nargin < 6), std_K=1; end
-                if (nargin < 7)
-                    extraArgName = [];
-                    extraArgValue = [];
-                end
-                dmp_o.init(DMP_TYPE, N_kernels, a_z, b_z, canClock_ptr, std_K, extraArgName, extraArgValue);
+                dmp_o.init(vec3D_dmp);
             end
 
         end
 
 
         %% Initializes the DMP
-        %  @param[in] DMP_TYPE: the type of DMP, i.e. 'DMP', 'DMP-bio' etc.
-        %  @param[in] N_kernels: the number of kernels
-        %  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
-        %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
-        %  @param[in] canClock_ptr: Pointer to a DMP canonical system object.
-        %  @param[in] std_K: Scales the std of each kernel (optional, default = 1).
-        %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
-        %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
-        function init(dmp_o, DMP_TYPE, N_kernels, a_z, b_z, canClock_ptr, std_K, extraArgName, extraArgValue)
+         %  @param[in] vec3D_dmp: 3x1 cell array of 1D DMPs.
+        function init(dmp_o, vec3D_dmp)
 
-            if (nargin < 7), std_K=1; end
-            if (nargin < 8)
-                extraArgName = [];
-                extraArgValue = [];
-            end
-
-            dmp_o.canClock_ptr = canClock_ptr;
-
-            for i=1:3
-                if (strcmpi(DMP_TYPE,'DMP'))
-                    dmp_o.dmp{i} = DMP();
-                elseif (strcmpi(DMP_TYPE,'DMP-bio'))
-                    dmp_o.dmp{i} = DMP_bio();
-                elseif (strcmpi(DMP_TYPE,'DMP-plus'))
-                    dmp_o.dmp{i} = DMP_plus();
-                elseif (strcmpi(DMP_TYPE,'DMP-Shannon'))
-                    dmp_o.dmp{i} = DMP_Shannon();
-                else
-                    error('Unsupported DMP type ''%s''', DMP_TYPE);
-                end
-
-                dmp_o.dmp{i}.init(N_kernels, a_z, b_z, canClock_ptr, std_K, extraArgName, extraArgValue);
+            dmp_o.D = 3;
+            dmp_o.dmp = cell(3,1);
+            
+            for i=1:dmp_o.D
+                dmp_o.dmp{i} = vec3D_dmp{i};
             end
 
         end
@@ -120,11 +78,12 @@ classdef DMP_orient < handle
 
         %% Sets the standard deviations for the kernel functions  of the DMP
         %  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
-        %  @param[in] s: Scales the variance of each kernel by 's' (optional, default = 1).
-        function set_stds(dmp_o, s)
+        %  @param[in] kernel_std_scaling: Scales the variance of each kernel by 'kernel_std_scaling' (optional, default = 1.0).
+        function set_stds(dmp_o, kernel_std_scaling)
 
-            for i=1:3
-                dmp_o.dmp{i}.set_stds(s);
+            if (nargin < 2), kernel_std_scaling=1.0; end
+            for i=1:dmp_o.D
+                dmp_o.dmp{i}.set_stds(kernel_std_scaling);
             end
 
         end
@@ -157,119 +116,6 @@ classdef DMP_orient < handle
             for i=1:3
                 [train_error(i), F(i,:), Fd(i,:)] = dmp_o.dmp{i}.train(Time, yd_data(i,:), v_rot_data(i,:), dv_rot_data(i,:), y0(i), 0);
             end
-
-%
-%             yd_data = zeros(3,length(Time));
-%             dyd_data = v_rot_data;
-%             ddyd_data = dv_rot_data;
-%
-%             Q_data = zeros(size(Qd_data));
-%             y_data = zeros(size(yd_data));
-%             dy_data = zeros(size(dyd_data));
-%             ddy_data = zeros(size(ddyd_data));
-%             F_sim = zeros(size(F));
-%
-%
-%             x = 0.0;
-%             dx = 0;
-%             Q0 = Qd_data(:,1);
-%             Qg = Qd_data(:,end);
-%             dv_rot = zeros(3,1);
-%             v_rot = zeros(3,1);
-%             Q = Q0;
-%             t = 0;
-%             Q_robot = Q0;
-%             deta = zeros(3,1);
-%             eta = zeros(3,1);
-%
-%             Ts = Time(2) - Time(1);
-%             dt = Ts;
-%
-%             tic
-%             for i=1:length(Time)
-%
-%                 Q_data(:,i) = Q;
-%                 dy_data(:,i) = v_rot;
-%                 ddy_data(:,i) = dv_rot;
-%                 F_sim(:,i) = dmp_o.shape_attractor(x, Q0, Qg);
-%
-% %                 dmp_o.forcing_term_scaling(x, Q0, Qg).*dmp_o.forcing_term(x);
-%
-%
-%                 %% Orientation DMP
-% %                 scaled_forcing_term = dmp_o.forcing_term(x).*dmp_o.forcing_term_scaling(x, Q0, Qg);
-%
-%                 Q_c = 0;
-%                 eta_c = 0;
-%                 [dQ, deta] = dmp_o.get_states_dot(x, Q, eta, Q0, Qg, Q_c, eta_c);
-%                 v_rot_temp = 2*quatProd(dQ,quatInv(Q));
-%
-%                 v_rot = v_rot_temp(2:4);
-%                 dv_rot = deta / dmp_o.get_v_scale();
-%
-%                 %% Update phase variable
-%                 dx = dmp_o.canClock_ptr.get_phaseVar_dot(x);
-%
-%                 %% Numerical integration
-%                 t = t + dt;
-%
-% %                 t
-% %                 v_rot
-%
-% %                 v_rot = dyd_data(:,i);
-% %                 dv_rot = ddyd_data(:,i);
-% %                 eta = dv_rot*dmp_o.get_v_scale();
-%
-% %                 v_rot
-% %
-% %                 pause
-%
-%                 Q = quatProd(quatExp(v_rot*dt), Q);
-% %                 Q = Q + dQ*dt;
-% %                 Q = Q/norm(Q);
-%
-%                 eta = eta + deta*dt;
-%
-%                 x = x + dx*dt;
-%
-%             end
-%
-%
-%             for i=1:length(Time)
-%                 yd_data(:,i) = quatLog(quatProd(Qg, quatInv(Qd_data(:,i))));
-%                 y_data(:,i) = quatLog(quatProd(Qg, quatInv(Q_data(:,i))));
-%             end
-%
-% %             plot_training_data(Time, yd_data, dyd_data, ddyd_data);
-%
-%             lineWidth = 1.2;
-%             plot_signals_and_errorSignal(Time,y_data, Time,yd_data, 'DMP', 'demo', 'Position', lineWidth);
-%             plot_signals_and_errorSignal(Time,dy_data, Time,dyd_data, 'DMP', 'demo', 'Velocity', lineWidth);
-%             plot_signals_and_errorSignal(Time,ddy_data, Time,ddyd_data, 'DMP', 'demo', 'Acceleration', lineWidth);
-%
-%             figure;
-%             for i=1:3
-%                 subplot(3,1,i);
-%                 hold on;
-%                 plot(Time, Fd(i,:));
-%                 plot(Time, F(i,:));
-%                 plot(Time, F_sim(i,:));
-%                 legend({'$F_{d_{train}}$','$F_{train}$','$F_{sim}$'},'Interpreter','latex','fontsize',14);
-%                 hold off;
-%             end
-%
-% %             figure;
-% %             for i=1:3
-% %                 subplot(3,1,i);
-% %                 hold on;
-% %                 plot(Time, F_sim(i,:));
-% %                 legend({'$F_{sim}$'},'Interpreter','latex','fontsize',14);
-% %                 hold off;
-% %             end
-% %
-% %             plot_line_path(y_data, yd_data, 'DMP', 'demo', 2, 10);
-%
-% %             error('stop');
 
         end
 
@@ -315,7 +161,7 @@ classdef DMP_orient < handle
         %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
         %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] Fd: Desired value of the scaled forcing term.
-        function Fd = calc_Fd(dmp_o, x, Q, v_rot, dv_rot, Q0, Qg)
+        function Fd = calc_Fd(dmp_o, X, Q, v_rot, dv_rot, Q0, Qg)
 
             y = -quatLog(quatProd(Qg,quatInv(Q)));
             y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
@@ -325,7 +171,7 @@ classdef DMP_orient < handle
 
             Fd = zeros(3, 1);
             for i=1:3
-                Fd(i) = dmp_o.dmp{i}.calc_Fd(x, y(i), dy(i), ddy(i), y0(i), g(i));
+                Fd(i) = dmp_o.dmp{i}.calc_Fd(X(i), y(i), dy(i), ddy(i), y0(i), g(i));
             end
 
         end
@@ -334,28 +180,27 @@ classdef DMP_orient < handle
         %% Returns the forcing term of the DMP.
         %  @param[in] x: The phase variable.
         %  @param[out] f: The normalized weighted sum of Gaussians.
-        function f = forcing_term(dmp_o, x)
+        function f = forcing_term(dmp_o, X)
 
             f = zeros(3,1);
             for i=1:3
-                f(i) = dmp_o.dmp{i}.forcing_term(x);
+                f(i) = dmp_o.dmp{i}.forcing_term(X(i));
             end
 
         end
 
         %% Returns the scaling factor of the forcing term.
-        %  @param[in] x: The phase variable.
         %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
         %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] f_scale: The scaling factor of the forcing term.
-        function f_scale = forcing_term_scaling(dmp_o, x, Q0, Qg)
+        function f_scale = forcing_term_scaling(dmp_o, Q0, Qg)
 
             y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
             g = zeros(3,1);
 
             f_scale = zeros(3,1);
             for i=1:3
-                f_scale(i) = dmp_o.dmp{i}.forcing_term_scaling(x, y0(i), g(i));
+                f_scale(i) = dmp_o.dmp{i}.forcing_term_scaling(y0(i), g(i));
             end
 
         end
@@ -366,37 +211,37 @@ classdef DMP_orient < handle
         %  @param[in] eta: \a eta state of the DMP.
         %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] goal_attr: The goal attractor of the DMP.
-        function goal_attr = goal_attractor(dmp_o, x, Q, eta, Qg)
+        function goal_attr = goal_attractor(dmp_o, X, Q, eta, Qg)
 
             goal_attr = zeros(3, 1);
             y = -quatLog(quatProd(Qg, quatInv(Q)));
             for i=1:3
-                goal_attr(i) = dmp_o.dmp{i}.goal_attractor(x, y(i), eta(i), 0);
+                goal_attr(i) = dmp_o.dmp{i}.goal_attractor(X(i), y(i), eta(i), 0);
             end
 
         end
 
 
         %% Returns the shape attractor of the DMP.
-        %  @param[in] x: The phase variable.
+        %  @param[in] X: The phase variable.
         %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
         %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] shape_attr: The shape_attr of the DMP.
-        function shape_attr = shape_attractor(dmp_o, x, Q0, Qg)
+        function shape_attr = shape_attractor(dmp_o, X, Q0, Qg)
 
             y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
             g = zeros(3,1);
 
             shape_attr = zeros(3,1);
             for i=1:3
-                shape_attr(i) = dmp_o.dmp{i}.shape_attractor(x, y0(i), g(i));
+                shape_attr(i) = dmp_o.dmp{i}.shape_attractor(X(i), y0(i), g(i));
             end
 
         end
 
 
         %% Returns the derivatives of the DMP states
-        %  @param[in] x: The phase variable.
+        %  @param[in] X: The phase variable.
         %  @param[in] Q: \a Q state of the DMP.
         %  @param[in] eta: \a eta state of the DMP.
         %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
@@ -405,45 +250,54 @@ classdef DMP_orient < handle
         %  @param[in] eta_c: Coupling term for the dynamical equation of the \a eta state.
         %  @param[out] dQ: Derivative of the \a Q state of the DMP.
         %  @param[out] deta: Derivative of the \a eta state of the DMP.
-        function [dQ, deta] = get_states_dot(dmp_o, x, Q, eta, Q0, Qg, Q_c, eta_c)
+        function [dQ, deta] = get_states_dot(dmp_o, X, Q, eta, Q0, Qg, Q_c, eta_c)
 
             if (nargin < 8), eta_c=0; end
             if (nargin < 7), Q_c=0; end
 
             v_scale = dmp_o.get_v_scale();
-            shape_attr = dmp_o.shape_attractor(x, Q0, Qg);
-            goal_attr = dmp_o.goal_attractor(x, Q, eta, Qg);
+            shape_attr = dmp_o.shape_attractor(X, Q0, Qg);
+            goal_attr = dmp_o.goal_attractor(X, Q, eta, Qg);
 
-            deta = ( goal_attr + shape_attr + eta_c) / v_scale;
-            dQ = 0.5*quatProd([0; (eta+Q_c)/ v_scale], Q);
+            deta = ( goal_attr + shape_attr + eta_c) ./ v_scale;
+            dQ = 0.5*quatProd([0; (eta+Q_c)./ v_scale], Q);
 
         end
 
 
         %% Returns a column vector with the values of the kernel functions of the DMP
-        %  @param[in] x: phase variable.
-        %  @param[out] psi: column vector with the values of the kernel functions of the DMP.
-        function psi = kernel_function(dmp_o, x)
+        %  @param[in] X: 3x1 vector with the phase variable of each DMP.
+        %  @param[out] Psi: 3x1 cell array of column vectors with the values of the kernel functions of each DMP.
+        function Psi = kernel_function(dmp_CartPos, X)
 
-            psi = dmp_o.dmp{1}.kernel_function(x);
+            Psi = cell(dmp_CartPos.D,1);
+            for i=1:dmp_CartPos.D
+                Psi{i} = dmp_CartPos.dmp{i}.kernel_function(X(i));
+            end
 
         end
 
 
         %% Returns the scaling factor of the DMP
-        %  @param[out] v_scale: The scaling factor of the DMP.
-        function v_scale = get_v_scale(dmp_o)
+        %  @param[out] v_scale: 3x1 vector with the scaling factor of each DMP.
+        function v_scale = get_v_scale(dmp_CartPos)
 
-            v_scale = dmp_o.dmp{1}.get_v_scale();
+            v_scale = zeros(dmp_CartPos.D,1);
+            for i=1:dmp_CartPos.D
+                v_scale(i) = dmp_CartPos.dmp{i}.get_v_scale();
+            end 
 
         end
 
 
         %% Returns the time cycle of the DMP
-        %  @param[out] tau: The time cycle of the DMP.
-        function tau = get_tau(dmp_o)
+        %  @param[out] tau: 3x1 vector with the time duration of each DMP.
+        function tau = get_tau(dmp_CartPos)
 
-            tau = dmp_o.dmp{1}.get_tau();
+            tau = zeros(dmp_CartPos.D,1);
+            for i=1:3
+                tau(i) = dmp_CartPos.dmp{i}.get_tau();
+            end
 
         end
 

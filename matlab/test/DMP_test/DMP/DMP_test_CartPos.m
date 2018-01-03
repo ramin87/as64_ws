@@ -34,27 +34,10 @@ number_of_kernels = cmd_args.N_kernels
 n_data
 
 
-% Init canonical system
-can_sys_ptr = CanonicalSystem();
-
-% Optionally, one can set the clock's starting and end value, but in this case 'init' must be called again
-can_sys_ptr.can_clock.x0 = cmd_args.x0;
-can_sys_ptr.can_clock.x_end = cmd_args.x_end;
-
-% Optionally, one can set the steepness of the sigmoid, but in this case 'init' must be called again
-if (strcmpi(cmd_args.CAN_FUN_TYPE,'sigmoid'))
-    can_sys_ptr.forcingTermGatingFun.a_u = 500;
-end
-
-can_sys_ptr.init(cmd_args.CAN_CLOCK_TYPE, cmd_args.CAN_FUN_TYPE, tau, cmd_args.u_end, cmd_args.u0);
-
-
-extraArgNames = {'k_trunc_kernel', 'Wmin', 'Freq_min', 'Freq_max', 'P1_min'};
-extraArgValues = {cmd_args.k_trunc_kernel, cmd_args.Wmin, cmd_args.Freq_min, cmd_args.Freq_max, cmd_args.P1_min};
+[canClock_ptr, shapeAttrGating_ptr, goalAttrGating_ptr, dmp_vec] = get_canClock_gatingFuns_DMP(cmd_args, D, tau);
 
 dmpCartPos = DMP_CartPos();
-dmpCartPos.init(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, can_sys_ptr, cmd_args.kernel_std_scaling, extraArgNames, extraArgValues);
-
+dmpCartPos.init(dmp_vec);
 
 Time_offline_train = [];
 F_p_offline_train_data = [];
@@ -80,11 +63,15 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
     toc
 end
 
+for i=1:D
+    N_kernels_i = dmpCartPos.dmp{i}.N_kernels
+end
+
 
 %% DMP simulation
 % set initial values
-x = cmd_args.x0;
-dx = 0;
+x = 0.0;
+dx = 0.0;
 Y0 = Yd_data(:,1);
 Yg0 = Yd_data(:,end);
 Yg = Yg0;
@@ -96,7 +83,7 @@ ind_g_chage = 1;
 dY = zeros(D,1);
 ddY = zeros(D,1);
 Y = Y0;
-t = 0;
+t = 0.0;
 Y_robot = Y0;
 dY_robot = zeros(D,1);
 ddY_robot = zeros(D,1);
@@ -111,7 +98,6 @@ Fd = zeros(D,1);
 
 Fdist = 0;
 
-log_data = get_logData_struct(); 
 log_data = get_logData_struct();   
 log_data.dmp = cell(D,1);
 for i=1:D, log_data.dmp{i} = dmpCartPos.dmp{i}; end
@@ -148,7 +134,7 @@ log_data.shape_attr_data = [];
 log_data.goal_attr_data = [];
 
 tau = cmd_args.tau_sim_scale*tau;
-can_sys_ptr.set_tau(tau);
+canClock_ptr.set_tau(tau);
 
 iters = 0;
 
@@ -184,23 +170,24 @@ while (true)
     log_data.goal_attr_data = [log_data.goal_attr_data goal_attr];
 
     
+    X = ones(3,1)*x;
+    
     %% DMP simulation
 
     %% Orientation DMP
-    scaled_forcing_term = dmpCartPos.forcing_term(x).*dmpCartPos.forcing_term_scaling(x, Y0, Yg);
+    scaled_forcing_term = dmpCartPos.forcing_term(X).*dmpCartPos.forcing_term_scaling(Y0, Yg);
 %     scaled_forcing_term =  dmpo.shape_attractor(x, Q0, Qg);
     
     Y_c = cmd_args.a_py*(Y_robot - Y);
-    Z_c = 0;
-    [dY, dZ] = dmpCartPos.get_states_dot(x, Y, Z, Y0, Yg, Y_c, Z_c);
+    Z_c = zeros(D,1);
+    [dY, dZ] = dmpCartPos.get_states_dot(X, Y, Z, Y0, Yg, Y_c, Z_c);
 
-    ddY = dZ / dmpCartPos.get_v_scale();    
+    ddY = dZ ./ dmpCartPos.get_v_scale();    
     ddY_robot = ddY + inv(cmd_args.Md_p) * ( - cmd_args.Dd_p*(dY_robot - dY) - cmd_args.Kd_p*(Y_robot - Y) + Fdist ); 
-    
     
     %% Goal filtering
     if (cmd_args.USE_GOAL_FILT)
-        dg = cmd_args.a_g*(Yg2 - Yg)/can_sys_ptr.get_tau();
+        dg = cmd_args.a_g*(Yg2 - Yg)/canClock_ptr.get_tau();
     else
         Yg = Yg2;
         dg = zeros(size(dg));
@@ -222,7 +209,7 @@ while (true)
     
     %% Update phase variable
         
-    dx = can_sys_ptr.get_phaseVar_dot(x);
+    dx = canClock_ptr.get_phase_dot(x);
 
     
     %% Update disturbance force
@@ -263,11 +250,13 @@ while (true)
     dY_robot = dY_robot + ddY_robot*dt;
     
     Yg = Yg + dg*dt;
+    
 
 end
 toc
 
-log_data.u_data = can_sys_ptr.get_shapeVar(log_data.x_data);
+log_data.shapeAttrGating_data = shapeAttrGating_ptr.get_output(log_data.x_data);
+log_data.goalAttrGating_data = goalAttrGating_ptr.get_output(log_data.x_data);
 
 save data/dmp_results.mat log_data cmd_args;
     
