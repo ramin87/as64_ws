@@ -1,6 +1,8 @@
-function Fdist = Fdist_fun(t)
+function Fdist = Fdist_fun(t, D)
 
 global cmd_args
+
+if (nargin < 2), D=1; end
 
 t1 = cmd_args.t1_fdist;
 t2 = cmd_args.t2_fdist;
@@ -22,9 +24,7 @@ if (t>t1 && t<t2)
     end
 end
 
-% if (t>t1 && t<t2)
-%     Fdist = Fdist + cmd_args.Fdist_max/50*rand(1);
-% end
+Fdist = Fdist*ones(D,1);
 
 end
 

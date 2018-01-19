@@ -16,32 +16,33 @@ end
 set_matlab_utils_path();
 
 
-%% Load demos and process demos
-load data/data.mat data Qd_data Ts
+%% Load data
+load data/data.mat data Time
 
-% calculate numerically the 1st and 2nd derivatives
-[yd_data, dyd_data, ddyd_data] = process_data(data, Ts, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
-% [Qd_data, v_rot_d_data, dv_rot_d_data] = process_Q_data(Q_data, Ts, cmd_args.add_points_percent, cmd_args.smooth_points_percent);
-
+yd_data = data{1};
+dyd_data = data{2};
+ddyd_data = data{3};
+Ts = min(diff(Time));
+         
+D = size(yd_data,1); % dimensionality of training data
 n_data = size(yd_data,2); % number of points in each dimension
 Time_demo = ((1:n_data)-1)*Ts;
 
-D = size(yd_data,1); % dimensionality of training data
-n_data = size(yd_data,2); % number of training points
-
 %% Set up DMP params
-tau = (n_data-1)*Ts;
+tau = Time_demo(end);
 
 number_of_kernels = cmd_args.N_kernels
 n_data
 
-[canClock_ptr, shapeAttrGating_ptr, goalAttrGating_ptr, dmp] = get_canClock_gatingFuns_DMP(cmd_args, D, tau);
+[canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp] = get_canClock_gatingFuns_DMP(cmd_args, D, tau);
 
 F_offline_train_data = [];
 Fd_offline_train_data = [];
 Time_offline_train = [];
 offline_train_mse = [];
 online_train_mse = [];
+trainParamsName = {'lambda', 'P_cov'};
+trainParamsValue = {cmd_args.lambda, cmd_args.P_cov};
 %% Train the DMP
 if (cmd_args.OFFLINE_DMP_TRAINING_enable)
     disp('DMP training...')
@@ -61,9 +62,7 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
         dyd = dyd_data(i,ind);
         ddyd = ddyd_data(i,ind);
 
-        trainParamsName = {'lambda', 'P_cov'};
-        trainParamsValue = {cmd_args.lambda, cmd_args.P_cov};
-        dmp{i}.set_training_params(cmd_args.train_method, trainParamsName, trainParamsValue);
+        dmp{i}.setTrainingParams(cmd_args.trainMethod, trainParamsName, trainParamsValue);
         [offline_train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0);      
 
         F_offline_train_data = [F_offline_train_data; F_train];
@@ -74,6 +73,7 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
 
     toc
 end
+
 
 number_of_kernels = dmp{1}.N_kernels
 n_data
@@ -101,9 +101,6 @@ dy_robot = zeros(D,1);
 ddy_robot = zeros(D,1);
 dz = zeros(D,1);
 z = zeros(D,1);
-scaled_forcing_term = zeros(D,1);
-shape_attr = zeros(D,1);
-goal_attr = zeros(D,1);
 
 P_lwr = cell(D,1);
 for i=1:D
@@ -112,7 +109,7 @@ end
 F = zeros(D,1);
 Fd = zeros(D,1);
 
-Fdist = 0;
+Fdist = zeros(D,1);
 
 log_data = get_logData_struct();   
 
@@ -135,16 +132,17 @@ log_data.Time_online_train = [];
 log_data.F_online_train_data = [];
 log_data.Fd_online_train_data = [];
 
-log_data.Psi_data = cell(D,1);
 log_data.P_lwr = cell(D,1);
 log_data.DMP_w = cell(D,1);
-log_data.shape_attr_data = [];
-log_data.goal_attr_data = [];
+for i=1:D
+    log_data.DMP_w{i} = dmp{i}.w;
+    log_data.DMP_c{i} = dmp{i}.c;
+    log_data.DMP_h{i} = dmp{i}.h;
+end
 
-
-tau0 = canClock_ptr.get_tau();
+tau0 = canClockPtr.getTau();
 tau = cmd_args.tau_sim_scale*tau;
-canClock_ptr.set_tau(tau);
+canClockPtr.setTau(tau);
 
 iters = 0;
 
@@ -175,12 +173,7 @@ while (true)
     
     log_data.Fdist_data = [log_data.Fdist_data Fdist];
     
-    log_data.Force_term_data = [log_data.Force_term_data scaled_forcing_term];
-    
     log_data.g_data = [log_data.g_data g];
-    
-    log_data.shape_attr_data = [log_data.shape_attr_data shape_attr];
-    log_data.goal_attr_data = [log_data.goal_attr_data goal_attr];
   
     
     %% DMP simulation
@@ -199,25 +192,18 @@ while (true)
             ddyd = ddyd_data(i,iters+1);
             P_lwr{i} = dmp{i}.update_weights(x, yd, dyd, ddyd, y0(i), g(i), P_lwr{i}, cmd_args.RLWR_lambda); 
 
-            F(i) = dmp{i}.calc_Fd(x, y(i), dy(i), ddy(i), y0(i), g(i));
-            Fd(i) = dmp{i}.calc_Fd(x, yd, dyd, ddyd, y0(i), g(i));
+            F(i) = dmp{i}.calcFd(x, y(i), dy(i), ddy(i), y0(i), g(i));
+            Fd(i) = dmp{i}.calcFd(x, yd, dyd, ddyd, y0(i), g(i));
             
         end
-        
-        Psi = dmp{i}.kernel_function(x);
-        log_data.Psi_data{i} = [log_data.Psi_data{i} Psi(:)];
-
-        shape_attr(i) = dmp{i}.shape_attractor(x, y0(i), g(i));
-        goal_attr(i) = dmp{i}.goal_attractor(x, y(i), dy(i), g(i));
-        scaled_forcing_term(i) = dmp{i}.forcing_term(x)*dmp{i}.forcing_term_scaling(y0(i), g(i)) * dmp{i}.shapeAttrGating_ptr.get_output(x);
         
         y_c = cmd_args.a_py*(y_robot(i)-y(i));
         z_c = 0;
         
-        [dy(i), dz(i)] = dmp{i}.get_states_dot(x, y(i), z(i), y0(i), g(i), y_c, z_c);
+        [dy(i), dz(i)] = dmp{i}.getStatesDot(x, y(i), z(i), y0(i), g(i), y_c, z_c);
         
         ddy(i) = dz(i)/dmp{i}.get_v_scale();
-        ddy_robot(i) = ddy(i) + inv(cmd_args.Md) * ( - cmd_args.Dd*(dy_robot(i) - dy(i)) - cmd_args.Kd*(y_robot(i)-y(i)) + Fdist ); 
+        ddy_robot(i) = ddy(i) + inv(cmd_args.Md) * ( - cmd_args.Dd*(dy_robot(i) - dy(i)) - cmd_args.Kd*(y_robot(i)-y(i)) + Fdist(i) ); 
         
         
     end
@@ -232,8 +218,6 @@ while (true)
     if (cmd_args.ONLINE_GOAL_CHANGE_ENABLE)
         if (ind_g_chage <= N_g_change)
             if (abs((t-cmd_args.time_goal_change(ind_g_chage))) < dt/2.0)
-%                 disp('Goal change')
-%                 t
                 g2 = cmd_args.goal_change(ind_g_chage);
                 ind_g_chage = ind_g_chage + 1;
             end
@@ -243,7 +227,7 @@ while (true)
     
     %% Goal filtering
     if (cmd_args.USE_GOAL_FILT)
-        dg = cmd_args.a_g*(g2-g)/canClock_ptr.get_tau();
+        dg = cmd_args.a_g*(g2-g)/canClockPtr.getTau();
     else
         g = g2;
         dg = zeros(size(dg));
@@ -251,11 +235,11 @@ while (true)
     
     %% Update phase variable
 
-    dx = canClock_ptr.get_phase_dot(x);
+    dx = canClockPtr.getPhaseDot(x);
     
     %% Update disturbance force
     if (cmd_args.APPLY_DISTURBANCE)
-        Fdist = Fdist_fun(t);
+        Fdist = Fdist_fun(t, D);
     end
     
      
@@ -266,7 +250,7 @@ while (true)
         dx = dx*stop_coeff;
         dg = dg*stop_coeff;
         
-%         canClock_ptr.set_tau(tau0*stop_coeff);
+%         canClockPtr.setTau(tau0*stop_coeff);
     end
     
     %% Stopping criteria
@@ -275,8 +259,6 @@ while (true)
         && t>=tau)
         break; 
     end
-%     t
-%     err_p
     
     iters = iters + 1;
     if (t>=tau && iters>=cmd_args.max_iters)
@@ -304,9 +286,6 @@ while (true)
 
 end
 toc
-
-log_data.shapeAttrGating_data = shapeAttrGating_ptr.get_output(log_data.x_data);
-log_data.goalAttrGating_data = goalAttrGating_ptr.get_output(log_data.x_data);
 
 save data/dmp_results.mat log_data cmd_args;
     
@@ -342,21 +321,7 @@ Time_demo = log_data.Time_demo;
 y_data = log_data.y_data;
 yd_data = log_data.yd_data;
 
-y_data2 = cell(D,1);
-yd_data2 = cell(D,1);
-
-sim_mse = zeros(D,1);
-for i=1:D
-   [~, y_data2{i}, yd_data2{i}] = temp_align_signals(Time, y_data(i,:), Time_demo, yd_data(i,:)); 
-   sim_mse(i) = norm(y_data2{i} - yd_data2{i});
-end
-
-sim_mse_dtw = zeros(D,1);
-dist_f = @(s1,s2) norm(s1-s2);
-[Time1, z1, Time2, z2] = spatial_align_signals(Time, y_data, Time_demo, yd_data, dist_f);
-for i=1:D
-   sim_mse_dtw(i) = norm(z1(i,:) - z2(i,:))/length(z1(i,:));
-end
+[sim_mse, sim_mse_dtw] = get_sim_mse_with_temp_and_spatial_align(Time, y_data, Time_demo, yd_data);
 
 offline_train_mse
 online_train_mse

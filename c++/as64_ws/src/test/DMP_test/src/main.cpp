@@ -9,14 +9,7 @@
 
 #include <utils.h>
 
-#include <DMP_lib/DMP/DMP_.h>
-#include <DMP_lib/DMP/DMP.h>
-#include <DMP_lib/DMP/DMP_bio.h>
-#include <DMP_lib/DMP/DMP_plus.h>
-
-#include <DMP_lib/CanonicalSystem/ExpCanonicalSystem.h>
-#include <DMP_lib/CanonicalSystem/LinCanonicalSystem.h>
-#include <DMP_lib/CanonicalSystem/SpringDamperCanonicalSystem.h>
+#include <DMP_lib/DMP_lib.h>
 
 
 int main(int argc, char** argv)
@@ -28,6 +21,12 @@ int main(int argc, char** argv)
   arma::wall_clock timer;
   double elapsed_time;
 
+  double tau = 2.3;
+  as64::CanonicalClock canClockPtr = new(LinCanonicalClock());
+  canClockPtr->init(tau);
+
+
+/*
   // ========  initialize cmd params  ===========
   CMD_ARGS cmd_args;
   std::cout << "====> Parsing CMD args...\n";

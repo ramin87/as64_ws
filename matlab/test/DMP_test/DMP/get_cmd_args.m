@@ -12,53 +12,41 @@ cmd_args.DMP_TYPE = 'DMP-Shannon'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
 
 cmd_args.N_kernels = 100; % number of kernels used in the DMP
 
-cmd_args.kernel_std_scaling = 1.0; % scaling factor for the kernels std
+cmd_args.kernelStdScaling = 1.0; % scaling factor for the kernels std
 
-cmd_args.train_method = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
+cmd_args.trainMethod = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 
 cmd_args.CAN_CLOCK_TYPE = 'lin';
 
 cmd_args.SHAPE_ATTR_GATTING_TYPE = 'sigmoid'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
 cmd_args.SHAPE_ATTR_GATTING_u0 = 1.0; % starting value of the shape attractor gating
-cmd_args.SHAPE_ATTR_GATTING_u_end = 0.995; % ending value of the shape attractor gating
+cmd_args.SHAPE_ATTR_GATTING_u_end = 0.5; % ending value of the shape attractor gating
 
 cmd_args.GOAL_ATTR_GATTING_TYPE = 'lin'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
-cmd_args.GOAL_ATTR_GATTING_u0 = 0.001; % starting value of the goal attractor gating
+cmd_args.GOAL_ATTR_GATTING_u0 = 0.005; % starting value of the goal attractor gating
 cmd_args.GOAL_ATTR_GATTING_u_end = 1.0; % ending value of the goal attractor gating
 
-% if (strcmpi(cmd_args.DMP_TYPE, 'DMP-Shannon'))
-%     cmd_args.CAN_FUN_TYPE = 'sigmoid'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
-% else
-%     cmd_args.CAN_FUN_TYPE = 'exp'; % 'lin', 'exp', 'spring-damper', 'sigmoid'
-% end
-cmd_args.sigmoid_a_u = 280; % steepness of the sigmoid gating function (optional)
-
+cmd_args.sigmoid_a_u = 280.0; % steepness of the sigmoid gating function (optional)
 
 cmd_args.OFFLINE_DMP_TRAINING_enable = true;
 cmd_args.ONLINE_DMP_UPDATE_enable = false;
 cmd_args.lambda = 0.99; % forgetting factor for recursive training methods
-cmd_args.P_cov = 1e8; % initial value of covariance matrix for recursive training methods
+cmd_args.P_cov = 1000000.0; % initial value of covariance matrix for recursive training methods
 
 cmd_args.USE_GOAL_FILT = true;
 cmd_args.a_g = 20.0;
 cmd_args.USE_PHASE_STOP = true;
 cmd_args.a_px = 50.0; 
-cmd_args.a_py = 0*40; %2*cmd_args.a_z;
+cmd_args.a_py = 40.0; %2*cmd_args.a_z;
 
 % Parameters for DMP-plus
 cmd_args.k_trunc_kernel = 3; % number of stds beyond which the kernel is truncated
 
 % Parameters for DMP-Shannon
-cmd_args.Wmin = 0.9999;
-cmd_args.Freq_min = 60;
-cmd_args.Freq_max = 150;
-cmd_args.P1_min = 0.008;
-
-
-%% demos preprocess params
-% these params are expressed in percent of the total number of training points
-cmd_args.add_points_percent = 0.06; % percent of points added at the start and end of the demonstrated trajectory to ensure zero initial and final velocities/accelerations
-cmd_args.smooth_points_percent = 0.035; % width of the window used to smooth velocity and acceleration (alleviate numerica differentiation noise)
+cmd_args.Wmin = 0.999;
+cmd_args.Freq_min = 60.0;
+cmd_args.Freq_max = 150.0;
+cmd_args.P1_min = 0.1;
 
 
 %% Robot controller params
@@ -79,8 +67,8 @@ cmd_args.Dd_o = eye(3,3)*2*sqrt(cmd_args.Kd_o*cmd_args.Md_o); % rotational dampi
 
 %% Simulation params
 cmd_args.dt = 0.002; %simulation time_step;
-cmd_args.tol_stop = 5e-3; % position error tolerance to stop the simulation
-cmd_args.orient_tol_stop = 2e-3; % orientation error tolerance to stop the simulation
+cmd_args.tol_stop = 0.01; % position error tolerance to stop the simulation
+cmd_args.orient_tol_stop = 0.005; % orientation error tolerance to stop the simulation
 cmd_args.max_iters = 3000; % maximum iteration steps
 cmd_args.tau_sim_scale = 1.0; % scaling factor for the time of the DMP simulation
 cmd_args.goal_scale = 1.0; % scaling factor for the goal in the DMP simulation
@@ -113,7 +101,6 @@ cmd_args.t2_fdist = 2.2; % End of Fdist_max
 
 %% Plotting params
 cmd_args.fontsize = 14;
-
 
 
 

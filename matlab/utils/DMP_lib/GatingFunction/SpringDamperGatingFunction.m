@@ -39,7 +39,7 @@ classdef SpringDamperGatingFunction < handle
               error('SpringDamperGatingFunction: init: |u_end| must be less than |u0|');
           end
 
-          gating_fun.set_gating_fun_params(u0, u_end);
+          gating_fun.setGatingFunParams(u0, u_end);
 
       end
 
@@ -47,10 +47,10 @@ classdef SpringDamperGatingFunction < handle
       %% the phase variable at the end of the movement.
       %  @param[in] u0: Initial value of the gating function.
       %  @param[in] u_end: Final value of the gating function.
-      function set_gating_fun_params(gating_fun, u0, u_end)
+      function setGatingFunParams(gating_fun, u0, u_end)
 
           if (u_end == 0)
-              error('SpringDamperGatingFunction: set_gating_fun_params: u_end must be != 0');
+              error('SpringDamperGatingFunction: setGatingFunParams: u_end must be != 0');
           end
 
           gating_fun.u0 = u0;
@@ -62,7 +62,7 @@ classdef SpringDamperGatingFunction < handle
       %% Returns the gating function's output for the specified timestamps.
       %  @param[in] x: Vector of timestamps.
       %  @param[out] u: Vector of values of the gating function's output.
-      function u = get_output(gating_fun, x)
+      function u = getOutput(gating_fun, x)
 
           exp_at = exp(-gating_fun.a_u * x);
           s = 1 / (exp(-1)/gating_fun.a_u);
@@ -73,7 +73,7 @@ classdef SpringDamperGatingFunction < handle
       %% Returns the gating function's derivated output for the specified timestamps.
       %  @param[in] x: Vector of timestamps.
       %  @param[out] u: Vector of values of the gating function's derivated output.
-      function du = get_output_dot(gating_fun, x)
+      function du = getOutputDot(gating_fun, x)
 
           exp_at = exp(-gating_fun.a_u * x);
           du = gating_fun.u0*exp_at .* (1 - gating_fun.a_u*x );

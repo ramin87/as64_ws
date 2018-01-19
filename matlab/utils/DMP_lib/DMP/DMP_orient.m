@@ -35,7 +35,7 @@
 classdef DMP_orient < handle
     properties
         dmp % vector 3x1 of DMPs
-        D % dimensionality of the DMP_CartPos (= 3, constant)
+        D % dimensionality of the orientation DMP (= 3, constant)
     end
 
     methods
@@ -67,10 +67,10 @@ classdef DMP_orient < handle
 
 
         %% Sets the centers for the kernel functions of the DMP according to the canonical system
-        function set_centers(dmp_o)
+        function setCenters(dmp_o)
 
             for i=1:3
-                dmp_o.dmp{i}.set_centers();
+                dmp_o.dmp{i}.setCenters();
             end
 
         end
@@ -78,12 +78,12 @@ classdef DMP_orient < handle
 
         %% Sets the standard deviations for the kernel functions  of the DMP
         %  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
-        %  @param[in] kernel_std_scaling: Scales the variance of each kernel by 'kernel_std_scaling' (optional, default = 1.0).
-        function set_stds(dmp_o, kernel_std_scaling)
+        %  @param[in] kernelStdScaling: Scales the variance of each kernel by 'kernelStdScaling' (optional, default = 1.0).
+        function setStds(dmp_o, kernelStdScaling)
 
-            if (nargin < 2), kernel_std_scaling=1.0; end
+            if (nargin < 2), kernelStdScaling=1.0; end
             for i=1:dmp_o.D
-                dmp_o.dmp{i}.set_stds(kernel_std_scaling);
+                dmp_o.dmp{i}.setStds(kernelStdScaling);
             end
 
         end
@@ -121,17 +121,17 @@ classdef DMP_orient < handle
 
 
         %% Sets the high level training parameters of the DMP
-        %  @param[in] train_method: Method used to train the DMP weights.
+        %  @param[in] trainMethod: Method used to train the DMP weights.
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
         %
         %  \remark The extra argument names can be the following:
         %  'lambda': Forgetting factor for recursive training methods.
         %  'P_cov': Initial value of the covariance matrix for recursive training methods.
-        function set_training_params(dmp_o, train_method, extraArgName, extraArgValue)
+        function setTrainingParams(dmp_o, trainMethod, extraArgName, extraArgValue)
 
             for i=1:3
-                dmp_o.dmp{i}.set_training_params(train_method, extraArgName, extraArgValue);
+                dmp_o.dmp{i}.setTrainingParams(trainMethod, extraArgName, extraArgValue);
             end
 
         end
@@ -161,7 +161,7 @@ classdef DMP_orient < handle
         %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
         %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] Fd: Desired value of the scaled forcing term.
-        function Fd = calc_Fd(dmp_o, X, Q, v_rot, dv_rot, Q0, Qg)
+        function Fd = calcFd(dmp_o, X, Q, v_rot, dv_rot, Q0, Qg)
 
             y = -quatLog(quatProd(Qg,quatInv(Q)));
             y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
@@ -171,7 +171,7 @@ classdef DMP_orient < handle
 
             Fd = zeros(3, 1);
             for i=1:3
-                Fd(i) = dmp_o.dmp{i}.calc_Fd(X(i), y(i), dy(i), ddy(i), y0(i), g(i));
+                Fd(i) = dmp_o.dmp{i}.calcFd(X(i), y(i), dy(i), ddy(i), y0(i), g(i));
             end
 
         end
@@ -180,11 +180,11 @@ classdef DMP_orient < handle
         %% Returns the forcing term of the DMP.
         %  @param[in] x: The phase variable.
         %  @param[out] f: The normalized weighted sum of Gaussians.
-        function f = forcing_term(dmp_o, X)
+        function f = forcingTerm(dmp_o, X)
 
             f = zeros(3,1);
             for i=1:3
-                f(i) = dmp_o.dmp{i}.forcing_term(X(i));
+                f(i) = dmp_o.dmp{i}.forcingTerm(X(i));
             end
 
         end
@@ -193,14 +193,14 @@ classdef DMP_orient < handle
         %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
         %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] f_scale: The scaling factor of the forcing term.
-        function f_scale = forcing_term_scaling(dmp_o, Q0, Qg)
+        function f_scale = forcingTermScaling(dmp_o, Q0, Qg)
 
             y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
             g = zeros(3,1);
 
             f_scale = zeros(3,1);
             for i=1:3
-                f_scale(i) = dmp_o.dmp{i}.forcing_term_scaling(y0(i), g(i));
+                f_scale(i) = dmp_o.dmp{i}.forcingTermScaling(y0(i), g(i));
             end
 
         end
@@ -211,12 +211,12 @@ classdef DMP_orient < handle
         %  @param[in] eta: \a eta state of the DMP.
         %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] goal_attr: The goal attractor of the DMP.
-        function goal_attr = goal_attractor(dmp_o, X, Q, eta, Qg)
+        function goal_attr = goalAttractor(dmp_o, X, Q, eta, Qg)
 
             goal_attr = zeros(3, 1);
             y = -quatLog(quatProd(Qg, quatInv(Q)));
             for i=1:3
-                goal_attr(i) = dmp_o.dmp{i}.goal_attractor(X(i), y(i), eta(i), 0);
+                goal_attr(i) = dmp_o.dmp{i}.goalAttractor(X(i), y(i), eta(i), 0);
             end
 
         end
@@ -227,14 +227,14 @@ classdef DMP_orient < handle
         %  @param[in] Q0: Initial orientation as 4x1 unit quaternion.
         %  @param[in] Qg: Goal orientation as 4x1 unit quaternion.
         %  @param[out] shape_attr: The shape_attr of the DMP.
-        function shape_attr = shape_attractor(dmp_o, X, Q0, Qg)
+        function shape_attr = shapeAttractor(dmp_o, X, Q0, Qg)
 
             y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
             g = zeros(3,1);
 
             shape_attr = zeros(3,1);
             for i=1:3
-                shape_attr(i) = dmp_o.dmp{i}.shape_attractor(X(i), y0(i), g(i));
+                shape_attr(i) = dmp_o.dmp{i}.shapeAttractor(X(i), y0(i), g(i));
             end
 
         end
@@ -250,14 +250,14 @@ classdef DMP_orient < handle
         %  @param[in] eta_c: Coupling term for the dynamical equation of the \a eta state.
         %  @param[out] dQ: Derivative of the \a Q state of the DMP.
         %  @param[out] deta: Derivative of the \a eta state of the DMP.
-        function [dQ, deta] = get_states_dot(dmp_o, X, Q, eta, Q0, Qg, Q_c, eta_c)
+        function [dQ, deta] = getStatesDot(dmp_o, X, Q, eta, Q0, Qg, Q_c, eta_c)
 
             if (nargin < 8), eta_c=0; end
             if (nargin < 7), Q_c=0; end
 
             v_scale = dmp_o.get_v_scale();
-            shape_attr = dmp_o.shape_attractor(X, Q0, Qg);
-            goal_attr = dmp_o.goal_attractor(X, Q, eta, Qg);
+            shape_attr = dmp_o.shapeAttractor(X, Q0, Qg);
+            goal_attr = dmp_o.goalAttractor(X, Q, eta, Qg);
 
             deta = ( goal_attr + shape_attr + eta_c) ./ v_scale;
             dQ = 0.5*quatProd([0; (eta+Q_c)./ v_scale], Q);
@@ -268,11 +268,11 @@ classdef DMP_orient < handle
         %% Returns a column vector with the values of the kernel functions of the DMP
         %  @param[in] X: 3x1 vector with the phase variable of each DMP.
         %  @param[out] Psi: 3x1 cell array of column vectors with the values of the kernel functions of each DMP.
-        function Psi = kernel_function(dmp_CartPos, X)
+        function Psi = kernelFunction(dmp_o, X)
 
-            Psi = cell(dmp_CartPos.D,1);
-            for i=1:dmp_CartPos.D
-                Psi{i} = dmp_CartPos.dmp{i}.kernel_function(X(i));
+            Psi = cell(dmp_o.D,1);
+            for i=1:dmp_o.D
+                Psi{i} = dmp_o.dmp{i}.kernelFunction(X(i));
             end
 
         end
@@ -280,11 +280,11 @@ classdef DMP_orient < handle
 
         %% Returns the scaling factor of the DMP
         %  @param[out] v_scale: 3x1 vector with the scaling factor of each DMP.
-        function v_scale = get_v_scale(dmp_CartPos)
+        function v_scale = get_v_scale(dmp_o)
 
-            v_scale = zeros(dmp_CartPos.D,1);
-            for i=1:dmp_CartPos.D
-                v_scale(i) = dmp_CartPos.dmp{i}.get_v_scale();
+            v_scale = zeros(dmp_o.D,1);
+            for i=1:dmp_o.D
+                v_scale(i) = dmp_o.dmp{i}.get_v_scale();
             end 
 
         end
@@ -292,11 +292,11 @@ classdef DMP_orient < handle
 
         %% Returns the time cycle of the DMP
         %  @param[out] tau: 3x1 vector with the time duration of each DMP.
-        function tau = get_tau(dmp_CartPos)
+        function tau = getTau(dmp_o)
 
-            tau = zeros(dmp_CartPos.D,1);
+            tau = zeros(dmp_o.D,1);
             for i=1:3
-                tau(i) = dmp_CartPos.dmp{i}.get_tau();
+                tau(i) = dmp_o.dmp{i}.getTau();
             end
 
         end

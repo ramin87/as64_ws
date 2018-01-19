@@ -10,9 +10,9 @@
 %  @param[in] lambda: Forgetting factor.
 function [P] = RLWR_update(dmp, x, y, dy, ddy, y0, g, P, lambda)
 
-    Fd = dmp.calc_Fd(y, dy, ddy, x, y0, g);
-    s = dmp.forcing_term_scaling(x, y0, g);
-    psi = dmp.kernel_function(x);
+    Fd = dmp.calcFd(y, dy, ddy, x, y0, g);
+    s = dmp.forcingTermScaling(x, y0, g);
+    psi = dmp.kernelFunction(x);
     
     error = Fd - dmp.w*s;
     

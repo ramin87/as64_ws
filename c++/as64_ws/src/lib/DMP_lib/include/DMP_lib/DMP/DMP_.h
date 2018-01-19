@@ -1,15 +1,40 @@
-/**
- * Copyright (C) 2017 DMP
- */
-
-
 /** DMP class
- *  Implements DMP Base Class.
+ *  Implements an 1-D this->
+ * The DMP is driven by a canonical clock. It outputs the phase varialbe
+ * 'x' which serves as a substitute for time. Typically, it evolves from
+ * x0=0 at t=0 to x_end=1, at t=tau, where tau is the total movement's
+ * duration. An example of a linear canonical clock is:
+ *    dx = -ax/tau
+ * where x is the phase variable and ax the evolution factor. Other types
+ * of canonical clocks, such as exponential, can be used. However, keeping
+ * a linear mapping between the phase variable 'x' and time 't' is more
+ * intuitive.
  *
+ * The DMP has the in general the following form:
+ *
+ *    tau*dz = g1(x)*( a_z*(b_z*(g-y) - z ) + g2(x)*fs*f(x) + z_c
+ *    tau*dy = z + y_c;
+ *
+ * Assuming y_c=z_c=0, we can write equivalently:
+ *    ddy = g1(x)*( a_z*(b_z*(g-y)-dy*tau) + 2(x)*fs*f(x) ) / tau^2;
+ *
+ * where
+ *    tau: is scaling factor defining the duration of the motion
+ *    a_z, b_z: constants relating to a spring-damper system
+ *    fs: scaling of the forcing term (typically fs = g0-y0)
+ *    g: the goal-final position
+ *    y0: the initial position
+ *    x: the phase variable
+ *    y,dy,ddy: the position, velocity and accelaration of the motion
+ *    f(x): the forcing term defined by the normalized weighted sum of the
+ *       kernel functions (gaussian kernels), i.e.:
+ *       f(x) = w'*Psi(x)/ sum(Psi(x));
+ *    g1(x): the gating factor of the spring-damper term
+ *    g2(x): the gating factor of non-linear forcing term
  */
 
-#ifndef DYNAMIC_MOVEMENT_PRIMITIVES_BASE_2002_H
-#define DYNAMIC_MOVEMENT_PRIMITIVES_BASE_2002_H
+#ifndef ABSTRACT_DYNAMICAL_MOVEMENT_PRIMITIVE_H
+#define ABSTRACT_DYNAMICAL_MOVEMENT_PRIMITIVE_H
 
 #include <cmath>
 #include <vector>
@@ -19,229 +44,242 @@
 #include <exception>
 #include <armadillo>
 
-#include <DMP_lib/CanonicalSystem/CanonicalSystem.h>
+#include <DMP_lib/CanonicalClock/CanonicalClock.h>
+#include <DMP_lib/GatingFunction/GatingFunction.h>
+#include <param_lib/param_lib.h>
 
 namespace as64
 {
 
 class DMP_
 {
+  // properties
 public:
-	int N_kernels; ///< number of kernels (basis functions)
+  int N_kernels; ///< number of kernels (basis functions)
 
-	double a_z; ///< parameter \a a_z relating to the spring-damper system
-	double b_z; ///< parameter \a b_z relating to the spring-damper system
+  double a_z; ///< parameter 'a_z' relating to the spring-damper system
+  double b_z; ///< parameter 'b_z' relating to the spring-damper system
 
-	std::shared_ptr<as64::CanonicalSystem> can_sys_ptr; ///< handle (pointer) to the canonical system
+  arma::vec w; ///< N_kernelsx1 vector with the weights of the DMP
+  arma::vec c; ///< N_kernelsx1 vector with the kernel centers of the DMP
+  arma::vec h; ///< N_kernelsx1 vector with the kernel stds of the DMP
 
-	arma::vec w; ///< N_kernels x 1 vector with the weights of the DMP
-	arma::vec c; ///< N_kernels x 1 vector with the kernel centers of the DMP
-	arma::vec h; ///< N_kernels x 1 vector with the kernel stds of the DMP
+  // methods
+public:
+  /** \brief DMP constructor.
+   * @param[in] N_kernels the number of kernels.
+   * @param[in] a_z Parameter 'a_z' relating to the spring-damper system.
+   * @param[in] b_z Parameter 'b_z' relating to the spring-damper system.
+   * @param[in] canClockPtr Pointer to a DMP canonical system object.
+   * @param[in] shapeAttrGatingPtr Pointer to gating function for the shape attractor.
+   * @param[in] goalAttrGatingPtr Pointer to gating function for the goal attractor.
+   * @param[in] kernelStdScaling Scales the std of each kernel (optional, default = 1.0).
+   * @param[in] extraArgName Names of extra arguments (optional, default = []).
+   * @param[in] extraArgValue Values of extra arguemnts (optional, default = []).
+   */
+  DMP_(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalClock> canClockPtr,
+    std::shared_ptr<GatingFunction> shapeAttrGatingPtr, std::shared_ptr<GatingFunction> goalAttrGatingPtr,
+    const param_::ParamList *paramListPtr=NULL);
 
-	double zero_tol; ///< tolerance value used to avoid divisions with very small numbers
+  DMP_();
 
-	double a_s; ///< scaling factor to ensure smaller changes in the accelaration to improve the training
-
-	bool USE_GOAL_FILT; ///<
-	double a_g; ///<
-
-	double lambda; ///<
-	double P_rlwr; ///<
-
-    DMP_();
-
-    /** \brief DMP constructor.
-    *  @param[in] N_kernels the number of kernels
-    *  @param[in] a_z Parameter \a a_z relating to the spring-damper system.
-    *  @param[in] b_z Parameter \a b_z relating to the spring-damper system.
-    *  @param[in] can_sys_ptr Pointer to a DMP canonical system object.
-    *  @param[in] std_K Scales the std of each kernel (optional, default = 1).
-    */
-    DMP_(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
+  /** \brief Initializes the DMP
+   * @param[in] N_kernels the number of kernels.
+   * @param[in] a_z Parameter 'a_z' relating to the spring-damper system.
+   * @param[in] b_z Parameter 'b_z' relating to the spring-damper system.
+   * @param[in] canClockPtr Pointer to a DMP canonical system object.
+   * @param[in] shapeAttrGatingPtr Pointer to gating function for the shape attractor.
+   * @param[in] goalAttrGatingPtr Pointer to gating function for the goal attractor.
+   * @param[in] kernelStdScaling Scales the std of each kernel (optional, default = 1).
+   * @param[in] extraArgName Names of extra arguments (optional, default = []).
+   * @param[in] extraArgValue Values of extra arguemnts (optional, default = []).
+   */
+  void init(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalClock> canClockPtr,
+    std::shared_ptr<GatingFunction> shapeAttrGatingPtr, std::shared_ptr<GatingFunction> goalAttrGatingPtr,
+    const param_::ParamList *paramListPtr=NULL);
 
 
-    /** \brief Initializes the DMP.
-     * @param[in] N_kernels The number of kernels.
-     * @param[in] a_z Parameter \a a_z relating to the spring-damper system.
-     * @param[in] b_z Parameter \a b_z relating to the spring-damper system.
-     * @param[in] can_sys_ptr Pointer to a DMP canonical system object.
-     * @param[in] std_K Scales the std of each kernel (optional, default = 1).
-     */
-    virtual void init(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
+  /** \brief Returns the shape attractor gating factor.
+   *  @param[in] x The phase variable.
+   *  @return The shape attractor gating factor.
+   */
+  double shapeAttrGating(double x) const;
 
-	/** \brief Sets the centers for the activation functions of the DMP according to the partition method specified.
-	 *  @param[in] part_type Partitioning method for the kernel centers (optional, default = "").
-	 */
-	void set_centers(const std::string  &part_type="");
 
-	/** \brief Sets the standard deviations for the activation functions  of the DMP.
-	 *  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
-	 *  @param[in] s Scales the variance of each kernel by \a s (optional, default = 1).
-	 */
-	void set_stds(double s=1);
+  /** \brief Returns the goal attractor gating factor.
+   *  @param[in] x The phase variable.
+   *  @return The goal attractor gating factor.
+   */
+  double goalAttrGating(double x) const;
 
-	/** \brief Trains the DMP
+
+  /** \brief Returns the phase variable.
+   *  @param[in] t The time instant.
+   *  @return The phase variable for time 't'.
+   */
+  double phase(double t) const;
+
+
+  /** \brief Returns the derivative of the phase variable.
+   *  @param[in] x The phase variable.
+   *  @return The derivative of the phase variable.
+   */
+  double phaseDot(double x) const;
+
+
+  /** \brief Returns the scaling factor of the DMP.
+   *  @return The scaling factor of the DMP.
+   */
+  double get_v_scale() const;
+
+  /** \brief Sets the time cycle of the DMP.
+   *  @param[in] tau The time duration for the DMP.
+   */
+  void setTau(double tau);
+
+  /** \brief Returns the time cycle of the DMP.
+   *  @return The time duration of the DMP.
+   */
+  double getTau() const;
+
+  /** \brief Returns the derivatives of the DMP states.
+   *  @param[in] x phase variable.
+   *  @param[in] y \a y state of the DMP.
+   *  @param[in] z \a z state of the DMP.
+   *  @param[in] y0 Initial position.
+   *  @param[in] g Goal position.
+   *  @param[in] y_c Coupling term for the dynamical equation of the \a y state.
+   *  @param[in] z_c Coupling term for the dynamical equation of the \a z state.
+   *  @return  The states derivatives of the DMP as a 3x1 vector (dz, dy, dx).
+   */
+  arma::vec getStatesDot(double x, double y, double z, double y0, double g, double y_c=0.0, double z_c=0.0) const;
+
+
+  /** \brief Trains the DMP
    *  @param[in] Time Row vector with the timestamps of the training data points.
    *  @param[in] yd_data Row vector with the desired potition.
    *  @param[in] dyd_data Row vector with the desired velocity.
    *  @param[in] ddyd_data Row vector with the desired accelaration.
    *  @param[in] y0 Initial position.
-   *  @param[in] g0 Target-goal position.
-   *  @param[in] train_method Method used to train the DMP weights.
-   *  @param[in] Fd_ptr Pointer to a rowvector for storing the desired forcing term values (optional, default = NULL).
-   *  @param[in] F_ptr Pointer to a rowvector for storing the learned forcing term values (optional, default = NULL).
+   *  @param[in] g Target-goal position.
    *
-   *  \note The timestamps in \a Time and the corresponding position,
-   *  velocity and acceleration data in \a yd_data, \a dyd_data and \a
-   *  ddyd_data need not be sequantial in time.
-	 */
-   virtual double train(const arma:: rowvec &Time, const arma::rowvec &yd_data, const arma::rowvec &dyd_data,
-                        const arma::rowvec &ddyd_data, double y0, double g0, const std::string &train_method,
-                        arma::rowvec *Fd_ptr=NULL, arma::rowvec *F_ptr=NULL);
+   * \note The timestamps in \a Time and the corresponding position,
+   * velocity and acceleration data in \a yd_data, \a dyd_data and \a
+   * ddyd_data need not be sequantial in time.
+   */
+  virtual double train(const arma::rowvec &Time, const arma::rowvec &yd_data,
+    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g);
 
 
-    /** \brief Sets training parameters of the DMP.
-     *  @param[in] USE_GOAL_FILT Flag for enabling goal filtering.
-     *  @param[in] a_g Goal filtering gain.
-     *	@param[in] lambda Forgetting factor for RLWR.
-     *	@param[in] P_rlwr Initial value of covarience matrix for RLWR.
-     */
-    void set_training_params(bool USE_GOAL_FILT, double a_g, double lambda, double P_rlwr);
-
-    /** \brief Returns the scaling factor of the forcing term.
-     *	@param[in] u Multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
-     *	@param[in] y0 Initial position.
-     *	@param[in] g0 Final goal.
-     *	\return The scaling factor of the forcing term.
-     */
-    virtual double forcing_term_scaling(double u, double y0, double g0) = 0;
-
-    /** Returns the shape attractor of the DMP.
-     *  @param[in] x The phase variable.
-     *  @param[in] u Multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
-     *  @param[in] y0 Initial position.
-     *  @param[in] g0 Final goal.
-     *  \return The shape_attr of the DMP.
-     */
-    virtual double shape_attractor(const arma::vec &X, double g0, double y0) = 0;
-
-    /** \brief Returns the goal attractor of the DMP.
-     *  @param[in] y \a y state of the DMP.
-     *  @param[in] z \a z state of the DMP.
-     *  @param[in] g Goal position.
-     *  \return The goal attractor of the DMP.
-     */
-    virtual double goal_attractor(double y, double z, double g);
+  /** \brief Sets the high level training parameters of the DMP.
+   * @param[in] trainMethod Method used to train the DMP weights.
+   * @param[in] extraArgName Names of extra arguments (optional, default = []).
+   * @param[in] extraArgValue Values of extra arguemnts (optional, default = []).
+   *
+   * \remark The extra argument names can be the following
+   * 'lambda' Forgetting factor for recursive training methods.
+   *  'P_cov' Initial value of the covariance matrix for recursive training methods.
+   */
+  virtual void setTrainingParams(const param_::ParamList *paramListPtr);
 
 
-    /** \brief Calculates the forcing term of the DMP
-     *  @param[in] x The phase variable.
-     *  \return The normalized weighted sum of Gaussians.
-     */
-    virtual double forcing_term(double x);
+  /** \brief Calculates the desired values of the scaled forcing term.
+   * @param[in] x The phase variable.
+   * @param[in] y Position.
+   * @param[in] dy Velocity.
+   * @param[in] ddy Acceleration.
+   * @param[in] y0 initial position.
+   * @param[in] g Goal position.
+   * @return Fd Desired value of the scaled forcing term.
+   */
+  virtual double calcFd(double x, double y, double dy, double ddy, double y0, double g) const;
 
-    /** \brief Calculates the values of the activation functions of the DMP
-     *  @param[in] x phase variable
-     *  \return Column vector with the values of the activation functions of the DMP.
-     */
-    virtual arma::vec activation_function(double x);
 
-    /** Returns the derivatives of the DMP states
-     *  @param[in] y \a y state of the DMP.
-     *  @param[in] z \a z state of the DMP.
-     *  @param[in] x phase variable.
-     *  @param[in] u multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
-     *  @param[in] y0 initial position.
-     *  @param[in] g0 final goal.
-     *  @param[in] g current goal (if for instance the transition from y0 to g0 is done using a filter).
-     *  @param[in] y_c coupling term for the dynamical equation of the \a y state.
-     *  @param[in] z_c coupling term for the dynamical equation of the \a z state.
-     *  \return dy dz derivatives of the \a y, \a z states of the DMP.
-     */
-    arma::vec get_states_dot(double y, double z, double x, double u, double y0,
-                             double g0, double g, double y_c = 0, double z_c = 0);
+  /** \brief Returns the learned forcing term.
+   * @param[in] x The phase variable.
+   * @param[in] y0 Initial position.
+   * @param[in] g Goal position.
+   * @return The learned forcing term.
+   */
+  virtual double learnedForcingTerm(double x, double y0, double g) const;
 
-    /** \brief Updates the DMP weights using RLWR (Recursive Locally Weighted Regression)
-     *  @param[in] x The phase variable.
-     *  @param[in] u multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
-     *  @param[in] y Position.
-     *  @param[in] dy Velocity.
-     *  @param[in] ddy Acceleration.
-     *  @param[in] y0 Initial position.
-     *  @param[in] g0 Final goal.
-     *  @param[in] g Current goal.
-     *  @param[in,out] P \a P conarience matrix of RLWR.
-     */
-    void update_weights(double x, double u, double y, double dy, double ddy,
-                        double y0, double g0, double g, arma::vec &P, double lambda);
 
-    /** Calculates the desired value of the scaled forcing term.
-     *  @param[in] y Position.
-     *  @param[in] dy Velocity.
-     *  @param[in] ddy Acceleration.
-     *  @param[in] u multiplier of the forcing term ensuring its convergens to zero at the end of the motion.
-     *  @param[in] y0 initial position.
-     *  @param[in] g0 final goal.
-     *  @param[in] g current goal (if for instance the transition from y0 to g0 is done using a filter).
-     *  \return Desired value of the scaled forcing term.
-     */
-    virtual double calc_Fd(double y, double dy, double ddy, double u, double g, double g0, double y0) = 0;
+  /** \brief Returns the forcing term of the DMP
+   * @param[in] x The phase variable.
+   * @return The normalized weighted sum of Gaussians.
+   */
+  virtual double forcingTerm(double x) const;
 
-    /** \brief Returns the time cycle of the DMP
-     *  \return The time cycle of the DMP.
-     */
-    double get_tau();
 
-    /** Returns the scaling factor of the DMP
-     *  \return The scaling factor of the DMP.
-     */
-    double get_v_scale();
+  /** \brief Returns the scaling factor of the forcing term.
+   * @param[in] y0 Initial position.
+   * @param[in] g Goal position.
+   * @return The scaling factor of the forcing term.
+   */
+  virtual double forcingTermScaling(double y0, double g) const;
+
+
+  /** \brief Returns the goal attractor of the DMP.
+   *  @param[in] x The phase variable.
+   *  @param[in] y 'y' state of the DMP.
+   *  @param[in] z 'z' state of the DMP.
+   *  @param[in] g Goal position.
+   *  @return The goal attractor of the DMP.
+   */
+  virtual double goalAttractor(double x, double y, double z, double g) const;
+
+
+  /** \brief Returns the shape attractor of the DMP.
+   *  @param[in] x The phase variable.
+   *  @param[in] y0 Initial position.
+   *  @param[in] g Goal position.
+   *  @return The shape_attr of the DMP.
+   */
+  virtual double shapeAttractor(double x, double y0, double g) const;
+
+
+  /** \brief Returns a column vector with the values of the kernel functions of the DMP.
+   *  @param[in] x Phase variable.
+   *  @return Column vector with the values of the kernel functions of the DMP.
+   */
+  virtual arma::vec kernelFunction(double x) const;
+
 
 protected:
+  std::shared_ptr<CanonicalClock> canClockPtr; ///< pointer to the canonical clock
+  std::shared_ptr<GatingFunction> shapeAttrGatingPtr; ///< pointer to gating function for the shape attractor
+  std::shared_ptr<GatingFunction> goalAttrGatingPtr; ///< pointer to gating function for the goal attractor
 
-    /** \brief Helper function for DMP initialization
-     * @param[in] N_kernels the number of kernels
-     * @param[in] a_z Parameter \a a_z relating to the spring-damper system.
-     * @param[in] b_z Parameter \a b_z relating to the spring-damper system.
-     * @param[in] can_sys_ptr Pointer to a DMP canonical system object.
-     * @param[in] std_K Scales the std of each kernel (optional, default = 1).
-     */
-    void init_helper(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalSystem> can_sys_ptr, double std_K = 1);
+  long double zero_tol; ///< tolerance value used to avoid divisions with very small numbers
+  double a_s; ///< scaling factor to ensure smaller changes in the accelaration to improve the training
+  double kernelStdScaling; ///< scaling factor for the kernels std
 
-    /** \brief Trains the DMP weights using LWR (Locally Weighted Regression)
-     *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s),
-     *  where Psi = exp(-h(k)*(x-c(k)).^2)
-     *  @param[in] x Row vector with the values of the phase variable.
-     *  @param[in] s Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
-     *  @param[in] Fd Row vector with the desired values of the shape attractor.
-     */
-    void train_LWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
-
-    /** Trains the DMP weights using RLWR (Recursive Locally Weighted Regression)
-     *  For the i-th data point the k-th weight is updated as w_k = w_k+Psi*P_k*s_i*e_i,
-     *  where Psi = exp(-h(k)*(x_i-c(k)).^2), e_i = Fd_i-w_k*s_i,
-     *  P_k = P_k - (P_k^2*s_i^2/((l/Psi)+P_k*s_i))/l
-     *  P_k is initialized in 1 and lambda is a forgetting factor in (0, 1].
-     *  @param[in] x Row vector with the values of the phase variable.
-     *  @param[in] s Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
-     *  @param[in] Fd Row vector with the desired values of the shape attractor.
-     */
-    void train_RLWR(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
+  // training params
+  std::string trainMethod; ///< training method for weights of the DMP forcing term
+  double lambda; ///< forgetting factor in recursive training methods
+  double P_cov; ///< Initial value of covariance matrix in recursive training methods
 
 
-    /** Trains the DMP weights using LS (Least Squares)
-     *  The k-th weight is set to w_k = (s'*Psi*Fd) / (s'*Psi*s),
-     *  where Psi = exp(-h(k)*(x-c(k)).^2)
-     *  @param[in] x Row vector with the values of the phase variable.
-     *  @param[in] s Row vector with the values of the term that is multiplied by the weighted sum of Gaussians.
-     *  @param[in] Fd Row vector with the desired values of the shape attractor.
-     */
-    void train_LS(const arma::rowvec &x, const arma::rowvec &s, arma::rowvec &Fd);
+  /** \brief Sets the centers for the kernel functions of the DMP according to the canonical system.
+   */
+  void setCenters();
 
-private:
 
-};
+  /** \brief Sets the standard deviations for the kernel functions  of the DMP
+   *  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
+   *  @param[in] kernelStdScaling Scales the std of each kernel by 'kernelStdScaling' (optional, default = 1.0).
+  */
+  void setStds(double kernelStdScaling = 1.0);
 
-}  // namespace as64
 
-#endif  // DS_DYNAMICAL_SYSTEM_GMR_H
+  /** \brief Parse extra arguments of the DMP.
+   *  @param[in] extraArgName Names of extra arguments.
+   *  @param[in] extraArgValue Values of extra arguemnts.
+   */
+  virtual void parseExtraArgs(const param_::ParamList *paramListPtr);
+
+}; // class DMP_
+
+} // namespace as64
+
+#endif // ABSTRACT_DYNAMICAL_MOVEMENT_PRIMITIVE_H

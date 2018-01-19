@@ -1,10 +1,10 @@
-function plot_3d_trajectory(Pos, Axang, Pos_sim, Axang_sim)
+function plot_3d_trajectory(Pos, Quat)
+    
+
+    Axang = quat2axang(Quat')';
     
     Z = Pos(1,:);   X = Pos(2,:);    Y = Pos(3,:);
     W = Axang(1,:); U = Axang(2,:);  V = Axang(3,:);
-
-    Z_sim = Pos_sim(1,:);   X_sim = Pos_sim(2,:);    Y_sim = Pos_sim(3,:);
-    W_sim = Axang_sim(1,:); U_sim = Axang_sim(2,:);  V_sim = Axang_sim(3,:);
 
     scale = 0.28;
 
@@ -19,13 +19,8 @@ function plot_3d_trajectory(Pos, Axang, Pos_sim, Axang_sim)
     quiver3(ax,X,Y,Z,U,V,W,scale, ...
             'Color','blue', 'LineStyle','-', 'LineWidth',0.8, ...
             'Marker','o', 'MarkerSize',5, 'MarkerEdgeColor','cyan');
-
-    quiver3(ax,X_sim,Y_sim,Z_sim,U_sim,V_sim,W_sim,scale, ...
-            'Color','magenta', 'LineStyle','-', 'LineWidth',0.8, ...
-            'Marker','o', 'MarkerSize',5, 'MarkerEdgeColor',[0.5 0.5 0]);
         
     plot3(ax, X,Y,Z,'b','Linestyle','-','MarkerSize',4,'LineWidth',1);
-    plot3(ax, X_sim,Y_sim,Z_sim,'g','Linestyle','-','MarkerSize',4,'LineWidth',1);
 
     legend('human','SEDS');
     

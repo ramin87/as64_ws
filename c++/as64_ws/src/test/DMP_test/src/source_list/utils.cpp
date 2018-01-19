@@ -1,84 +1,45 @@
 #include <utils.h>
 
-
-void movingAverageFilter(const arma::rowvec &y, arma::rowvec &y_filt, int win_n)
+void get_canClock_gatingFuns_DMP(const CMD_ARGS &cmd_args, int D, double tau,
+  std::shared_ptr<as64::CanonicalClock> &canClockPtr,
+  std::shared_ptr<as64::GatingFunction> &shapeAttrGatingPtr,
+  std::shared_ptr<as64::GatingFunction> &goalAttrGatingPtr,
+  std::vector<std::shared_ptr<as64::DMP_>> &dmp)
 {
-  if (win_n == 1){
-      y_filt = y;
-      return;
-  }
+  // ========================================================
+  // Init canonical clock
+  canClockPtr = as64::getCanClock(cmd_args.CAN_CLOCK_TYPE, tau);
 
-  if ((win_n%2) == 0) win_n++;
+  // ========================================================
+  // Init shape attractor gating function
+  shapeAttrGatingPtr = as64::getGatingFun(cmd_args.SHAPE_ATTR_GATTING_TYPE, cmd_args.SHAPE_ATTR_GATTING_u0, cmd_args.SHAPE_ATTR_GATTING_u_end);
 
-  int add_points = std::floor((double)win_n/2)-1;
-  int n = y.n_elem;
+  // ========================================================
+  // Init goal attractor gating function
+  goalAttrGatingPtr = as64::getGatingFun(cmd_args.GOAL_ATTR_GATTING_TYPE, cmd_args.GOAL_ATTR_GATTING_u0, cmd_args.GOAL_ATTR_GATTING_u_end);
 
-  arma::rowvec y_filt_temp;
+  // ========================================================
+  // Extra args for the DMP
+  as64::param_::ParamList paramList;
+  paramList.setParam("kernelStdScaling", cmd_args.kernelStdScaling);
+  paramList.setParam("k_trunc_kernel", cmd_args.k_trunc_kernel);
+  paramList.setParam("Wmin", cmd_args.Wmin);
+  paramList.setParam("Freq_min", cmd_args.Freq_min);
+  paramList.setParam("Freq_max", cmd_args.Freq_max);
+  paramList.setParam("P1_min", cmd_args.P1_min);
 
-  y_filt_temp.resize(add_points + n + add_points);
-  y_filt_temp.subvec(0, add_points-1).fill(y(0));
-  y_filt_temp.subvec(add_points, n+add_points-1) = y;
-  y_filt_temp.subvec(n+add_points, n+add_points+add_points-1).fill(y(n-1));
-
-  int k = std::ceil((double)win_n/2) - 1;
-  double s = arma::sum(y_filt_temp.subvec(0,win_n-2));
-  n = y_filt_temp.n_elem;
-
-  for (int i=win_n-1; i<n; i++){
-    s = s + y_filt_temp(i);
-    double y_k = y_filt_temp(k);
-    y_filt_temp(k) = s/win_n;
-    s = s - y_filt_temp(i-win_n+1) - y_k + y_filt_temp(k);
-    k = k+1;
-  }
-
-  y_filt = y_filt_temp.subvec(add_points, n-add_points-1);
-
-}
-
-void process_demos(const arma::mat &data, double Ts, arma::mat &yd_data, arma::mat &dyd_data, arma::mat &ddyd_data, double add_points_percent, double smooth_points_percent)
-{
-  yd_data = data;
-
-  int D = yd_data.n_rows;
-  int n_data = yd_data.n_cols;
-
-  int add_points = std::ceil(n_data*add_points_percent);
-  arma::vec y0 = yd_data.col(0);
-  arma::vec yend = yd_data.col(n_data-1);
-
-  yd_data = arma::join_horiz(arma::join_horiz(arma::repmat(y0,1,add_points), yd_data), arma::repmat(yend,1,add_points));
-
-  n_data = yd_data.n_cols;
-  int smooth_points = std::ceil(n_data*smooth_points_percent);
-  int smooth_times = 2;
-
-  dyd_data.resize(D,n_data);
-  ddyd_data.resize(D,n_data);
-
-  for (int i=0;i<D;i++){
-    dyd_data.row(i) = arma::join_horiz(arma::vec().zeros(1), arma::diff(yd_data.row(i)))/Ts;
-    ddyd_data.row(i) = arma::join_horiz(arma::vec().zeros(1), arma::diff(dyd_data.row(i)))/Ts;
-  }
-  // This doesn't work for some reason...???
-  //dyd_data = arma::join_horiz(arma::vec().zeros(D), arma::diff(yd_data,0))/Ts;
-  //ddyd_data = arma::join_horiz(arma::vec().zeros(D), arma::diff(dyd_data,0))/Ts;
-
-  for (int i=0;i<D;i++){
-    for (int k=0;k<smooth_times;k++){
-      arma::rowvec y_filt = dyd_data.row(i);
-      movingAverageFilter(dyd_data.row(i), y_filt, smooth_points);
-      dyd_data.row(i) = y_filt;
-
-      y_filt = ddyd_data.row(i);
-      movingAverageFilter(ddyd_data.row(i), y_filt, smooth_points);
-      ddyd_data.row(i) = y_filt;
-    }
+  dmp.resize(D);
+  for (int i=0;i<D;i++)
+  {
+  dmp[i] = as64::getDMP(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z,
+      canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, &paramList);
   }
 
 }
 
-void load_data(const std::string &data_file_name, arma::mat &data, double &Ts, bool binary)
+
+void load_data(const std::string &data_file_name, arma::mat &yd_data, arma::mat &dyd_data,
+               arma::mat &ddyd_data, arma::rowvec &Time_demo, bool binary)
 {
   std::ifstream in;
 
@@ -92,12 +53,15 @@ void load_data(const std::string &data_file_name, arma::mat &data, double &Ts, b
 
   if (!in) throw std::ios_base::failure(std::string("Couldn't open file: ") + data_file_name);
 
-  int D, n_data;
+  unsigned int D;
 
-  // in >> Ts;
-  as64_::io_::read_scalar(Ts, in, binary);
+  as64_::io_::read_mat(Time_demo, in, binary);
 
-  as64_::io_::read_mat(data, in, binary);
+  as64_::io_::read_scalar(D, in, binary);
+
+  as64_::io_::read_mat(yd_data, in, binary);
+  as64_::io_::read_mat(dyd_data, in, binary);
+  as64_::io_::read_mat(ddyd_data, in, binary);
 
 }
 

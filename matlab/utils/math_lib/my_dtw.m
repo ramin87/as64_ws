@@ -1,10 +1,15 @@
-% Copyright (C) 2013 Quan Wang <wangq10@rpi.edu>,
-% Signal Analysis and Machine Perception Laboratory,
-% Department of Electrical, Computer, and Systems Engineering,
-% Rensselaer Polytechnic Institute, Troy, NY 12180, USA
-
-% dynamic time warping of two signals
-
+%% function Dynamic Time Warping
+%  Performs dynamic time warping on two signals with dimensions D x N1 and 
+%  D x N2 respectively. D is the dimensionality of the input data and N1 and
+%  N2 the number of points in each signal.
+%  @param[in] s: D x N1 matrix with the first input signal.
+%  @param[in] t: D x N2 matrix with the second input signal.
+%  @param[in] w: Window to search for matching points in DTW (optional, default = Inf).
+%  @param[in] dist_fun_h: Pointer to the distance function for the input data (optional, default = 'norm').
+%  @param[out] d: The distance found by the DTW.
+%  @param[out] ind_s: Indices of the first signal after the DTW.
+%  @param[out] ind_t: Indices of the first signal after the DTW.
+%
 function [d, ind_s, ind_t, C] = my_dtw(s, t, w, dist_fun_h)
 % s: signal 1, size is k*ns, row for channel, column for time 
 % t: signal 2, size is k*nt, row for channel, column for time 

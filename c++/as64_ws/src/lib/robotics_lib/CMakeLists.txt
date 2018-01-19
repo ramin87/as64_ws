@@ -16,14 +16,12 @@ find_package(catkin REQUIRED
   io_lib
   time_lib
   math_lib
+  # Yaml-cpp REQUIRED
+  # OpenCV REQUIRED
+  # PCL REQUIRED
+  # Eigen REQUIRED
 )
 
-find_package(Yaml-cpp REQUIRED)
-#find_package(OpenCV REQUIRED)
-#find_package(PCL REQUIRED)
-
-#find_package(Eigen REQUIRED)
-#include_directories(${Eigen_INCLUDE_DIRS})
 
 catkin_package(
   INCLUDE_DIRS include
@@ -35,6 +33,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   /usr/include/eigen3
+  # ${Eigen_INCLUDE_DIRS}
 )
 
 ##############################
@@ -61,7 +60,7 @@ target_link_libraries(robotics-lib
   pthread
   IO-lib
   time-lib
-  yaml-cpp
+  # yaml-cpp
   math-lib
   #orocos-kdl
 )

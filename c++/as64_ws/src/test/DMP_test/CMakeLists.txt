@@ -4,14 +4,15 @@ project(dmp_test)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 find_package(catkin REQUIRED COMPONENTS
+  #OpenCV REQUIRED
+  #PCL REQUIRED
   roscpp
-  dmp_lib
+  roslib
+  DMP_lib
   io_lib
-  filter_lib
+  param_lib
+  signalProcessing_lib
 )
-
-find_package(OpenCV REQUIRED)
-find_package(PCL REQUIRED)
 
 # BHand need to know that we are on Linux
 add_definitions( -DLINUX )
@@ -52,24 +53,62 @@ include_directories(
 # *************************************************
 # *************************************************
 
-add_executable(DMP_test_node
-  src/main.cpp ${INCLUDE_LIST} ${SRC_LIST}
+add_executable(DMP_canonicalClock_test
+  src/DMP_canonicalClock_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
 )
 
-add_dependencies(DMP_test_node
+add_dependencies(DMP_canonicalClock_test
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(DMP_test_node
+target_link_libraries(DMP_canonicalClock_test
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
   DMP-lib
   IO-lib
-  filter-lib
 )
 
 
 # *************************************************
 # *************************************************
+
+add_executable(DMP_gatingFunction_test
+  src/DMP_gatingFunction_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
+)
+
+add_dependencies(DMP_gatingFunction_test
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(DMP_gatingFunction_test
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
+  DMP-lib
+  IO-lib
+)
+
+# *************************************************
+# *************************************************
+
+add_executable(DMP_test
+  src/DMP_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
+)
+
+add_dependencies(DMP_test
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(DMP_test
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
+  DMP-lib
+  IO-lib
+  param-lib
+  signalProcessing-lib
+)

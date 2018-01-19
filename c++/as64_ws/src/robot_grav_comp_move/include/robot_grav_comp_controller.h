@@ -22,7 +22,7 @@
 #include <autharl_core/robot/controller.h>
 
 #include <time_lib/time.h>
-#include <IO_lib/io_utils.h>
+#include <io_lib/io_utils.h>
 
 class RobotGravCompController : public arl::robot::Controller
 {

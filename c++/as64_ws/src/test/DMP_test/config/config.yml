@@ -1,52 +1,74 @@
-# ====  Set up DMP params  ====
-a_z: 40
-b_z: 10 # default: set to a_z/4
-x0: 1
-x_end: 0.005
-N_kernels: 30
-std_K: 0.95
-DMP_TYPE: "DMP-bio" # "DMP", "DMP-bio", "DMP-plus"
-train_method: "LWR" # "LWR", "LS", "RLS" , "RLWR"
-CAN_SYS_TYPE: "spring-damper" # "lin", "exp", "spring-damper"
+## Set up DMP params
+
+# Parameters of the linear part of the DMP (spring-damper)
+a_z: 20.0
+# b_z: 5.0
+
+DMP_TYPE: "DMP-Shannon" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
+
+N_kernels: 100 # number of kernels used in the DMP
+
+kernelStdScaling: 1.0 # scaling factor for the kernels std
+
+trainMethod: "LWR" # "LWR", "LS", "RLS" , "RLWR"
+
+CAN_CLOCK_TYPE: "lin"
+
+SHAPE_ATTR_GATTING_TYPE: "sigmoid" # "lin", "exp", "spring-damper", "sigmoid", "constant"
+SHAPE_ATTR_GATTING_u0: 1.0 # starting value of the shape attractor gating
+SHAPE_ATTR_GATTING_u_end: 0.5 # ending value of the shape attractor gating
+
+GOAL_ATTR_GATTING_TYPE: "lin" # "lin", "exp", "spring-damper", "sigmoid", "constant"
+GOAL_ATTR_GATTING_u0: 0.005 # starting value of the goal attractor gating
+GOAL_ATTR_GATTING_u_end: 1.0 # ending value of the goal attractor gating
+
+sigmoid_a_u: 280 # steepness of the sigmoid gating function (optional)
 
 OFFLINE_DMP_TRAINING_enable: true
 ONLINE_DMP_UPDATE_enable: false
-
-RLWR_lambda: 0.99
-RLWR_P: 1e8
+lambda: 0.99 # forgetting factor for recursive training methods
+P_cov: 1e8 # initial value of covariance matrix for recursive training methods
 
 USE_GOAL_FILT: true
-a_g: 10
+a_g: 20.0
 USE_PHASE_STOP: true
-a_px: 100
-a_py: 80 # default: set to 0 if (USE_PHASE_STOP==false)
+a_px: 50.0
+a_py: 40.0
 
-# ====  demos preprocess params ====
-add_points_percent: 0.01
-smooth_points_percent: 0.03
+# Parameters for DMP-plus
+k_trunc_kernel: 3 # number of stds beyond which the kernel is truncated
 
-# ====  Robot controller params  ====
-Kd: 100
-Dd: 10
+# Parameters for DMP-Shannon
+Wmin: 0.9999
+Freq_min: 60.0
+Freq_max: 150.0
+P1_min: 0.008
 
-# ====  Simulation params  ====
-sim_time_step: 0.002
-sim_tol_stop: 0.001
-sim_max_iters: 5000
-tau_sim_scale: 1
-goal_sim_scale: 1
+## Robot controller params
+Md: 1.0 # translational inertia
+Kd: 50.0 # translational stiffness
+#Dd: 14.2  # translational damping
 
-# ====  Apply disturbance force  ====
-APPLY_DISTURBANCE: false
-Fdist_min: 5
-Fdist_max: 200
-t1_fdist: 0.4
-t2_fdist: 2.2
+## Simulation params
+dt: 0.002 #simulation time_step
+tol_stop: 0.01 # position error tolerance to stop the simulation
+orient_tol_stop: 0.005 # orientation error tolerance to stop the simulation
+max_iters: 3000 # maximum iteration steps
+tau_sim_scale: 1.0 # scaling factor for the time of the DMP simulation
+goal_scale: 1.0 # scaling factor for the goal in the DMP simulation
 
-# ====  Path to input-output data  ====
+
+## Apply disturbance force
+APPLY_DISTURBANCE: false # Flag enabling/disabling the introduction of a disturbance in the robot system
+Fdist_min: 2.0 # Minimum disturbance value
+Fdist_max: 20.0 # Maximum disturbance value
+t1_fdist: 0.4 # Start of Fdist_max
+t2_fdist: 2.2 # End of Fdist_max
+
+#:===  Path to input-output data :===
 binary: true
 data_input_path: "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/"
 data_output_path: "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/"
 
-in_data_filename: "data"
+in_data_filename: "data.bin"
 out_data_filename: "data_out"

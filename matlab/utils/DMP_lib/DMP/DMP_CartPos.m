@@ -68,10 +68,10 @@ classdef DMP_CartPos < handle
 
 
         %% Sets the centers for the kernel functions of the DMP according to the canonical system
-        function set_centers(dmp_CartPos)
+        function setCenters(dmp_CartPos)
 
             for i=1:dmp_CartPos.D
-                dmp_CartPos.dmp{i}.set_centers();
+                dmp_CartPos.dmp{i}.setCenters();
             end
 
         end
@@ -79,12 +79,12 @@ classdef DMP_CartPos < handle
 
         %% Sets the standard deviations for the kernel functions  of the DMP
         %  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
-        %  @param[in] kernel_std_scaling: Scales the variance of each kernel by 'kernel_std_scaling' (optional, default = 1.0).
-        function set_stds(dmp_CartPos, kernel_std_scaling)
+        %  @param[in] kernelStdScaling: Scales the variance of each kernel by 'kernelStdScaling' (optional, default = 1.0).
+        function setStds(dmp_CartPos, kernelStdScaling)
 
-            if (nargin < 2), kernel_std_scaling=1.0; end
+            if (nargin < 2), kernelStdScaling=1.0; end
             for i=1:dmp_CartPos.D
-                dmp_CartPos.dmp{i}.set_stds(kernel_std_scaling);
+                dmp_CartPos.dmp{i}.setStds(kernelStdScaling);
             end
 
         end
@@ -115,17 +115,17 @@ classdef DMP_CartPos < handle
 
 
         %% Sets the high level training parameters of the DMP
-        %  @param[in] train_method: Method used to train the DMP weights.
+        %  @param[in] trainMethod: Method used to train the DMP weights.
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
         %
         %  \remark The extra argument names can be the following:
         %  'lambda': Forgetting factor for recursive training methods.
         %  'P_cov': Initial value of the covariance matrix for recursive training methods.
-        function set_training_params(dmp_CartPos, train_method, extraArgName, extraArgValue)
+        function setTrainingParams(dmp_CartPos, trainMethod, extraArgName, extraArgValue)
 
             for i=1:dmp_CartPos.D
-                dmp_CartPos.dmp{i}.set_training_params(train_method, extraArgName, extraArgValue);
+                dmp_CartPos.dmp{i}.setTrainingParams(trainMethod, extraArgName, extraArgValue);
             end
 
         end
@@ -155,11 +155,11 @@ classdef DMP_CartPos < handle
         %  @param[in] Y0: Initial Cartesian position.
         %  @param[in] Yg: Goal Cartesian position.
         %  @param[out] Fd: Desired value of the scaled forcing term.
-        function Fd = calc_Fd(dmp_CartPos, X, Y, dY, ddY, Y0, Yg)
+        function Fd = calcFd(dmp_CartPos, X, Y, dY, ddY, Y0, Yg)
 
             Fd = zeros(dmp_CartPos.D, 1);
             for i=1:dmp_CartPos.D
-                Fd(i) = dmp_CartPos.dmp{i}.calc_Fd(X(i), Y(i), dY(i), ddY(i), Y0(i), Yg(i));
+                Fd(i) = dmp_CartPos.dmp{i}.calcFd(X(i), Y(i), dY(i), ddY(i), Y0(i), Yg(i));
             end
 
         end
@@ -168,11 +168,11 @@ classdef DMP_CartPos < handle
         %% Returns the forcing term of the DMP.
         %  @param[in] X: 3x1 vector with the phase variable of each DMP.
         %  @param[out] f: The normalized weighted sum of Gaussians.
-        function f = forcing_term(dmp_CartPos, X)
+        function f = forcingTerm(dmp_CartPos, X)
 
             f = zeros(dmp_CartPos.D,1);
             for i=1:dmp_CartPos.D
-                f(i) = dmp_CartPos.dmp{i}.forcing_term(X(i));
+                f(i) = dmp_CartPos.dmp{i}.forcingTerm(X(i));
             end
 
         end
@@ -181,11 +181,11 @@ classdef DMP_CartPos < handle
         %  @param[in] Y0: Initial Cartesian position.
         %  @param[in] Yg: Goal Cartesian position.
         %  @param[out] f_scale: The scaling factor of the forcing term.
-        function f_scale = forcing_term_scaling(dmp_CartPos, Y0, Yg)
+        function f_scale = forcingTermScaling(dmp_CartPos, Y0, Yg)
 
             f_scale = zeros(dmp_CartPos.D,1);
             for i=1:dmp_CartPos.D
-                f_scale(i) = dmp_CartPos.dmp{i}.forcing_term_scaling(Y0(i), Yg(i));
+                f_scale(i) = dmp_CartPos.dmp{i}.forcingTermScaling(Y0(i), Yg(i));
             end
 
         end
@@ -196,11 +196,11 @@ classdef DMP_CartPos < handle
         %  @param[in] Z: \a z state of the DMP.
         %  @param[in] Yg: Goal Cartesian position.
         %  @param[out] goal_attr: The goal attractor of the DMP.
-        function goal_attr = goal_attractor(dmp_CartPos, X, Y, Z, Yg)
+        function goal_attr = goalAttractor(dmp_CartPos, X, Y, Z, Yg)
 
             goal_attr = zeros(dmp_CartPos.D, 1);
             for i=1:dmp_CartPos.D
-                goal_attr(i) = dmp_CartPos.dmp{i}.goal_attractor(X(i), Y(i), Z(i), Yg(i));
+                goal_attr(i) = dmp_CartPos.dmp{i}.goalAttractor(X(i), Y(i), Z(i), Yg(i));
             end
 
         end
@@ -211,11 +211,11 @@ classdef DMP_CartPos < handle
         %  @param[in] Y0: Initial Cartesian position.
         %  @param[in] Yg: Goal Cartesian position.
         %  @param[out] shape_attr: The shape_attr of the DMP.
-        function shape_attr = shape_attractor(dmp_CartPos, X, Y0, Yg)
+        function shape_attr = shapeAttractor(dmp_CartPos, X, Y0, Yg)
 
             shape_attr = zeros(dmp_CartPos.D,1);
             for i=1:dmp_CartPos.D
-                shape_attr(i) = dmp_CartPos.dmp{i}.shape_attractor(X(i), Y0(i), Yg(i));
+                shape_attr(i) = dmp_CartPos.dmp{i}.shapeAttractor(X(i), Y0(i), Yg(i));
             end
 
         end
@@ -231,7 +231,7 @@ classdef DMP_CartPos < handle
         %  @param[in] Z_c: Coupling term for the dynamical equation of the \a z state.
         %  @param[out] dY: Derivative of the \a y state of the DMP.
         %  @param[out] dZ: Derivative of the \a z state of the DMP.
-        function [dY, dZ] = get_states_dot(dmp_CartPos, X, Y, Z, Y0, Yg, Y_c, Z_c)
+        function [dY, dZ] = getStatesDot(dmp_CartPos, X, Y, Z, Y0, Yg, Y_c, Z_c)
 
             if (nargin < 8), Z_c=zeros(dmp_CartPos.D, 1); end
             if (nargin < 7), Y_c=zeros(dmp_CartPos.D, 1); end
@@ -241,15 +241,8 @@ classdef DMP_CartPos < handle
             
 
             for i=1:dmp_CartPos.D
-                [dY(i), dZ(i)] = dmp_CartPos.dmp{i}.get_states_dot(X(i), Y(i), Z(i), Y0(i), Yg(i), Y_c(i), Z_c(i));
+                [dY(i), dZ(i)] = dmp_CartPos.dmp{i}.getStatesDot(X(i), Y(i), Z(i), Y0(i), Yg(i), Y_c(i), Z_c(i));
             end
-
-%             v_scale = dmp_CartPos.get_v_scale();
-%             shape_attr = dmp_CartPos.shape_attractor(x, Y0, Yg);
-%             goal_attr = dmp_CartPos.goal_attractor(x, Y, Z, Yg);
-% 
-%             dZ = ( goal_attr + shape_attr + Z_c) ./ v_scale;
-%             dY = ( Z + Y_c) / v_scale;
 
         end
 
@@ -257,11 +250,11 @@ classdef DMP_CartPos < handle
         %% Returns a column vector with the values of the kernel functions of the DMP
         %  @param[in] X: 3x1 vector with the phase variable of each DMP.
         %  @param[out] Psi: 3x1 cell array of column vectors with the values of the kernel functions of each DMP.
-        function Psi = kernel_function(dmp_CartPos, X)
+        function Psi = kernelFunction(dmp_CartPos, X)
 
             Psi = cell(dmp_CartPos.D,1);
             for i=1:dmp_CartPos.D
-                Psi{i} = dmp_CartPos.dmp{i}.kernel_function(X(i));
+                Psi{i} = dmp_CartPos.dmp{i}.kernelFunction(X(i));
             end
 
         end
@@ -281,11 +274,11 @@ classdef DMP_CartPos < handle
 
         %% Returns the time cycle of the DMP
         %  @param[out] tau: 3x1 vector with the time duration of each DMP.
-        function tau = get_tau(dmp_CartPos)
+        function tau = getTau(dmp_CartPos)
 
             tau = zeros(dmp_CartPos.D,1);
             for i=1:3
-                tau(i) = dmp_CartPos.dmp{i}.get_tau();
+                tau(i) = dmp_CartPos.dmp{i}.getTau();
             end
 
         end

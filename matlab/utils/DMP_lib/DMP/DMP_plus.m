@@ -40,26 +40,26 @@ classdef DMP_plus < handle % : public DMP
         a_z % parameter 'a_z' relating to the spring-damper system
         b_z % parameter 'b_z' relating to the spring-damper system
 
-        canClock_ptr % handle (pointer) to the canonical clock
-        shapeAttrGating_ptr % pointer to gating function for the shape attractor
-        goalAttrGating_ptr % pointer to gating function for the goal attractor
+        canClockPtr % handle (pointer) to the canonical clock
+        shapeAttrGatingPtr % pointer to gating function for the shape attractor
+        goalAttrGatingPtr % pointer to gating function for the goal attractor
 
         w % N_kernelsx1 vector with the weights of the DMP
         b % N_kernelsx1 vector with the bias term for each weight of the DMP
         c % N_kernelsx1 vector with the kernel centers of the DMP
         h % N_kernelsx1 vector with the kernel stds of the DMP
 
-        k_trunc_kernel % gain multiplied by the std of each kernel to define the truncated kernels width
-
         zero_tol % tolerance value used to avoid divisions with very small numbers
 
         a_s % scaling factor to ensure smaller changes in the accelaration to improve the training
 
         % training params
-        train_method % training method for weights of the DMP forcing term
+        trainMethod % training method for weights of the DMP forcing term
 
         lambda % forgetting factor in recursive training methods
         P_cov% Initial value of covariance matrix in recursive training methods
+
+        k_trunc_kernel % gain multiplied by the std of each kernel to define the truncated kernels width
 
     end
 
@@ -68,23 +68,23 @@ classdef DMP_plus < handle % : public DMP
         %  @param[in] N_kernels: the number of kernels
         %  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
-        %  @param[in] canClock_ptr: Pointer to a DMP canonical system object.
-        %  @param[in] shapeAttrGating_ptr: Pointer to gating function for the shape attractor.
-        %  @param[in] goalAttrGating_ptr: Pointer to gating function for the goal attractor.
-        %  @param[in] kernel_std_scaling: Scales the std of each kernel (optional, default = 1).
+        %  @param[in] canClockPtr: Pointer to a DMP canonical system object.
+        %  @param[in] shapeAttrGatingPtr: Pointer to gating function for the shape attractor.
+        %  @param[in] goalAttrGatingPtr: Pointer to gating function for the goal attractor.
+        %  @param[in] kernelStdScaling: Scales the std of each kernel (optional, default = 1).
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
-        function dmp = DMP(N_kernels, a_z, b_z, canClock_ptr, shapeAttrGating_ptr, goalAttrGating_ptr, kernel_std_scaling, extraArgName, extraArgValue)
+        function dmp = DMP_plus(N_kernels, a_z, b_z, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, kernelStdScaling, extraArgName, extraArgValue)
 
             if (nargin < 6)
                 return;
             else
-                if (nargin < 7), kernel_std_scaling=1.0; end
+                if (nargin < 7), kernelStdScaling=1.0; end
                 if (nargin < 8)
                     extraArgName = [];
                     extraArgValue = [];
                 end
-                dmp.init(N_kernels, a_z, b_z, canClock_ptr, shapeAttrGating_ptr, goalAttrGating_ptr, kernel_std_scaling, extraArgName, extraArgValue);
+                dmp.init(N_kernels, a_z, b_z, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, kernelStdScaling, extraArgName, extraArgValue);
             end
 
         end
@@ -94,40 +94,40 @@ classdef DMP_plus < handle % : public DMP
         %  @param[in] N_kernels: the number of kernels
         %  @param[in] a_z: Parameter 'a_z' relating to the spring-damper system.
         %  @param[in] b_z: Parameter 'b_z' relating to the spring-damper system.
-        %  @param[in] canClock_ptr: Pointer to a DMP canonical system object.
-        %  @param[in] shapeAttrGating_ptr: Pointer to gating function for the shape attractor.
-        %  @param[in] goalAttrGating_ptr: Pointer to gating function for the goal attractor.
-        %  @param[in] kernel_std_scaling: Scales the std of each kernel (optional, default = 1).
+        %  @param[in] canClockPtr: Pointer to a DMP canonical system object.
+        %  @param[in] shapeAttrGatingPtr: Pointer to gating function for the shape attractor.
+        %  @param[in] goalAttrGatingPtr: Pointer to gating function for the goal attractor.
+        %  @param[in] kernelStdScaling: Scales the std of each kernel (optional, default = 1).
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
-        function init(dmp, N_kernels, a_z, b_z, canClock_ptr, shapeAttrGating_ptr, goalAttrGating_ptr, kernel_std_scaling, extraArgName, extraArgValue)
+        function init(dmp, N_kernels, a_z, b_z, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, kernelStdScaling, extraArgName, extraArgValue)
 
-            if (nargin < 8), kernel_std_scaling=1.0; end
+            if (nargin < 8), kernelStdScaling=1.0; end
             if (nargin < 9)
                 extraArgName = [];
                 extraArgValue = [];
             end
 
-            DMP_init(dmp, N_kernels, a_z, b_z, canClock_ptr, shapeAttrGating_ptr, goalAttrGating_ptr, kernel_std_scaling, extraArgName, extraArgValue);
+            DMP_init(dmp, N_kernels, a_z, b_z, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, kernelStdScaling, extraArgName, extraArgValue);
 
         end
 
 
         %% Sets the centers for the kernel functions of the DMP according to the canonical system
-        function set_centers(dmp)
+        function setCenters(dmp)
 
-            DMP_set_centers(dmp);
+            DMP_setCenters(dmp);
 
         end
 
 
         %% Sets the standard deviations for the kernel functions  of the DMP
         %  Sets the variance of each kernel equal to squared difference between the current and the next kernel.
-        %  @param[in] kernel_std_scaling: Scales the std of each kernel by 'kernel_std_scaling' (optional, default = 1.0).
-        function set_stds(dmp, kernel_std_scaling)
+        %  @param[in] kernelStdScaling: Scales the std of each kernel by 'kernelStdScaling' (optional, default = 1.0).
+        function setStds(dmp, kernelStdScaling)
 
-            if (nargin < 2), kernel_std_scaling=1.0; end
-            DMP_set_stds(dmp, kernel_std_scaling);
+            if (nargin < 2), kernelStdScaling=1.0; end
+            DMP_setStds(dmp, kernelStdScaling);
 
         end
 
@@ -145,58 +145,39 @@ classdef DMP_plus < handle % : public DMP
         %  ddyd_data need not be sequantial in time.
         function [train_error, F, Fd] = train(dmp, Time, yd_data, dyd_data, ddyd_data, y0, g)
 
-            x = dmp.canClock_ptr.get_phase(Time);
-            u = dmp.shapeAttrGating_ptr.get_output(x);
-            s = u; %*(g0-y0);
-
-%             v_scale = dmp.get_v_scale();
-%             ddzd_data = ddyd_data*v_scale^2;
-%             g_attr_data = - dmp.a_z*(dmp.b_z*(g-yd_data)-dyd_data*v_scale);
-%             Fd = (ddzd_data + g_attr_data) ./ ((g-y0) + dmp.zero_tol);
-
-            Fd = zeros(1,length(Time));
+            n_data = length(Time);
+            x = zeros(1, n_data);
+            u = zeros(1, n_data);
+            Fd = zeros(1, n_data);
+            Psi = zeros(dmp.N_kernels, n_data);
             for i=1:length(Fd)
-                Fd(i) = dmp.calc_Fd(x(i), yd_data(i), dyd_data(i), ddyd_data(i), y0, g);
-            end
-            Fd = Fd / ((g-y0) + dmp.zero_tol); 
+                x(i) = dmp.phase(Time(i));
+                u(i) = dmp.shapeAttrGating(x(i));
+                Fd(i) = dmp.calcFd(x(i), yd_data(i), dyd_data(i), ddyd_data(i), y0, g);
+                Psi(:,i) = dmp.kernelFunction(x(i));
+            end      
     
             dmp.w = zeros(dmp.N_kernels, 1);
             dmp.b = zeros(dmp.N_kernels, 1);
+            
+            X = [u; ones(1,n_data)] * dmp.forcingTermScaling(y0,g);
 
-            train_method = dmp.train_method;
-            if (strcmpi(train_method,'LWR'))
-
-                Psi = kernel_function(dmp,x);
-
-                for k=1:dmp.N_kernels
-
-                    psi = Psi(k,:);
-                    Sw = sum(psi) + dmp.zero_tol; %?
-                    Sx = dot(psi,s);
-                    Sx2 = dot(psi,s.^2);
-                    Sxy = dot(psi,s.*Fd);
-                    Sy = dot(psi,Fd);
-                    A = [Sx2 Sx; Sx Sw];
-                    b = [Sxy; Sy];
-                    W = A\b;
-                    dmp.w(k) = W(1);
-                    dmp.b(k) = W(2);
-
-                end
-
-            elseif (strcmpi(train_method,'LS'))
-
-                error('Unsopported training method ''%s'' for DMP_plus', train_method);
-                %LS_train(dmp,x, s, Fd);
-
+            trainMethod = dmp.trainMethod;
+            if (strcmpi(trainMethod,'LWR'))                
+                W = LWR(Psi, X, Fd, dmp.zero_tol);
+            elseif (strcmpi(trainMethod,'LS'))
+                W = normKernelLS(Psi, X, Fd, dmp.zero_tol);
             else
-                error('Unsopported training method ''%s''', train_method);
+                error('Unsopported training method ''%s''', trainMethod);
             end
-
-            Fd = Fd .* (g-y0);
+            
+            dmp.w = W(:,1);
+            dmp.b = W(:,2);
+            
+            
             F = zeros(size(Fd));
             for i=1:size(F,2)
-                F(i) = dmp.forcing_term(x(i)) * dmp.forcing_term_scaling(y0, g);
+                F(i) = dmp.learnedForcingTerm(x(i), y0, g);
             end
 
             train_error = norm(F-Fd)/length(F);
@@ -205,20 +186,20 @@ classdef DMP_plus < handle % : public DMP
 
 
         %% Sets the high level training parameters of the DMP
-        %  @param[in] train_method: Method used to train the DMP weights.
+        %  @param[in] trainMethod: Method used to train the DMP weights.
         %  @param[in] extraArgName: Names of extra arguments (optional, default = []).
         %  @param[in] extraArgValue: Values of extra arguemnts (optional, default = []).
         %
         %  \remark The extra argument names can be the following:
         %  'lambda': Forgetting factor for recursive training methods.
         %  'P_cov': Initial value of the covariance matrix for recursive training methods.
-        function set_training_params(dmp, train_method, extraArgName, extraArgValue)
+        function setTrainingParams(dmp, trainMethod, extraArgName, extraArgValue)
 
             if (nargin < 3)
                 extraArgName = [];
                 extraArgValue = [];
             end
-            DMP_set_training_params(dmp, train_method, extraArgName, extraArgValue);
+            DMP_setTrainingParams(dmp, trainMethod, extraArgName, extraArgValue);
 
         end
 
@@ -249,21 +230,33 @@ classdef DMP_plus < handle % : public DMP
         %  @param[in] y0: initial position.
         %  @param[in] g: Goal position.
         %  @param[out] Fd: Desired value of the scaled forcing term.
-        function Fd = calc_Fd(dmp, x, y, dy, ddy, y0, g)
+        function Fd = calcFd(dmp, x, y, dy, ddy, y0, g)
 
             v_scale = dmp.get_v_scale();
-            Fd = (ddy*v_scale^2 - dmp.goal_attractor(x, y, v_scale*dy, g));
+            Fd = (ddy*v_scale^2 - dmp.goalAttractor(x, y, v_scale*dy, g)); % / ((g-y0) + dmp.zero_tol);
 
+        end
+        
+        
+        %% Returns the learned forcing term.
+        %  @param[in] x: The phase variable.
+        %  @param[in] y0: initial position.
+        %  @param[in] g: Goal position.
+        %  @param[out] learnForcTerm: The learned forcing term.
+        function learnForcTerm = learnedForcingTerm(dmp, x, y0, g)
+
+            learnForcTerm = dmp.forcingTerm(x) * dmp.forcingTermScaling(y0,g);
+            
         end
 
 
         %% Returns the forcing term of the DMP
         %  @param[in] x: The phase variable.
         %  @param[out] f: The normalized weighted sum of Gaussians.
-        function f = forcing_term(dmp,x)
+        function f = forcingTerm(dmp,x)
 
-            u = dmp.shapeAttrGating_ptr.get_output(x);
-            Psi = dmp.kernel_function(x);
+            u = dmp.shapeAttrGating(x);
+            Psi = dmp.kernelFunction(x);
             f = dot(Psi,dmp.w*u+dmp.b) / (sum(Psi)+dmp.zero_tol); % add 'zero_tol' to avoid numerical issues
 
         end
@@ -273,12 +266,30 @@ classdef DMP_plus < handle % : public DMP
         %  @param[in] y0: initial position.
         %  @param[in] g: Goal position.
         %  @param[out] f_scale: The scaling factor of the forcing term.
-        function f_scale = forcing_term_scaling(dmp, y0, g)
+        function f_scale = forcingTermScaling(dmp, y0, g)
 
             f_scale = (g-y0);
 
         end
+        
+        
+        %% Returns the shape attractor gating factor.
+        %  @param[in] x: The phase variable.
+        function sAttrGat = shapeAttrGating(dmp, x)
 
+            sAttrGat = DMP_shapeAttrGating(dmp,x);
+
+        end
+        
+        
+        %% Returns the goal attractor gating factor.
+        %  @param[in] x: The phase variable.
+        function gAttrGat = goalAttrGating(dmp, x)
+
+            gAttrGat = DMP_goalAttrGating(dmp,x);
+
+        end
+        
 
         %% Returns the goal attractor of the DMP.
         %  @param[in] x: The phase variable.
@@ -286,10 +297,10 @@ classdef DMP_plus < handle % : public DMP
         %  @param[in] z: \a z state of the DMP.
         %  @param[in] g: Goal position.
         %  @param[out] goal_attr: The goal attractor of the DMP.
-        function goal_attr = goal_attractor(dmp, x, y, z, g)
+        function goal_attr = goalAttractor(dmp, x, y, z, g)
 
-            g_attr_gating = dmp.goalAttrGating_ptr.get_output(x);
-            goal_attr = g_attr_gating * DMP_goal_attractor(dmp, y, z, g);
+            g_attr_gating = dmp.goalAttrGating(x);
+            goal_attr = g_attr_gating * DMP_goalAttractor(dmp, y, z, g);
 
         end
 
@@ -299,16 +310,32 @@ classdef DMP_plus < handle % : public DMP
         %  @param[in] y0: Initial position.
         %  @param[in] g: Goal position.
         %  @param[out] shape_attr: The shape_attr of the DMP.
-        function shape_attr = shape_attractor(dmp, x, y0, g)
+        function shape_attr = shapeAttractor(dmp, x, y0, g)
 
-%             f = dmp.forcing_term(x);
-%             f_scale = dmp.forcing_term_scaling(x, y0, g);
-%             shape_attr = f * f_scale;
-
-              shape_attr = DMP_shape_attractor(dmp, x, y0, g);
+              shape_attr = DMP_shapeAttractor(dmp, x, y0, g);
 
         end
 
+        
+        %% Returns the phase variable.
+        %  @param[in] t: The time instant.
+        %  @param[out] x: The phase variable for time 't'.
+        function x = phase(dmp, t)
+            
+            x = DMP_phase(dmp, t);
+
+        end
+        
+        
+        %% Returns the derivative of the phase variable.
+        %  @param[in] x: The phase variable.
+        %  @param[out] dx: The derivative of the phase variable.
+        function dx = phaseDot(dmp, x)
+            
+            dx = DMP_phaseDot(dmp, x);
+
+        end
+        
 
         %% Returns the derivatives of the DMP states
         %  @param[in] x: Phase variable.
@@ -320,12 +347,12 @@ classdef DMP_plus < handle % : public DMP
         %  @param[in] z_c: coupling term for the dynamical equation of the 'z' state.
         %  @param[out] dy: derivative of the 'y' state of the DMP.
         %  @param[out] dz: derivative of the 'z' state of the DMP.
-        function [dy, dz] = get_states_dot(dmp, x, y, z, y0, g, y_c, z_c)
+        function [dy, dz] = getStatesDot(dmp, x, y, z, y0, g, y_c, z_c)
 
-            if (nargin < 8), z_c=0; end
-            if (nargin < 7), y_c=0; end
+            if (nargin < 8), z_c=0.0; end
+            if (nargin < 7), y_c=0.0; end
 
-            [dy, dz] = DMP_get_states_dot(dmp, x, y, z, y0, g, y_c, z_c);
+            [dy, dz] = DMP_getStatesDot(dmp, x, y, z, y0, g, y_c, z_c);
 
         end
 
@@ -333,15 +360,16 @@ classdef DMP_plus < handle % : public DMP
         %% Returns a column vector with the values of the kernel functions of the DMP
         %  @param[in] x: phase variable
         %  @param[out] psi: column vector with the values of the kernel functions of the DMP
-        function Psi = kernel_function(dmp,x)
+        function Psi = kernelFunction(dmp,x)
 
             n = length(x);
             Psi = zeros(dmp.N_kernels, n);
-
+            std_thres = 2*dmp.k_trunc_kernel^2;
+            
             for j=1:n
                 t = dmp.h.*((x(j)-dmp.c).^2);
-                psi = exp(-t);
-                psi(t>2*dmp.k_trunc_kernel^2) = 0;
+                psi = exp(-t);   
+                psi(t>std_thres) = 0;
                 Psi(:,j) = psi;
             end
 
@@ -359,9 +387,9 @@ classdef DMP_plus < handle % : public DMP
 
         %% Returns the time cycle of the DMP
         %  @param[out] tau: The time duration of the DMP.
-        function tau = get_tau(dmp)
+        function tau = getTau(dmp)
 
-            tau = DMP_get_tau(dmp);
+            tau = DMP_getTau(dmp);
 
         end
 

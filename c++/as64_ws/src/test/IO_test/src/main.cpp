@@ -11,23 +11,23 @@
 #include <vector>
 #include <exception>
 
-#include <IO_lib/io_utils.h>
+#include <io_lib/io_utils.h>
 
 using namespace as64_::io_;
 
 int main(int argc, char** argv)
-{    
+{
   // ===========  Initialize the ROS node  ==================
   ros::init(argc, argv, "IO_test_node");
   ros::NodeHandle nh_("~");
-  
+
   std::string path = ros::package::getPath("io_test") + "/data/";
 
   // ===========  read cmd args  ==================
   bool binary;
   int precision;
   std::string filename;
-  
+
   if (!nh_.getParam("binary", binary)) binary = false;
   if (!nh_.getParam("precision", precision)) precision = 5;
   if (!nh_.getParam("filename", filename)) filename = "data";
@@ -35,9 +35,9 @@ int main(int argc, char** argv)
   filename = path + filename;
   if (binary) filename += ".bin";
   else filename += ".txt";
-  
-  std::cout << "filename = \"" << filename << "\"\n"; 
-  
+
+  std::cout << "filename = \"" << filename << "\"\n";
+
   // ===========  create data  ==================
   arma::mat A(24, 25, arma::fill::randu);
   arma::mat B(36, 28, arma::fill::randu);
@@ -46,13 +46,13 @@ int main(int argc, char** argv)
   m[1] = B;
   arma::vec v(32, 1, arma::fill::randu);
   arma::rowvec rowV(1, 61, arma::fill::randu);
-  
-  
+
+
   // ===========  write data  ==================
   std::ofstream out;
   if (binary) out.open(filename, std::ios::out | std::ios::binary);
   else out.open(filename, std::ios::out);
-  
+
   if (!out) throw std::ios_base::failure(std::string("Couldn't create file \"") + filename + "\"...\n");
 
   write_mat(A, out, binary, precision);
@@ -104,8 +104,8 @@ int main(int argc, char** argv)
   std::cout << "v_err = " << v_err << "\n";
   std::cout << "rowV_err = " << rowV_err << "\n";
   std::cout << "m_err = " << m_err << "\n";
-  
-  
+
+
   // ===========  Shutdown ROS node  ==================
   ros::shutdown();
 

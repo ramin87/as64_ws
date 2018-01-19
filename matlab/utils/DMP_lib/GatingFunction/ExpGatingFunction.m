@@ -31,25 +31,25 @@ classdef ExpGatingFunction < handle
       %  @param[in] u_end: Value of phase variable at the end of the motion.
       function init(gating_fun, u0, u_end)
 
-          gating_fun.set_gating_fun_params(u0, u_end);
+          gating_fun.setGatingFunParams(u0, u_end);
 
       end
 
       %% Sets the gating function's time constants based on the value of
       %% the phase variable at the end of the movement.
-      %  @param[in] u0: Initial value of the phase variable (optional, default = 1.0).
-      %  @param[in] u_end: Value of the phase variable at the end of the movement (t = tau)
-      function set_gating_fun_params(gating_fun, u0, u_end)
+      %  @param[in] u0: Initial value of the phase variable.
+      %  @param[in] u_end: Final value of the gating function.
+      function setGatingFunParams(gating_fun, u0, u_end)
 
           gating_fun.u0 = u0;
           x = u_end/gating_fun.u0;
 
           if (u0 == 0)
-              error('ExpGatingFunction: set_gating_fun_params: u0 must be != 0');
+              error('ExpGatingFunction: setGatingFunParams: u0 must be != 0');
           end
 
           if (x <= 0)
-              error('ExpGatingFunction: set_gating_fun_params: u0 and u_end must be both positive or negative.');
+              error('ExpGatingFunction: setGatingFunParams: u0 and u_end must be both positive or negative.');
           end
 
           gating_fun.a_u = -log(x);
@@ -59,7 +59,7 @@ classdef ExpGatingFunction < handle
       %% Returns the gating function's output for the specified timestamps.
       %  @param[in] x: Vector of timestamps.
       %  @param[out] u: Vector of values of the gating function's output.
-      function u = get_output(gating_fun, x)
+      function u = getOutput(gating_fun, x)
 
           u = gating_fun.u0*exp(-gating_fun.a_u*x);
 
@@ -68,7 +68,7 @@ classdef ExpGatingFunction < handle
       %% Returns the gating function's derivated output for the specified timestamps.
       %  @param[in] x: Vector of timestamps.
       %  @param[out] u: Vector of values of the gating function's derivated output.
-      function du = get_output_dot(gating_fun, x)
+      function du = getOutputDot(gating_fun, x)
 
           du = -gating_fun.a_u*gating_fun.u0*exp(-gating_fun.a_u*x);
 

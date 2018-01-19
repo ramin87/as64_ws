@@ -32,9 +32,9 @@ classdef SigmoidGatingFunction < handle
       %  @param[in] u_end: Final value of the gating function.
       function init(gating_fun, u0, u_end)
 
-          gating_fun.a_u = 150.0;
+          gating_fun.a_u = 850.0;
 
-          gating_fun.set_gating_fun_params(u0, u_end);
+          gating_fun.setGatingFunParams(u0, u_end);
 
       end
 
@@ -42,7 +42,7 @@ classdef SigmoidGatingFunction < handle
       %% the phase variable at the end of the movement.
       %  @param[in] u0: Initial value of the gating function.
       %  @param[in] u_end: Final value of the gating function.
-      function set_gating_fun_params(gating_fun, u0, u_end)
+      function setGatingFunParams(gating_fun, u0, u_end)
 
           gating_fun.u0 = u0;
           gating_fun.c = 1.0 - (1.0/gating_fun.a_u)*log((gating_fun.u0-u_end)/u_end);
@@ -52,7 +52,7 @@ classdef SigmoidGatingFunction < handle
       %% Returns the gating function's output for the specified timestamps.
       %  @param[in] x: Vector of timestamps.
       %  @param[out] u: Vector of values of the gating function's output.
-      function u = get_output(gating_fun, x)
+      function u = getOutput(gating_fun, x)
 
           exp_t = exp((gating_fun.a_u)*(x-gating_fun.c));
           u = gating_fun.u0 * 1.0 ./ (1.0 + exp_t);
@@ -62,7 +62,7 @@ classdef SigmoidGatingFunction < handle
       %% Returns the gating function's derivated output for the specified timestamps.
       %  @param[in] x: Vector of timestamps.
       %  @param[out] u: Vector of values of the gating function's derivated output.
-      function du = get_output_dot(gating_fun, x)
+      function du = getOutputDot(gating_fun, x)
 
           exp_t = exp((gating_fun.a_u/gating_fun.tau)*(x-gating_fun.c));
           du = -gating_fun.u0 * (gating_fun.a_u) * exp_t ./ (1.0 + exp_t).^2;

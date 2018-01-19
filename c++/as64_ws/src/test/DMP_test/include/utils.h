@@ -7,19 +7,26 @@
 #include <string>
 #include <fstream>
 #include <boost/concept_check.hpp>
+#include <memory>
 #include <armadillo>
 
 #include <ros/ros.h>
 
+#include <DMP_lib/DMP_lib.h>
+#include <param_lib/param_lib.h>
+
 #include <cmd_args.h>
 #include <log_data.h>
 
+void get_canClock_gatingFuns_DMP(const CMD_ARGS &cmd_args, int D, double tau,
+  std::shared_ptr<as64::CanonicalClock> &canClockPtr,
+  std::shared_ptr<as64::GatingFunction> &shapeAttrGatingPtr,
+  std::shared_ptr<as64::GatingFunction> &goalAttrGatingPtr,
+  std::vector<std::shared_ptr<as64::DMP_>> &dmp);
 
-void movingAverageFilter(const arma::rowvec &y, arma::rowvec &y_filt, int win_n);
 
-void process_demos(const arma::mat &data, double Ts, arma::mat &yd_data, arma::mat &dyd_data, arma::mat &ddyd_data, double add_points_percent=0.01, double smooth_points_percent=0.02);
-
-void load_data(const std::string &data_file_name, arma::mat &data, double &Ts, bool binary);
+void load_data(const std::string &data_file_name, arma::mat &yd_data, arma::mat &dyd_data,
+               arma::mat &ddyd_data, arma::rowvec &Time_demo, bool binary);
 
 double Fdist_fun(double t, const CMD_ARGS &cmd_args);
 

@@ -34,14 +34,14 @@ classdef LinCanonicalClock < handle
 
           can_clock.x0 = 0.0;
           can_clock.x_end = 1.0;
-          can_clock.set_tau(tau);
+          can_clock.setTau(tau);
           can_clock.a_x = can_clock.x0 - can_clock.x_end;
   
       end
       
       %% Sets/scales the canonical clock's time duration.
       %  @param[in] tau: Total time duration (used to set/scale the clocks time duration).
-      function set_tau(can_clock, tau)
+      function setTau(can_clock, tau)
           
           can_clock.tau = tau;
           
@@ -49,7 +49,7 @@ classdef LinCanonicalClock < handle
       
       %% Returns the canonical clock's time duration.
       %  @param[out] tau: Total time duration (used to set/scale the clocks time duration).
-      function tau = get_tau(can_clock)
+      function tau = getTau(can_clock)
           
           tau = can_clock.tau;
           
@@ -59,9 +59,9 @@ classdef LinCanonicalClock < handle
       %% the specified phase variable value.
       %  @param[in] x: Vector of the phase variable values.
       %  @param[out] dx: Vector of phase variable derivatives.
-      function dx = get_phase_dot(can_clock, x)
+      function dx = getPhaseDot(can_clock, x)
           
-           dx = -can_clock.a_x*ones(size(x))/can_clock.get_tau();
+           dx = -can_clock.a_x*ones(size(x))/can_clock.getTau();
 
       end
       
@@ -69,9 +69,9 @@ classdef LinCanonicalClock < handle
       %% timestamps.
       %  @param[in] t: Vector of timestamps.
       %  @param[out] x: Vector with the phase variable values at each timestamp in 't'.
-      function x = get_phase(can_clock, t)
+      function x = getPhase(can_clock, t)
           
-          x = can_clock.x0 - can_clock.a_x*t/can_clock.get_tau();
+          x = can_clock.x0 - can_clock.a_x*t/can_clock.getTau();
 
       end
 

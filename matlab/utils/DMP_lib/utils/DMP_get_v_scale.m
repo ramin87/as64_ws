@@ -3,6 +3,6 @@
 %  @param[out] v_scale: The scaling factor of the DMP.
 function v_scale = DMP_get_v_scale(dmp)
 
-    v_scale = dmp.get_tau() * dmp.a_s;
+    v_scale = dmp.getTau() * dmp.a_s;
     
 end
