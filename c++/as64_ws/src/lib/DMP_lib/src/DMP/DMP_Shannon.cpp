@@ -2,7 +2,7 @@
 #include <signalProcessing_lib/signalProcessing_lib.h>
 #include <Optimization_lib/Optimization_lib.h>
 
-namespace as64
+namespace as64_
 {
 
   DMP_Shannon::DMP_Shannon() {}
@@ -32,7 +32,7 @@ namespace as64
     double Ts = Time(1)-Time(0);
     double Fs = 1.0/Ts;
     arma::rowvec f, P1;
-    as64::spl_::getSingleSidedFourier(Fd, Fs, f, P1);
+    as64_::spl_::getSingleSidedFourier(Fd, Fs, f, P1);
 
     double Freq_max = std::min(this->Freq_max, f(f.size()-1));
 
@@ -117,6 +117,12 @@ namespace as64
     return psi;
   }
 
+  double DMP_Shannon::learnedForcingTerm(double x, double y0, double g) const
+  {
+    double learnForcTerm = this->forcingTerm(x);
+    return learnForcTerm;
+  }
+
   void DMP_Shannon::parseExtraArgs(const param_::ParamList *paramListPtr)
   {
     this->kernelStdScaling = 1.0;
@@ -135,4 +141,4 @@ namespace as64
     }
   }
 
-} // namespace as64
+} // namespace as64_

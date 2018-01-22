@@ -1,7 +1,7 @@
 #include <DMP_lib/DMP/DMP_bio.h>
 
 
-namespace as64
+namespace as64_
 {
 
   DMP_bio::DMP_bio() {}
@@ -39,4 +39,4 @@ namespace as64
     return shape_attr;
   }
 
-} // namespace as64
+} // namespace as64_

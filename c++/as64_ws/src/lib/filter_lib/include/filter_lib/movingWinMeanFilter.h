@@ -3,7 +3,7 @@
 
 #include <queue>
 
-namespace as64
+namespace as64_
 {
 
 class MovingWinMeanFilter
@@ -22,6 +22,6 @@ private:
     std::queue<double> F_queue;
 };
 
-} // namespace as64
+} // namespace as64_
 
 #endif // FILTER_LIB_MOVING_WINDOW_MEAN_FILTER_64_H

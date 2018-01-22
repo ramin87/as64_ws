@@ -1,6 +1,6 @@
 #include <robotics_lib/robotics.h>
 
-namespace as64
+namespace as64_
 {
 
-} // namespace as64
+} // namespace as64_

@@ -1,7 +1,6 @@
 #include <math_lib/math.h>
-#include <boost/concept_check.hpp>
 
-namespace as64
+namespace as64_
 {
 
 Eigen::Matrix3d vec2ssMat(const Eigen::Vector3d &v)
@@ -110,7 +109,6 @@ Eigen::Vector4d quat2axang(Eigen::Vector4d quat)
 
   return axang;
 }
-
 
 
 Eigen::MatrixXd inv(const Eigen::MatrixXd &M)

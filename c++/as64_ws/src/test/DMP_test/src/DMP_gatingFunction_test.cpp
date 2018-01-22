@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017 as64
+ * Copyright (C) 2017 as64_
  */
 
 #include <ros/ros.h>
@@ -36,27 +36,27 @@ int main(int argc, char** argv)
   if (argc >= 3) u0 = std::atof(argv[2]);
   if (argc >= 4) u_end = std::atof(argv[3]);
 
-  std::shared_ptr<as64::GatingFunction> gatingFunPtr;
+  std::shared_ptr<as64_::GatingFunction> gatingFunPtr;
 
   if (gatingFunType.compare("lin")==0)
   {
-    gatingFunPtr.reset(new as64::LinGatingFunction());
+    gatingFunPtr.reset(new as64_::LinGatingFunction());
   }
   else if (gatingFunType.compare("constant")==0)
   {
-    gatingFunPtr.reset(new as64::ConstGatingFunction());
+    gatingFunPtr.reset(new as64_::ConstGatingFunction());
   }
   else if (gatingFunType.compare("exp")==0)
   {
-    gatingFunPtr.reset(new as64::ExpGatingFunction());
+    gatingFunPtr.reset(new as64_::ExpGatingFunction());
   }
   else if (gatingFunType.compare("sigmoid")==0)
   {
-    gatingFunPtr.reset(new as64::SigmoidGatingFunction());
+    gatingFunPtr.reset(new as64_::SigmoidGatingFunction());
   }
   else if (gatingFunType.compare("spring-damper")==0)
   {
-    gatingFunPtr.reset(new as64::SpringDamperGatingFunction());
+    gatingFunPtr.reset(new as64_::SpringDamperGatingFunction());
   }
   else
   {

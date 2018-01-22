@@ -1,26 +1,26 @@
 #include <utils.h>
 
 void get_canClock_gatingFuns_DMP(const CMD_ARGS &cmd_args, int D, double tau,
-  std::shared_ptr<as64::CanonicalClock> &canClockPtr,
-  std::shared_ptr<as64::GatingFunction> &shapeAttrGatingPtr,
-  std::shared_ptr<as64::GatingFunction> &goalAttrGatingPtr,
-  std::vector<std::shared_ptr<as64::DMP_>> &dmp)
+  std::shared_ptr<as64_::CanonicalClock> &canClockPtr,
+  std::shared_ptr<as64_::GatingFunction> &shapeAttrGatingPtr,
+  std::shared_ptr<as64_::GatingFunction> &goalAttrGatingPtr,
+  std::vector<std::shared_ptr<as64_::DMP_>> &dmp)
 {
   // ========================================================
   // Init canonical clock
-  canClockPtr = as64::getCanClock(cmd_args.CAN_CLOCK_TYPE, tau);
+  canClockPtr = as64_::getCanClock(cmd_args.CAN_CLOCK_TYPE, tau);
 
   // ========================================================
   // Init shape attractor gating function
-  shapeAttrGatingPtr = as64::getGatingFun(cmd_args.SHAPE_ATTR_GATTING_TYPE, cmd_args.SHAPE_ATTR_GATTING_u0, cmd_args.SHAPE_ATTR_GATTING_u_end);
+  shapeAttrGatingPtr = as64_::getGatingFun(cmd_args.SHAPE_ATTR_GATTING_TYPE, cmd_args.SHAPE_ATTR_GATTING_u0, cmd_args.SHAPE_ATTR_GATTING_u_end);
 
   // ========================================================
   // Init goal attractor gating function
-  goalAttrGatingPtr = as64::getGatingFun(cmd_args.GOAL_ATTR_GATTING_TYPE, cmd_args.GOAL_ATTR_GATTING_u0, cmd_args.GOAL_ATTR_GATTING_u_end);
+  goalAttrGatingPtr = as64_::getGatingFun(cmd_args.GOAL_ATTR_GATTING_TYPE, cmd_args.GOAL_ATTR_GATTING_u0, cmd_args.GOAL_ATTR_GATTING_u_end);
 
   // ========================================================
   // Extra args for the DMP
-  as64::param_::ParamList paramList;
+  as64_::param_::ParamList paramList;
   paramList.setParam("kernelStdScaling", cmd_args.kernelStdScaling);
   paramList.setParam("k_trunc_kernel", cmd_args.k_trunc_kernel);
   paramList.setParam("Wmin", cmd_args.Wmin);
@@ -31,7 +31,7 @@ void get_canClock_gatingFuns_DMP(const CMD_ARGS &cmd_args, int D, double tau,
   dmp.resize(D);
   for (int i=0;i<D;i++)
   {
-  dmp[i] = as64::getDMP(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z,
+  dmp[i] = as64_::getDMP(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z,
       canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, &paramList);
   }
 

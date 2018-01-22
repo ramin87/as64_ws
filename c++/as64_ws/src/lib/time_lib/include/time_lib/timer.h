@@ -4,7 +4,7 @@
 #include <ctime>
 #include <chrono>
 
-namespace as64
+namespace as64_
 {
 
 /**
@@ -45,7 +45,7 @@ private:
 	bool resume_pressed; ///< flag indicating whether \a resume was called
 };
 
-} // namespace as64
+} // namespace as64_
 
 
 #endif // TIME_LIB_TIMER_64_H

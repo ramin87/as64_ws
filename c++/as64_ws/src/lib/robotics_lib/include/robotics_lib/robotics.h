@@ -8,10 +8,10 @@
 
 #include <robotics_lib/jlav.h>
 
-namespace as64
+namespace as64_
 {
 
 
-} // namespace as64
+} // namespace as64_
 
 #endif // ROBOTICS_LIB_64_H

@@ -10,7 +10,7 @@
 #include <exception>
 #include <armadillo>
 
-namespace as64
+namespace as64_
 {
 
 class GatingFunction
@@ -52,6 +52,6 @@ protected:
 
 }; // class GatingFunction
 
-} // namespace as64
+} // namespace as64_
 
 #endif // GATING_FUNCTION_H

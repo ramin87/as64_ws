@@ -4,10 +4,10 @@
 #include <filter_lib/movingWinMeanFilter.h>
 #include <filter_lib/svf.h>
 
-namespace as64
+namespace as64_
 {
 
 
-} // namespace as64
+} // namespace as64_
 
 #endif // FILTER_LIB_FILTER_64_H

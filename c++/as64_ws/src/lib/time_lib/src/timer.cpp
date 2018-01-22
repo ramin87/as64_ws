@@ -1,6 +1,6 @@
 #include <time_lib/timer.h>
 
-namespace as64
+namespace as64_
 {
 
 // *********************************
@@ -44,4 +44,4 @@ double TIMER::stop()
 // ********************************
 
 
-} // namespace as64
+} // namespace as64_

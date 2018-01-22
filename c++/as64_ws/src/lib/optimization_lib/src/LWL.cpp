@@ -1,6 +1,9 @@
 #include <Optimization_lib/LWL.h>
 
-namespace as64
+namespace as64_
+{
+
+namespace opt_
 {
 
 arma::mat LWR(const arma::mat &Psi, const arma::mat &X, const arma::rowvec &Fd, double zero_tol)
@@ -24,5 +27,6 @@ arma::mat RLWR(const arma::mat &Psi, const arma::mat &X, const arma::rowvec &Fd,
   throw std::runtime_error("RLWR: Unimplemented function.\n");
 }
 
+} // namespace opt_
 
-} // namespace as64
+} // namespace as64_

@@ -11,7 +11,7 @@
 
 #include <DMP_lib/GatingFunction/GatingFunction.h>
 
-namespace as64
+namespace as64_
 {
 
 class SigmoidGatingFunction: public GatingFunction
@@ -51,6 +51,6 @@ private:
   double c; ///< center of the exponential in the sigmoid
 }; // class SigmoidGatingFunction
 
-} // namespace as64
+} // namespace as64_
 
 #endif // SIGMOID_GATING_FUNCTION_H

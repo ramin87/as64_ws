@@ -11,7 +11,10 @@
 #include <cmath>
 #include <armadillo>
 
-namespace as64
+namespace as64_
+{
+
+namespace opt_
 {
 
 /** \brief Locally Weighted Regression
@@ -37,7 +40,8 @@ arma::mat LWR(const arma::mat &Psi, const arma::mat &X, const arma::rowvec &Fd, 
 */
 arma::mat RLWR(const arma::mat &Psi, const arma::mat &X, const arma::rowvec &Fd, double lambda, double P, double zero_tol=0.0);
 
+} // namespace opt_
 
-} // namespace as64
+} // namespace as64_
 
 #endif // LOCALLY_WEIGHTED_LEARNING_H

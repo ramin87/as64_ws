@@ -17,7 +17,7 @@
 #include <DMP_lib/DMP/DMP_plus.h>
 #include <DMP_lib/DMP/DMP_Shannon.h>
 
-namespace as64
+namespace as64_
 {
 
 std::shared_ptr<CanonicalClock> getCanClock(const std::string &CAN_CLOCK_TYPE, double tau);
@@ -32,6 +32,6 @@ std::shared_ptr<DMP_> getDMP(const std::string &DMP_TYPE, int N_kernels, double 
 
 std::shared_ptr<GatingFunction> getGatingFun(const std::string &GATTING_FUN_TYPE, double u0, double u_end);
 
-} // namespace as64
+} // namespace as64_
 
 #endif // DMP_UTILS_H

@@ -3,7 +3,7 @@
 
 #include <DMP_lib/DMP/DMP_.h>
 
-namespace as64
+namespace as64_
 {
 
 class DMP_Shannon: public DMP_
@@ -24,16 +24,18 @@ public:
 
   virtual arma::vec kernelFunction(double x) const;
 
+  virtual double learnedForcingTerm(double x, double y0, double g) const;
+
+  virtual void parseExtraArgs(const param_::ParamList *paramListPtr);
+
 private:
   double Freq_min; ///< minimum allowable filter frequency to avoid instabilities with filtering
   double Freq_max; ///< filter out all frequencies beyond 'Freq_max'
   double Wmin; ///< minimum energy percent that must be retained after filtering
   double P1_min; ///< take all frequency components up to Freq_max with amplitude >= 'P1_min', even in the case that Wmin is satisfied
 
-  virtual void parseExtraArgs(const param_::ParamList *paramListPtr);
-  
 }; // class DMP_Shannon
 
-} // namespace as64
+} // namespace as64_
 
 #endif // DYNAMICAL_MOVEMENT_PRIMITIVE_SHANNON_H

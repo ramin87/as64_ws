@@ -1,6 +1,10 @@
 #ifndef AS64_IO_UTILS_H
 #define AS64_IO_UTILS_H
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__)
+ #include <conio.h>   //for getch(), needed in wait_for_key()
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -16,6 +20,25 @@ namespace as64_
 
 namespace io_
 {
+
+/** \brief Pauses until a key is pressed.
+ */
+inline void wait_for_key()
+{
+  #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__)  // every keypress registered, also arrow keys
+      std::cout << std::endl << "Press any key to continue..." << std::endl;
+
+      FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+      _getch();
+  #elif defined(unix) || defined(__unix) || defined(__unix__) || defined(__APPLE__)
+      std::cout << std::endl << "Press ENTER to continue..." << std::endl;
+
+      std::cin.clear();
+      std::cin.ignore(std::cin.rdbuf()->in_avail());
+      std::cin.get();
+  #endif
+      return;
+}
 
 /** \brief Reads a character from the keyboard (no need to press 'enter' afterwards is required)
  *  @return the character pressed in the keyboard.

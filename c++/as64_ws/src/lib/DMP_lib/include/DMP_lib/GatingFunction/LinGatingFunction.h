@@ -11,7 +11,7 @@
 
 #include <DMP_lib/GatingFunction/GatingFunction.h>
 
-namespace as64
+namespace as64_
 {
 
 class LinGatingFunction: public GatingFunction
@@ -49,6 +49,6 @@ public:
 
 }; // class LinGatingFunction
 
-} // namespace as64
+} // namespace as64_
 
 #endif // LINEAR_GATING_FUNCTION_H

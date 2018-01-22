@@ -3,7 +3,10 @@
 
 #include <Optimization_lib/LeastSquares.h>
 
-namespace as64
+namespace as64_
+{
+
+namespace opt_
 {
 
 arma::mat normKernelLS(const arma::mat &Psi, const arma::mat &X, const arma::rowvec &Fd, double zero_tol)
@@ -35,5 +38,6 @@ arma::mat normKernelRLS(const arma::mat &Psi, const arma::mat &X, const arma::ro
   throw std::runtime_error("normKernelRLS: Unimplemented function.\n");
 }
 
+} // namespace opt_
 
-} // namespace as64
+} // namespace as64_

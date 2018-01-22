@@ -1,6 +1,6 @@
 #include <math_lib/dtw.h>
 
-namespace as64
+namespace as64_
 {
 
 double dtw(const arma::mat &s, const arma::mat &t, arma::rowvec &ind_s, arma::rowvec &ind_t, int w, distance_function dist_fun_h)
@@ -93,4 +93,4 @@ double dtw(const arma::mat &s, const arma::mat &t, arma::rowvec &ind_s, arma::ro
   return d;
 }
 
-} // namespace as64
+} // namespace as64_

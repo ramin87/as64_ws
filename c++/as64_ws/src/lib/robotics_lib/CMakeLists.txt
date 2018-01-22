@@ -58,7 +58,7 @@ target_link_libraries(robotics-lib
   autharl-viz
   lwr-robot
   pthread
-  IO-lib
+  io-lib
   time-lib
   # yaml-cpp
   math-lib

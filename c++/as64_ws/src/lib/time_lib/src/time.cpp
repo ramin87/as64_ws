@@ -1,6 +1,6 @@
 #include <time_lib/time.h>
 
-namespace as64
+namespace as64_
 {
 
 std::string getTimeStamp()
@@ -18,4 +18,4 @@ std::string getTimeStamp()
 	return time_stamp;
 }
 
-} // namespace as64
+} // namespace as64_

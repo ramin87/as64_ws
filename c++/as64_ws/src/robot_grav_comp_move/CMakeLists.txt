@@ -37,6 +37,6 @@ target_link_libraries(robot_grav_comp_move_node
   autharl-viz
   lwr-robot
   pthread
-  IO-lib
+  io-lib
   time-lib
 )

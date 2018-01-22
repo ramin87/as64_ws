@@ -1,6 +1,6 @@
 #include <filter_lib/movingWinMeanFilter.h>
 
-namespace as64
+namespace as64_
 {
 
 void MovingWinMeanFilter::init(int filt_win, double F_init)
@@ -41,4 +41,4 @@ double MovingWinMeanFilter::get_filtered_output() const
   return F_filt;
 }
 
-} // namespace as64
+} // namespace as64_

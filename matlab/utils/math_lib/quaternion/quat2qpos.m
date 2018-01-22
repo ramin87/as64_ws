@@ -1,5 +1,5 @@
 function qPos = quat2qpos(Q1, Q2)
-%% qpos2quat
+%% quat2qpos
 %  Converts the unit quaternion 'Q1' to pseudo quaternion position 'qPos'
 %  using as origin the unit quaternion 'Q2'. 
 %  Given two unit quaternions Q1, Q2, the pseudo quaternion position of Q1 with

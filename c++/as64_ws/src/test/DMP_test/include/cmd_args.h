@@ -1,5 +1,5 @@
-#ifndef CMD_ARGS_H
-#define CMD_ARGS_H
+#ifndef DMP_TEST_CMD_ARGS_H
+#define DMP_TEST_CMD_ARGS_H
 
 #include <iostream>
 #include <cstdlib>
@@ -52,14 +52,22 @@ struct CMD_ARGS
   double t1_fdist; // Start of Fdist_max
   double t2_fdist; // End of Fdist_max
   bool binary;
+
   std::string data_input_path;
   std::string data_output_path;
+
   std::string in_data_filename;
   std::string out_data_filename;
+
+  std::string  in_CartPos_data_filename;
+  std::string  out_CartPos_data_filename;
+
+  std::string  in_orient_data_filename;
+  std::string  out_orient_data_filename;
 
   CMD_ARGS();
   bool parse_cmd_args();
   void print(std::ostream &out=std::cout) const;
 };
 
-#endif // CMD_ARGS_H
+#endif // DMP_TEST_CMD_ARGS_H

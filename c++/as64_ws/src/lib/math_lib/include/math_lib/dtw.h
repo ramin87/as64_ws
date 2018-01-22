@@ -8,7 +8,7 @@
 
 #include <armadillo>
 
-namespace as64
+namespace as64_
 {
 
 typedef double (*distance_function)(const arma::vec &x1, const arma::vec &x2);
@@ -27,6 +27,6 @@ typedef double (*distance_function)(const arma::vec &x1, const arma::vec &x2);
  */
 double dtw(const arma::mat &s, const arma::mat &t, arma::rowvec &ind_s, arma::rowvec &ind_t, int w = -1, distance_function dist_fun_h=arma::norm);
 
-} // namespace as64
+} // namespace as64_
 
 #endif // DYNAMIC_TIME_WARPING_64_H

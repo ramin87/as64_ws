@@ -156,7 +156,7 @@ double HandoverController::get_pose_error(const Eigen::Matrix4d &T) const
 {
 	Eigen::Vector3d pos_err = T.block(0,3,3,1);
 
-	Eigen::Vector4d quat = as64::rotm2quat(T.block(0,0,3,3));
+	Eigen::Vector4d quat = as64_::rotm2quat(T.block(0,0,3,3));
 	Eigen::Vector3d orient_err = quat.segment(1,3);
 	double r = cmd_args.POS_ERR_COEFF * pos_err.squaredNorm() + (1-cmd_args.POS_ERR_COEFF) * orient_err.squaredNorm();
 
@@ -172,7 +172,7 @@ void HandoverController::calc_DS_input(const Eigen::Matrix4d &T_objTarget_obj, E
 // 	X_in->segment(3,3) = orient_err;
 
 	X_in->segment(0,3) = T_objTarget_obj.block(0,3,3,1);
-	X_in->segment(3,3) = as64::rotm2quat(T_objTarget_obj.block(0,0,3,3)).segment(1,3);
+	X_in->segment(3,3) = as64_::rotm2quat(T_objTarget_obj.block(0,0,3,3)).segment(1,3);
 }
 
 HandoverController::HandoverController(std::shared_ptr<arl::robot::Robot> robot)
@@ -269,7 +269,7 @@ HandoverController::HandoverController(std::shared_ptr<arl::robot::Robot> robot)
 
 	Eigen::Matrix3d R_endEffector_obj = T_endEffector_obj.block(0,0,3,3);
 	Eigen::Vector3d p_endEffector_obj = T_endEffector_obj.block(0,3,3,1);
-	Twist_endEffector_obj << R_endEffector_obj, as64::vec2ssMat(p_endEffector_obj)*R_endEffector_obj,
+	Twist_endEffector_obj << R_endEffector_obj, as64_::vec2ssMat(p_endEffector_obj)*R_endEffector_obj,
 	Eigen::Matrix3d::Zero(), R_endEffector_obj;
 
 	if (cmd_args.LOG_DATA) logData.Ts = Ts;
@@ -597,7 +597,7 @@ void HandoverController::execute()
 
 		Eigen::Matrix<double, JOINT_SIZE,CART_DOF_SIZE> J_endEffector_inv;
 		if (cmd_args.SVF_enable) J_endEffector_inv = svf.inv(J_endEffector);
-		else J_endEffector_inv = as64::inv(J_endEffector);
+		else J_endEffector_inv = as64_::inv(J_endEffector);
 
 		qd_dot = J_endEffector_inv * Vd_endEffector;
 

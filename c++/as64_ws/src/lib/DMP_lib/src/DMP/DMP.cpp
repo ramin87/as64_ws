@@ -1,7 +1,7 @@
 #include <DMP_lib/DMP/DMP.h>
 
 
-namespace as64
+namespace as64_
 {
 
   DMP::DMP() {}
@@ -14,4 +14,4 @@ namespace as64
   }
 
 
-} // namespace as64
+} // namespace as64_

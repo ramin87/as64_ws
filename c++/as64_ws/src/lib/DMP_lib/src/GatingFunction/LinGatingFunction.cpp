@@ -1,6 +1,6 @@
 #include <DMP_lib/GatingFunction/LinGatingFunction.h>
 
-namespace as64
+namespace as64_
 {
 
   LinGatingFunction::LinGatingFunction(double u0, double u_end)
@@ -43,4 +43,4 @@ namespace as64
     return du;
   }
 
-} // namespace as64
+} // namespace as64_

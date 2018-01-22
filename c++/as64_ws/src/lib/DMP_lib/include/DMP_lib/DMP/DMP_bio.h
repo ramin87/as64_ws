@@ -3,7 +3,7 @@
 
 #include <DMP_lib/DMP/DMP_.h>
 
-namespace as64
+namespace as64_
 {
 
 class DMP_bio: public DMP_
@@ -23,6 +23,6 @@ public:
 
 }; // class DMP_bio
 
-} // namespace as64
+} // namespace as64_
 
 #endif // DYNAMICAL_MOVEMENT_PRIMITIVE_BIO_H

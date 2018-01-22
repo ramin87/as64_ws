@@ -5,7 +5,7 @@
 #include <armadillo>
 #include <iostream>
 
-namespace as64
+namespace as64_
 {
 
 class JLAv
@@ -49,6 +49,6 @@ private:
 
 };
 
-} // namespace as64
+} // namespace as64_
 
 #endif // JOINT_LIMIT_AVOIDANCE_H

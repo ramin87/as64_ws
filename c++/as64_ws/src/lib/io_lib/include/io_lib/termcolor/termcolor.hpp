@@ -42,7 +42,7 @@
 #include <cstdio>
 
 
-namespace as64
+namespace as64_
 {
 
 namespace io_
@@ -551,7 +551,7 @@ namespace io_
 
 } // namespace io_lib
 
-} // namespace as64
+} // namespace as64_
 
 #undef TERMCOLOR_OS_WINDOWS
 #undef TERMCOLOR_OS_MACOS

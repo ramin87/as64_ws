@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017 as64
+ * Copyright (C) 2017 as64_
  */
 
 #include <ros/ros.h>
@@ -22,7 +22,7 @@ int main(int argc, char** argv)
   double elapsed_time;
 
   double tau = 2.3;
-  as64::CanonicalClock canClockPtr = new(LinCanonicalClock());
+  as64_::CanonicalClock canClockPtr = new(LinCanonicalClock());
   canClockPtr->init(tau);
 
 
@@ -69,20 +69,20 @@ int main(int argc, char** argv)
   std::cout << "n_data = " << n_data << "\n";
 
   // set the Canonical System
-  std::shared_ptr<as64::CanonicalSystem> can_sys_ptr;
+  std::shared_ptr<as64_::CanonicalSystem> can_sys_ptr;
   bool USE_2nd_order_can_sys = false;
 
   if (cmd_args.CAN_SYS_TYPE.compare("exp") == 0)
   {
-    can_sys_ptr.reset(new as64::ExpCanonicalSystem());
+    can_sys_ptr.reset(new as64_::ExpCanonicalSystem());
   }
   else if (cmd_args.CAN_SYS_TYPE.compare("lin") == 0)
   {
-    can_sys_ptr.reset(new as64::LinCanonicalSystem());
+    can_sys_ptr.reset(new as64_::LinCanonicalSystem());
   }
   else if (cmd_args.CAN_SYS_TYPE.compare("spring-damper") == 0)
   {
-    can_sys_ptr.reset(new as64::SpringDamperCanonicalSystem());
+    can_sys_ptr.reset(new as64_::SpringDamperCanonicalSystem());
     USE_2nd_order_can_sys = true;
   }
   else
@@ -93,20 +93,20 @@ int main(int argc, char** argv)
   can_sys_ptr->init(cmd_args.x_end, tau);
 
   // set the DMP
-  std::vector<std::shared_ptr<as64::DMP_>> dmp(D);
+  std::vector<std::shared_ptr<as64_::DMP_>> dmp(D);
   for (int i=0; i<D; i++){
 
     if (cmd_args.DMP_TYPE.compare("DMP") == 0)
     {
-      dmp[i].reset(new as64::DMP());
+      dmp[i].reset(new as64_::DMP());
     }
     else if (cmd_args.DMP_TYPE.compare("DMP-bio") == 0)
     {
-      dmp[i].reset(new as64::DMP_bio());
+      dmp[i].reset(new as64_::DMP_bio());
     }
     else if (cmd_args.DMP_TYPE.compare("DMP-plus") == 0)
     {
-      dmp[i].reset(new as64::DMP_plus());
+      dmp[i].reset(new as64_::DMP_plus());
     }
     else
     {

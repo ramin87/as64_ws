@@ -1,6 +1,6 @@
 #include <math_lib/convertions.h>
 
-namespace as64
+namespace as64_
 {
 
 void rosTransform_to_eigenTransform(const geometry_msgs::Transform &rosTrans, Eigen::Matrix4d &eigenTrans)
@@ -12,7 +12,7 @@ void rosTransform_to_eigenTransform(const geometry_msgs::Transform &rosTrans, Ei
 	Eigen::Vector4d quat;
 	quat << rosTrans.rotation.w, rosTrans.rotation.x, rosTrans.rotation.y, rosTrans.rotation.z;
 
-	eigenTrans.block(0,0,3,3) = as64::quat2rotm(quat);
+	eigenTrans.block(0,0,3,3) = as64_::quat2rotm(quat);
 
 	eigenTrans.row(3) << 0, 0, 0, 1;
 }

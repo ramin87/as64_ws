@@ -21,10 +21,10 @@ catkin_package(
 )
 
 include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-  /usr/include/eigen3
-  # ${Eigen_INCLUDE_DIRS}
+include
+/usr/include/eigen3
+${catkin_INCLUDE_DIRS}
+# ${Eigen_INCLUDE_DIRS}
 )
 
 ##########################

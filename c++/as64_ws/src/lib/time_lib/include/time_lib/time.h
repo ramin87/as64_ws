@@ -8,7 +8,10 @@
 
 #include <time_lib/timer.h>
 
-namespace as64
+namespace as64_
+{
+
+namespace time_
 {
 
 /** \brief Returns the current time stamp in the format ???
@@ -16,6 +19,8 @@ namespace as64
  */
 std::string getTimeStamp();
 
-} // namespace as64
+} // namespace time_
+
+} // namespace as64_
 
 #endif // TIME_LIB_TIME_64_H

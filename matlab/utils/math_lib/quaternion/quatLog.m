@@ -5,10 +5,11 @@ function v_rot = quatLog(Q)
 
     n = Q(1);
     e = Q(2:4);
+    norm_e = norm(e);
     
-    if (norm(e) > 1e-15)
+    if (norm_e > 1e-16)
         % use real(acos(η)) because for n close but greater than 1, acos(n) becomes complex number
-        v_rot = 2*real(acos(n))*e/norm(e);
+        v_rot = 2*real(acos(n))*e/norm_e;
     else
         v_rot = zeros(size(e));
     end

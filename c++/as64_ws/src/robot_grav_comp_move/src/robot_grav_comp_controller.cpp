@@ -198,7 +198,7 @@ void RobotGravCompController::measure()
 		std::cout << "Recorded current pose!\n";
 		// record_current_pose = false;
 		//
-		// std::string time_stamp = as64::getTimeStamp();
+		// std::string time_stamp = as64_::getTimeStamp();
 		//
 		// std::string path = this->DIR + "pose_" + this->filename + "_" + time_stamp; // + ".dat";
 		//

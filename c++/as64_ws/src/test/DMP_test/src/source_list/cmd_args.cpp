@@ -51,9 +51,25 @@ bool CMD_ARGS::parse_cmd_args()
   if (!nh_.getParam("binary", binary)) binary = true;
   if (!nh_.getParam("data_input_path", data_input_path)) data_input_path = "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/";
   if (!nh_.getParam("data_output_path", data_output_path)) data_output_path = "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/";
-  if (!nh_.getParam("in_data_filename", in_data_filename)) in_data_filename = "data";
-  if (!nh_.getParam("out_data_filename", out_data_filename)) out_data_filename = "data_out";
+  if (!nh_.getParam("in_data_filename", in_data_filename)) in_data_filename = "";
+  if (!nh_.getParam("out_data_filename", out_data_filename)) out_data_filename = "";
 
+  if (!nh_.getParam("in_CartPos_data_filename", in_CartPos_data_filename)) in_CartPos_data_filename = "";
+  if (!nh_.getParam("out_CartPos_data_filename", out_CartPos_data_filename)) out_CartPos_data_filename = "";
+
+  if (!nh_.getParam("in_orient_data_filename", in_orient_data_filename)) in_orient_data_filename = "";
+  if (!nh_.getParam("out_orient_data_filename", out_orient_data_filename)) out_orient_data_filename = "";
+
+  in_data_filename = data_input_path + "/" + in_data_filename;
+  out_data_filename = data_output_path + out_data_filename;
+
+  in_CartPos_data_filename = data_input_path + "/" + in_CartPos_data_filename;
+  out_CartPos_data_filename = data_output_path + out_CartPos_data_filename;
+
+  in_orient_data_filename = data_input_path + "/" + in_orient_data_filename;
+  out_orient_data_filename = data_output_path + out_orient_data_filename;
+
+  if (USE_PHASE_STOP == false) a_py = 0.0;
 }
 
 void CMD_ARGS::print(std::ostream &out) const
@@ -106,4 +122,9 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "in_data_filename: " << in_data_filename << "\n";
   out << "out_data_filename: " << out_data_filename << "\n";
 
+  out << "in_CartPos_data_filename: " << in_CartPos_data_filename << "\n";
+  out << "out_CartPos_data_filename: " << out_CartPos_data_filename << "\n";
+
+  out << "in_orient_data_filename: " << in_orient_data_filename << "\n";
+  out << "out_orient_data_filename: " << out_orient_data_filename << "\n";
 }

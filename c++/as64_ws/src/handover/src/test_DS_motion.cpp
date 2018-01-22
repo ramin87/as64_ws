@@ -35,7 +35,7 @@ double get_pose_error(const Eigen::Matrix4d &T)
 {
 	Eigen::Vector3d pos_err = T.block(0,3,3,1);
 
-	Eigen::Vector4d quat = as64::rotm2quat(T.block(0,0,3,3));
+	Eigen::Vector4d quat = as64_::rotm2quat(T.block(0,0,3,3));
 	Eigen::Vector3d orient_err = quat.segment(1,3);
 	double r = cmd_args.POS_ERR_COEFF * pos_err.squaredNorm() + (1-cmd_args.POS_ERR_COEFF) * orient_err.squaredNorm();
 
@@ -51,7 +51,7 @@ void calc_DS_input(const Eigen::Matrix4d &T_objTarget_obj, Eigen::Matrix<double,
 // 	X_in->segment(3,3) = orient_err;
 
 	X_in->segment(0,3) = T_objTarget_obj.block(0,3,3,1);
-	X_in->segment(3,3) = as64::rotm2quat(T_objTarget_obj.block(0,0,3,3)).segment(1,3);
+	X_in->segment(3,3) = as64_::rotm2quat(T_objTarget_obj.block(0,0,3,3)).segment(1,3);
 }
 
 int main(int argc, char **argv)
@@ -173,17 +173,17 @@ int main(int argc, char **argv)
     Vd_endEffector = cmd_args.ks*Vd_endEffector + (1-cmd_args.ks)*V_endEffector;
 
     Eigen::Vector3d pos = T_objTarget_obj.block(0,3,3,1);
-    Eigen::Vector4d quat = as64::rotm2quat(T_objTarget_obj.block(0,0,3,3));
+    Eigen::Vector4d quat = as64_::rotm2quat(T_objTarget_obj.block(0,0,3,3));
 
     Eigen::Vector3d v_lin = Vd_endEffector.segment(0,3);
     Eigen::Vector3d v_rot = Vd_endEffector.segment(3,3);
 
     pos += v_lin*Ts;
-    quat += as64::get_quat_dot(v_rot,quat)*Ts;
+    quat += as64_::get_quat_dot(v_rot,quat)*Ts;
     quat = quat/quat.norm();
-    //quat = as64::quatProd(as64::quatExp(v_rot*Ts), quat);
+    //quat = as64_::quatProd(as64_::quatExp(v_rot*Ts), quat);
 
-    T_objTarget_obj.block(0,0,3,3) = as64::quat2rotm(quat);
+    T_objTarget_obj.block(0,0,3,3) = as64_::quat2rotm(quat);
     T_objTarget_obj.block(0,3,3,1) = pos;
     V_endEffector = Vd_endEffector;
 

@@ -1,7 +1,7 @@
 #include <DMP_lib/DMP/DMP_plus.h>
 #include <Optimization_lib/Optimization_lib.h>
 
-namespace as64
+namespace as64_
 {
 
   DMP_plus::DMP_plus() {}
@@ -38,15 +38,15 @@ namespace as64
     arma::mat W;
     if (trainMethod.compare("LWR")==0)
     {
-      W = LWR(Psi, X, Fd, this->zero_tol);
+      W = opt_::LWR(Psi, X, Fd, this->zero_tol);
     }
     else if (trainMethod.compare("RLWR")==0)
     {
-      W = RLWR(Psi, X, Fd, this->lambda, this->P_cov, this->zero_tol);
+      W = opt_::RLWR(Psi, X, Fd, this->lambda, this->P_cov, this->zero_tol);
     }
     else if (trainMethod.compare("LS")==0)
     {
-      W = normKernelLS(Psi, X, Fd, this->zero_tol);
+      W = opt_::normKernelLS(Psi, X, Fd, this->zero_tol);
     }
     else
     {
@@ -113,4 +113,4 @@ namespace as64
 
   }
 
-} // namespace as64
+} // namespace as64_

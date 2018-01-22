@@ -1,6 +1,6 @@
 #include <robotics_lib/jlav.h>
 
-namespace as64
+namespace as64_
 {
 
 /**
@@ -217,4 +217,4 @@ arma::vec JLAv::getControlSignal(arma::vec q_meas)
 
 }
 
-} // namespace as64
+} // namespace as64_

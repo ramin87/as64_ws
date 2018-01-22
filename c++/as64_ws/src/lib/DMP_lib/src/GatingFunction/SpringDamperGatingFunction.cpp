@@ -1,6 +1,6 @@
 #include <DMP_lib/GatingFunction/SpringDamperGatingFunction.h>
 
-namespace as64
+namespace as64_
 {
 
   SpringDamperGatingFunction::SpringDamperGatingFunction(double u0, double u_end)
@@ -67,4 +67,4 @@ namespace as64
     return du;
   }
 
-} // namespace as64
+} // namespace as64_

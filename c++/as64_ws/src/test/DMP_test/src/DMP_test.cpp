@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017 as64
+ * Copyright (C) 2017 as64_
  */
 
 #include <ros/ros.h>
@@ -15,6 +15,7 @@
 #include <param_lib/param_lib.h>
 #include <io_lib/io_lib.h>
 #include <signalProcessing_lib/signalProcessing_lib.h>
+#include <plot_lib/plot_lib.h>
 
 #include <utils.h>
 #include <cmd_args.h>
@@ -25,20 +26,19 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "DMP_test");
   ros::NodeHandle nh("~");
 
+  arma::wall_clock timer;
+
   // std::string package_path = ros::package::getPath("dmp_test");
   // std::cout << "package_path = " << package_path << "\n";
 
   // ======  Read parameters from config file  =======
-  std::cout << as64::io_::bold << as64::io_::green << "Reading params from yaml file..." << as64::io_::reset << "\n";
+  std::cout << as64_::io_::bold << as64_::io_::green << "Reading params from yaml file..." << as64_::io_::reset << "\n";
   CMD_ARGS cmd_args;
   cmd_args.parse_cmd_args();
   cmd_args.print();
-  cmd_args.in_data_filename = cmd_args.data_input_path + "/" + cmd_args.in_data_filename;
-  cmd_args.out_data_filename = cmd_args.data_output_path + cmd_args.out_data_filename;
-  if (cmd_args.USE_PHASE_STOP == false) cmd_args.a_py = 0.0;
 
   // ======  Read training data  =======
-  std::cout << as64::io_::bold << as64::io_::green << "Reading training data..." << as64::io_::reset << "\n";
+  std::cout << as64_::io_::bold << as64_::io_::green << "Reading training data..." << as64_::io_::reset << "\n";
   arma::rowvec Time_demo;
   arma::mat yd_data;
   arma::mat dyd_data;
@@ -51,28 +51,33 @@ int main(int argc, char** argv)
   Time_demo = arma::linspace<arma::rowvec>(0,n_data-1,n_data)*Ts;
   double tau = Time_demo(n_data-1);
 
-  std::cout << "number_of_kernels = " << cmd_args.N_kernels << "\n";
-  std::cout << "n_data = " << n_data << "\n";
 
   // ======  Get DMP  =======
-  std::shared_ptr<as64::CanonicalClock> canClockPtr;
-  std::shared_ptr<as64::GatingFunction> shapeAttrGatingPtr;
-  std::shared_ptr<as64::GatingFunction> goalAttrGatingPtr;
-  std::vector<std::shared_ptr<as64::DMP_>> dmp;
+  std::shared_ptr<as64_::CanonicalClock> canClockPtr;
+  std::shared_ptr<as64_::GatingFunction> shapeAttrGatingPtr;
+  std::shared_ptr<as64_::GatingFunction> goalAttrGatingPtr;
+  std::vector<std::shared_ptr<as64_::DMP_>> dmp;
   get_canClock_gatingFuns_DMP(cmd_args, D, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
 
+  for (int i=0;i<D;i++)
+  {
+    std::cout << "DMP " << i+1 << ": number_of_kernels = " << dmp[i]->N_kernels << "\n";
+  }
+  std::cout << "n_data = " << n_data << "\n";
+  
   // ======  Train the DMP  =======
   arma::mat F_offline_train_data(D, n_data);
   arma::mat Fd_offline_train_data(D, n_data);
   arma::rowvec Time_offline_train;
   arma::vec offline_train_mse(D);
 
-  as64::param_::ParamList trainParamList;
+  as64_::param_::ParamList trainParamList;
   trainParamList.setParam("trainMethod", cmd_args.trainMethod);
   trainParamList.setParam("lambda", cmd_args.lambda);
   trainParamList.setParam("P_cov", cmd_args.P_cov);
 
-  std::cout << as64::io_::bold << as64::io_::green << "DMP training..." << as64::io_::reset << "\n";
+  std::cout << as64_::io_::bold << as64_::io_::green << "DMP training..." << as64_::io_::reset << "\n";
+  timer.tic();
   for (int i=0;i<D;i++)
   {
     arma::vec y0 = yd_data.col(0);
@@ -89,6 +94,8 @@ int main(int argc, char** argv)
     }
   }
   Time_offline_train = Time_demo;
+
+  std::cout << "Elapsed time is " << timer.toc() << "\n";
 
   // ======  Simulate DMP  =======
   // Set initial conditions
@@ -134,7 +141,8 @@ int main(int argc, char** argv)
   int iters = 0;
   double dt = cmd_args.dt;
 
-  std::cout << as64::io_::bold << as64::io_::green << "DMP simulation..." << as64::io_::reset << "\n";
+  std::cout << as64_::io_::bold << as64_::io_::green << "DMP simulation..." << as64_::io_::reset << "\n";
+  timer.tic();
   // Start simulation
   while (true)
   {
@@ -213,7 +221,7 @@ int main(int argc, char** argv)
 
     if (t>=tau && iters>=cmd_args.max_iters)
     {
-        std::cout << as64::io_::yellow << as64::io_::bold << "Iteration limit reached. Stopping simulation...\n";
+        std::cout << as64_::io_::yellow << as64_::io_::bold << "Iteration limit reached. Stopping simulation...\n";
         break;
     }
 
@@ -232,6 +240,8 @@ int main(int argc, char** argv)
 
   }
 
+  std::cout << "Elapsed time is " << timer.toc() << "\n";
+
   log_data.Time_demo = Time_demo;
   log_data.yd_data = yd_data;
   log_data.dyd_data = dyd_data;
@@ -245,10 +255,11 @@ int main(int argc, char** argv)
   log_data.F_offline_train_data = F_offline_train_data;
   log_data.Fd_offline_train_data = Fd_offline_train_data;
   log_data.Psi_data_train.resize(D);
+
   for (int i=0;i<D;i++)
   {
     int n_data = Time_offline_train.size();
-    log_data.Psi_data_train[i].resize(cmd_args.N_kernels,n_data);
+    log_data.Psi_data_train[i].resize(dmp[i]->N_kernels,n_data);
     for (int j=0;j<n_data;j++)
     {
       double x = canClockPtr->getPhase(Time_offline_train(j));
@@ -260,7 +271,7 @@ int main(int argc, char** argv)
   for (int i=0;i<D;i++)
   {
     int n_data = log_data.Time.size();
-    log_data.Psi_data[i].resize(cmd_args.N_kernels,n_data);
+    log_data.Psi_data[i].resize(dmp[i]->N_kernels,n_data);
     log_data.Force_term_data.resize(D,n_data);
     for (int j=0;j<n_data;j++)
     {
@@ -275,8 +286,8 @@ int main(int argc, char** argv)
   for (int j=0;j<log_data.Time.size();j++)
   {
     double x = log_data.x_data(j);
-    log_data.goalAttr_data(j) = dmp[0]->shapeAttrGating(x);
-    log_data.shapeAttr_data(j) = dmp[0]->goalAttrGating(x);
+    log_data.goalAttr_data(j) = dmp[0]->goalAttrGating(x);
+    log_data.shapeAttr_data(j) = dmp[0]->shapeAttrGating(x);
   }
 
   // ========  Save results  ===========
@@ -291,7 +302,7 @@ int main(int argc, char** argv)
   {
     arma::rowvec y_robot_data2;
     arma::rowvec yd_data2;
-    as64::spl_::makeSignalsEqualLength(log_data.Time, log_data.y_robot_data.row(i),
+    as64_::spl_::makeSignalsEqualLength(log_data.Time, log_data.y_robot_data.row(i),
             log_data.Time_demo, log_data.yd_data.row(i), log_data.Time,
             y_robot_data2, yd_data2);
     sim_mse(i) = arma::norm(y_robot_data2-yd_data2); // /yd_data2.size();

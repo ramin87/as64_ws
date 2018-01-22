@@ -1,6 +1,6 @@
 #include <DMP_lib/GatingFunction/SigmoidGatingFunction.h>
 
-namespace as64
+namespace as64_
 {
 
   SigmoidGatingFunction::SigmoidGatingFunction(double u0, double u_end)
@@ -48,4 +48,4 @@ namespace as64
     return du;
   }
 
-} // namespace as64
+} // namespace as64_

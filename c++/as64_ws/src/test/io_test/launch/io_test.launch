@@ -1,8 +1,8 @@
 <launch>
-    <arg name="node_name" default="IO_test_node" />
+    <arg name="node_name" default="io_test_node" />
 
     <node pkg="io_test"
-          type="IO_test_node"
+          type="io_test_node"
           name="$(arg node_name)"
           output="screen">
 

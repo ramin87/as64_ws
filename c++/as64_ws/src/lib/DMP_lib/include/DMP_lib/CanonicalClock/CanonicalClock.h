@@ -11,7 +11,7 @@
 
 #include <armadillo>
 
-namespace as64
+namespace as64_
 {
 
 class CanonicalClock
@@ -74,6 +74,6 @@ protected:
 
 }; // class CanonicalClock
 
-} // namespace as64
+} // namespace as64_
 
 #endif // CANONICAL_CLOCK_H

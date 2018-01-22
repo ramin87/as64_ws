@@ -3,7 +3,7 @@
 
 #include <DMP_lib/DMP/DMP_.h>
 
-namespace as64
+namespace as64_
 {
 
 class DMP_plus: public DMP_
@@ -26,13 +26,14 @@ public:
 
   virtual arma::vec kernelFunction(double x) const;
 
+  virtual void parseExtraArgs(const param_::ParamList *paramListPtr);
+
 private:
   arma::vec b; ///< N_kernelsx1 vector with the bias term for each weight
   int k_trunc_kernel; ///< gain multiplied by the std of each kernel to define the truncated kernels width
-
-  virtual void parseExtraArgs(const param_::ParamList *paramListPtr);
+  
 }; // class DMP_plus
 
-} // namespace as64
+} // namespace as64_
 
 #endif // DYNAMICAL_MOVEMENT_PRIMITIVE_PLUS_H

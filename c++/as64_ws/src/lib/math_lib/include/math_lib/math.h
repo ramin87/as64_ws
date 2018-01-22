@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <armadillo>
 
-namespace as64
+namespace as64_
 {
 
 Eigen::Matrix3d vec2ssMat(const Eigen::Vector3d &v);

@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   io_lib
   param_lib
   signalProcessing_lib
+  plot_lib
 )
 
 # BHand need to know that we are on Linux
@@ -67,7 +68,7 @@ target_link_libraries(DMP_canonicalClock_test
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
   DMP-lib
-  IO-lib
+  io-lib
 )
 
 
@@ -88,7 +89,7 @@ target_link_libraries(DMP_gatingFunction_test
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
   DMP-lib
-  IO-lib
+  io-lib
 )
 
 # *************************************************
@@ -108,7 +109,54 @@ target_link_libraries(DMP_test
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
   DMP-lib
-  IO-lib
+  io-lib
   param-lib
   signalProcessing-lib
+  plot-lib
+)
+
+# *************************************************
+# *************************************************
+
+add_executable(DMP_CartPos_test
+  src/DMP_CartPos_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
+)
+
+add_dependencies(DMP_CartPos_test
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(DMP_CartPos_test
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
+  DMP-lib
+  io-lib
+  param-lib
+  signalProcessing-lib
+  plot-lib
+)
+
+# *************************************************
+# *************************************************
+
+add_executable(DMP_orient_test
+  src/DMP_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
+)
+
+add_dependencies(DMP_orient_test
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(DMP_orient_test
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
+  DMP-lib
+  io-lib
+  param-lib
+  signalProcessing-lib
+  plot-lib
 )

@@ -9,7 +9,7 @@
 
 #include <armadillo>
 
-namespace as64
+namespace as64_
 {
 
 namespace spl_
@@ -44,6 +44,6 @@ namespace spl_
 
 } // namespace spl_
 
-} // namespace as64
+} // namespace as64_
 
 #endif // SIGNAL_PROCESSING_LIB_64_H

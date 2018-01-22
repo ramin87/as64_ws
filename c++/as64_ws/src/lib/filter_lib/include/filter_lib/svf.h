@@ -4,7 +4,7 @@
 #include <cmath>
 #include <Eigen/Dense>
 
-namespace as64
+namespace as64_
 {
 
 class SingularValueFilter
@@ -26,6 +26,6 @@ private:
     double v; // shape factor
 };
 
-} // namespace as64
+} // namespace as64_
 
 #endif // SINGULAR_VALUE_FILTER_H

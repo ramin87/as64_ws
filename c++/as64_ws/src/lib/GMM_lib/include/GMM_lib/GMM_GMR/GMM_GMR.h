@@ -16,7 +16,7 @@
 #include <iostream>
 #include <cstdlib>
 
-namespace as64
+namespace as64_
 {
 	
 struct GMM_GMR_PARAMS
@@ -51,6 +51,6 @@ private:
 	const double realmin;
 };
 
-}  // namespace as64
+}  // namespace as64_
 
 #endif  // GAUSSIAN_MIXTURE_MODELS_WITH_GAUSSIAN_MIXTURE_REGRESSION_H

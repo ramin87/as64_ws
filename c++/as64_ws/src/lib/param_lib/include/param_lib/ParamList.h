@@ -7,7 +7,7 @@
 #include <sstream>
 #include <ctime>
 
-namespace as64
+namespace as64_
 {
 
 namespace param_
@@ -97,6 +97,6 @@ void ParamList::setParam(const char *key, Type &value) const
 
 } // namespace param_
 
-} // namespace as64
+} // namespace as64_
 
 #endif // PARAMETERS_LIST_64_H

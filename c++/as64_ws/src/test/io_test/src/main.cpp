@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017 as64
+ * Copyright (C) 2017 as64_
  */
 
 #include <ros/ros.h>

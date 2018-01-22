@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017 as64
+ * Copyright (C) 2017 as64_
  */
 
 #include <ros/ros.h>
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
   double elapsed_time;
 
   double tau = 4.0;
-  std::shared_ptr<as64::CanonicalClock> canClockPtr(new as64::LinCanonicalClock());
+  std::shared_ptr<as64_::CanonicalClock> canClockPtr(new as64_::LinCanonicalClock());
   canClockPtr->init(tau);
 
   double t = 1.8;

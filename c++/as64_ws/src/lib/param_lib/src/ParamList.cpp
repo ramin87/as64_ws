@@ -1,6 +1,6 @@
 #include <param_lib/ParamList.h>
 
-namespace as64
+namespace as64_
 {
 
 namespace param_
@@ -61,4 +61,4 @@ namespace param_
 
 } // namespace param_
 
-} // namespace as64
+} // namespace as64_

@@ -11,7 +11,10 @@
 #include <cmath>
 #include <armadillo>
 
-namespace as64
+namespace as64_
+{
+
+namespace opt_
 {
 
 /** \brief Performs kernel based LS (Least Squares)
@@ -37,7 +40,8 @@ arma::mat normKernelLS(const arma::mat &Psi, const arma::mat &X, const arma::row
 */
 arma::mat normKernelRLS(const arma::mat &Psi, const arma::mat &X, const arma::rowvec &Fd, double zero_tol=0.0);
 
+} // namespace opt_
 
-} // namespace as64
+} // namespace as64_
 
 #endif // LEAST_SQUARES_LEARNING_H

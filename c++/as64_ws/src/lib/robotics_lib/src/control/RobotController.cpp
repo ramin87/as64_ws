@@ -9,7 +9,7 @@
 #include <time_lib/time.h>
 #include <yaml-cpp/yaml.h>
 
-namespace as64
+namespace as64_
 {
 RobotController::Params::Params()
 {
@@ -279,10 +279,10 @@ void RobotController::measure()
 	R = pose.submat(0, 0, 2, 2);
 
 	//update current orientation
-	Q = as64::rotm2quat(R);
+	Q = as64_::rotm2quat(R);
 	// update orientation error
 	arma::vec te=(Q.t()*Q_ref); if (te(0)<0.0) Q_ref=-Q_ref; //avoid discontinuity
-	Qdiff = as64::quatDiff(Q, Q_ref);
+	Qdiff = as64_::quatDiff(Q, Q_ref);
 	e_o = -2.0*Qdiff.rows(1, 3);
 }
 
@@ -406,4 +406,4 @@ bool RobotController::stop()
 	std::cout << "[RobotController::stop()]: Controller stopped...\n";
 }
 
-} // namespace as64
+} // namespace as64_

@@ -11,7 +11,7 @@
 
 #include <DMP_lib/GatingFunction/GatingFunction.h>
 
-namespace as64
+namespace as64_
 {
 
 class SpringDamperGatingFunction: public GatingFunction
@@ -49,6 +49,6 @@ public:
 
 }; // class SpringDamperGatingFunction
 
-} // namespace as64
+} // namespace as64_
 
 #endif // SPRING_DAMPER_GATING_FUNCTION_H

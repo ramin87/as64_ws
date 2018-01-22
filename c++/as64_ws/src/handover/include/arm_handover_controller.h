@@ -60,7 +60,7 @@ public:
 	// *******************************
 	// *********    TIMER   **********
 	// *******************************
-	as64::TIMER timer;
+	as64_::TIMER timer;
 	double average_cycle_time;
 	double min_cycle_time;
 	double max_cycle_time;
@@ -115,7 +115,7 @@ public:
 	LogData logData;
 	CMD_ARGS cmd_args;
 
-	as64::MovingWinMeanFilter obj_weight_filter;
+	as64_::MovingWinMeanFilter obj_weight_filter;
 
 	Eigen::Matrix<double, JOINT_SIZE, 1> q_prev;
 
@@ -164,8 +164,8 @@ private:
 
 	double Ts;
 
-	as64::JLAv jlav;
-	as64::SingularValueFilter svf;
+	as64_::JLAv jlav;
+	as64_::SingularValueFilter svf;
 
 	ros::NodeHandle node_handle_;
 	ros::Subscriber sub;

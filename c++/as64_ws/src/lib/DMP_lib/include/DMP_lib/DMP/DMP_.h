@@ -48,7 +48,7 @@
 #include <DMP_lib/GatingFunction/GatingFunction.h>
 #include <param_lib/param_lib.h>
 
-namespace as64
+namespace as64_
 {
 
 class DMP_
@@ -244,22 +244,6 @@ public:
    */
   virtual arma::vec kernelFunction(double x) const;
 
-
-protected:
-  std::shared_ptr<CanonicalClock> canClockPtr; ///< pointer to the canonical clock
-  std::shared_ptr<GatingFunction> shapeAttrGatingPtr; ///< pointer to gating function for the shape attractor
-  std::shared_ptr<GatingFunction> goalAttrGatingPtr; ///< pointer to gating function for the goal attractor
-
-  long double zero_tol; ///< tolerance value used to avoid divisions with very small numbers
-  double a_s; ///< scaling factor to ensure smaller changes in the accelaration to improve the training
-  double kernelStdScaling; ///< scaling factor for the kernels std
-
-  // training params
-  std::string trainMethod; ///< training method for weights of the DMP forcing term
-  double lambda; ///< forgetting factor in recursive training methods
-  double P_cov; ///< Initial value of covariance matrix in recursive training methods
-
-
   /** \brief Sets the centers for the kernel functions of the DMP according to the canonical system.
    */
   void setCenters();
@@ -278,8 +262,22 @@ protected:
    */
   virtual void parseExtraArgs(const param_::ParamList *paramListPtr);
 
+protected:
+  std::shared_ptr<CanonicalClock> canClockPtr; ///< pointer to the canonical clock
+  std::shared_ptr<GatingFunction> shapeAttrGatingPtr; ///< pointer to gating function for the shape attractor
+  std::shared_ptr<GatingFunction> goalAttrGatingPtr; ///< pointer to gating function for the goal attractor
+
+  long double zero_tol; ///< tolerance value used to avoid divisions with very small numbers
+  double a_s; ///< scaling factor to ensure smaller changes in the accelaration to improve the training
+  double kernelStdScaling; ///< scaling factor for the kernels std
+
+  // training params
+  std::string trainMethod; ///< training method for weights of the DMP forcing term
+  double lambda; ///< forgetting factor in recursive training methods
+  double P_cov; ///< Initial value of covariance matrix in recursive training methods
+
 }; // class DMP_
 
-} // namespace as64
+} // namespace as64_
 
 #endif // ABSTRACT_DYNAMICAL_MOVEMENT_PRIMITIVE_H

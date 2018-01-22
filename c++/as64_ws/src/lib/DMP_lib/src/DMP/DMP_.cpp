@@ -1,7 +1,7 @@
 #include <DMP_lib/DMP/DMP_.h>
 #include <Optimization_lib/Optimization_lib.h>
 
-namespace as64
+namespace as64_
 {
 
   DMP_::DMP_(int N_kernels, double a_z, double b_z, std::shared_ptr<CanonicalClock> canClockPtr,
@@ -119,15 +119,15 @@ namespace as64
     std::string trainMethod = this->trainMethod;
     if (trainMethod.compare("LWR")==0)
     {
-      this->w = LWR(Psi, s, Fd, this->zero_tol);
+      this->w = opt_::LWR(Psi, s, Fd, this->zero_tol);
     }
     else if (trainMethod.compare("RLWR")==0)
     {
-      this->w = RLWR(Psi, s, Fd, this->lambda, this->P_cov, this->zero_tol);
+      this->w = opt_::RLWR(Psi, s, Fd, this->lambda, this->P_cov, this->zero_tol);
     }
     else if (trainMethod.compare("LS")==0)
     {
-      this->w = normKernelLS(Psi, s, Fd, this->zero_tol);
+      this->w = opt_::normKernelLS(Psi, s, Fd, this->zero_tol);
     }
     else
     {

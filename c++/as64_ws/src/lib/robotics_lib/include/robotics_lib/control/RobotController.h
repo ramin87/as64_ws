@@ -21,7 +21,7 @@
 #include <autharl_core/robot/controller.h>
 
 
-namespace as64
+namespace as64_
 {
 
 class RobotController : public arl::robot::Controller
@@ -112,6 +112,6 @@ private:
 	RefInput refIn;
 };
 
-} // namespace as64
+} // namespace as64_
 
 #endif // ROBOT_CONTROLLER_64_H

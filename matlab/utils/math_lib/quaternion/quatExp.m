@@ -9,7 +9,7 @@ function Q = quatExp(v_rot)
   norm_v_rot = norm(v_rot);
   theta = norm_v_rot;
   
-  if (norm_v_rot > 1e-15)
+  if (norm_v_rot > 1e-16)
     Q(1) = cos(theta/2);
     Q(2:4) = sin(theta/2)*v_rot/norm_v_rot;
   else

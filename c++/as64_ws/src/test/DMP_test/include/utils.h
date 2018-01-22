@@ -19,10 +19,10 @@
 #include <log_data.h>
 
 void get_canClock_gatingFuns_DMP(const CMD_ARGS &cmd_args, int D, double tau,
-  std::shared_ptr<as64::CanonicalClock> &canClockPtr,
-  std::shared_ptr<as64::GatingFunction> &shapeAttrGatingPtr,
-  std::shared_ptr<as64::GatingFunction> &goalAttrGatingPtr,
-  std::vector<std::shared_ptr<as64::DMP_>> &dmp);
+  std::shared_ptr<as64_::CanonicalClock> &canClockPtr,
+  std::shared_ptr<as64_::GatingFunction> &shapeAttrGatingPtr,
+  std::shared_ptr<as64_::GatingFunction> &goalAttrGatingPtr,
+  std::vector<std::shared_ptr<as64_::DMP_>> &dmp);
 
 
 void load_data(const std::string &data_file_name, arma::mat &yd_data, arma::mat &dyd_data,

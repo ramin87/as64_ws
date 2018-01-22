@@ -12,7 +12,7 @@
 
 #include <DMP_lib/CanonicalClock/CanonicalClock.h>
 
-namespace as64
+namespace as64_
 {
 
 class LinCanonicalClock: public CanonicalClock
@@ -61,6 +61,6 @@ private:
 
 }; // class LinCanonicalClock
 
-} // namespace as64
+} // namespace as64_
 
 #endif // LINEAR_CANONICAL_CLOCK_H

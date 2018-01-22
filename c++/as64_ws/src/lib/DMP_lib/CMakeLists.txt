@@ -7,9 +7,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 
 find_package(catkin REQUIRED COMPONENTS
-optimization_lib
-param_lib
-signalProcessing_lib
+  optimization_lib
+  param_lib
+  signalProcessing_lib
+  math_lib
 )
 
 catkin_package(
@@ -19,6 +20,7 @@ catkin_package(
 
 include_directories(
   include
+  /usr/include/eigen3
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -38,6 +40,8 @@ add_library(DMP-lib
   src/DMP/DMP_bio.cpp
   src/DMP/DMP_plus.cpp
   src/DMP/DMP_Shannon.cpp
+  src/DMP/DMP_CartPos.cpp
+  src/DMP/DMP_orient.cpp
 
   src/DMP_utils.cpp
 )
@@ -53,4 +57,5 @@ target_link_libraries(DMP-lib
   optimization-lib
   param-lib
   signalProcessing-lib
+  math-lib
 )

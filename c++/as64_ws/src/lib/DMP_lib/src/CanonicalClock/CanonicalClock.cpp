@@ -1,6 +1,6 @@
 #include <DMP_lib/CanonicalClock/CanonicalClock.h>
 
-namespace as64
+namespace as64_
 {
 
   CanonicalClock::CanonicalClock()
@@ -23,4 +23,4 @@ namespace as64
     this->setTau(tau);
   }
 
-} // namespace as64
+} // namespace as64_

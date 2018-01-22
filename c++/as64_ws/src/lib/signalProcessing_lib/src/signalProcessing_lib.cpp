@@ -1,6 +1,6 @@
 #include <signalProcessing_lib/signalProcessing_lib.h>
 
-namespace as64
+namespace as64_
 {
 
 namespace spl_
@@ -30,4 +30,4 @@ namespace spl_
 
 } // namespace spl_
 
-} // namespace as64
+} // namespace as64_

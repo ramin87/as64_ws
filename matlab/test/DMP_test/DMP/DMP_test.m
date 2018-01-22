@@ -64,7 +64,7 @@ if (cmd_args.OFFLINE_DMP_TRAINING_enable)
 
         dmp{i}.setTrainingParams(cmd_args.trainMethod, trainParamsName, trainParamsValue);
         [offline_train_mse(i), F_train, Fd_train] = dmp{i}.train(T, yd, dyd, ddyd, y0, g0);      
-
+            
         F_offline_train_data = [F_offline_train_data; F_train];
         Fd_offline_train_data = [Fd_offline_train_data; Fd_train];
 

@@ -11,7 +11,7 @@
 
 #include <DMP_lib/GatingFunction/GatingFunction.h>
 
-namespace as64
+namespace as64_
 {
 
 class ConstGatingFunction: public GatingFunction
@@ -49,6 +49,6 @@ public:
 
 }; // class ConstGatingFunction
 
-} // namespace as64
+} // namespace as64_
 
 #endif // CONSTANT_GATING_FUNCTION_H

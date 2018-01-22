@@ -1,6 +1,6 @@
 #include <filter_lib/svf.h>
 
-namespace as64
+namespace as64_
 {
 
 /**
@@ -65,4 +65,4 @@ Eigen::MatrixXd SingularValueFilter::inv(Eigen::MatrixXd M) const
   return V*S*U.transpose();
 }
 
-} // namespace as64
+} // namespace as64_

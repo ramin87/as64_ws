@@ -1,6 +1,6 @@
 #include <DMP_lib/CanonicalClock/LinCanonicalClock.h>
 
-namespace as64
+namespace as64_
 {
 
   LinCanonicalClock::LinCanonicalClock(double tau)
@@ -38,4 +38,4 @@ namespace as64
     return x;
   }
 
-} // namespace as64
+} // namespace as64_

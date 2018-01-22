@@ -1,6 +1,6 @@
 #include <DMP_lib/DMP_utils.h>
 
-namespace as64
+namespace as64_
 {
 
 std::shared_ptr<CanonicalClock> getCanClock(const std::string &CAN_CLOCK_TYPE, double tau)
@@ -89,4 +89,4 @@ std::shared_ptr<GatingFunction> getGatingFun(const std::string &GATTING_FUN_TYPE
   return gatingFunPtr;
 }
 
-} // namespace as64
+} // namespace as64_

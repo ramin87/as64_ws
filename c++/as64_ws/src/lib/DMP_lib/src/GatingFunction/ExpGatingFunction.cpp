@@ -1,6 +1,6 @@
 #include <DMP_lib/GatingFunction/ExpGatingFunction.h>
 
-namespace as64
+namespace as64_
 {
 
   ExpGatingFunction::ExpGatingFunction(double u0, double u_end)
@@ -58,4 +58,4 @@ namespace as64
     return du;
   }
 
-} // namespace as64
+} // namespace as64_

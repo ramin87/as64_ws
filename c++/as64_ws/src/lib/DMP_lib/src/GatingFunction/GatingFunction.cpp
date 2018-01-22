@@ -1,6 +1,6 @@
 #include <DMP_lib/GatingFunction/GatingFunction.h>
 
-namespace as64
+namespace as64_
 {
 
   GatingFunction::GatingFunction()
@@ -24,4 +24,4 @@ namespace as64
   //arma::rowvec GatingFunction::getOutputDot(const arma::rowvec &x) const = 0;
 
 
-} // namespace as64
+} // namespace as64_

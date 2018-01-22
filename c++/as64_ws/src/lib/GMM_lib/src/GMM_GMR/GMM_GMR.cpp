@@ -4,7 +4,7 @@
 
 #include <GMM_lib/GMM_GMR/GMM_GMR.h>
 
-namespace as64
+namespace as64_
 {
 
 GMM_GMR::GMM_GMR():realmin(1e-300)
@@ -156,4 +156,4 @@ Eigen::VectorXd GMM_GMR::gaussPDF(const Eigen::MatrixXd &X, const Eigen::VectorX
 }
 
   
-}  // namespace as64
+}  // namespace as64_

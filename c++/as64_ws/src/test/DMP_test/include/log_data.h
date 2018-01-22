@@ -1,5 +1,5 @@
-#ifndef LOG_DATA_H
-#define LOG_DATA_H
+#ifndef DMP_TEST_LOG_DATA_H
+#define DMP_TEST_LOG_DATA_H
 
 #include <iostream>
 #include <cstdlib>
@@ -8,7 +8,7 @@
 #include <memory>
 
 // #include <DMP_lib/DMP_lib.h>
-#include <io_lib/io_utils.h>
+#include <io_lib/io_lib.h>
 #include <cmd_args.h>
 
 struct LogData
