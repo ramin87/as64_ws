@@ -67,7 +67,7 @@ class GnuplotException : public std::runtime_error
 
 class Gnuplot
 {
-  protected:
+public:
 
     //----------------------------------------------------------------------------------
     // member data
@@ -1092,9 +1092,11 @@ Gnuplot& Gnuplot::savetops(const std::string &filename)
 Gnuplot& Gnuplot::set_legend(const std::string &position)
 {
     std::ostringstream cmdstr;
-    cmdstr << "set key " << position;
+    cmdstr << "set key " << position; // << " vertical title \"Plot\ 1"" << "\nshow key\n";
 
     cmd(cmdstr.str());
+
+    replot();
 
     return *this;
 }

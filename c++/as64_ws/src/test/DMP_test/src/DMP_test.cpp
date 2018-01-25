@@ -59,12 +59,6 @@ int main(int argc, char** argv)
   std::vector<std::shared_ptr<as64_::DMP_>> dmp;
   get_canClock_gatingFuns_DMP(cmd_args, D, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
 
-  for (int i=0;i<D;i++)
-  {
-    std::cout << "DMP " << i+1 << ": number_of_kernels = " << dmp[i]->N_kernels << "\n";
-  }
-  std::cout << "n_data = " << n_data << "\n";
-  
   // ======  Train the DMP  =======
   arma::mat F_offline_train_data(D, n_data);
   arma::mat Fd_offline_train_data(D, n_data);
@@ -96,6 +90,12 @@ int main(int argc, char** argv)
   Time_offline_train = Time_demo;
 
   std::cout << "Elapsed time is " << timer.toc() << "\n";
+
+  for (int i=0;i<D;i++)
+  {
+    std::cout << "DMP " << i+1 << ": number_of_kernels = " << dmp[i]->N_kernels << "\n";
+  }
+  std::cout << "n_data = " << n_data << "\n";
 
   // ======  Simulate DMP  =======
   // Set initial conditions

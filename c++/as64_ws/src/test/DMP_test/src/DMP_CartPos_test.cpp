@@ -45,7 +45,7 @@ int main(int argc, char** argv)
   load_data(cmd_args.in_CartPos_data_filename, yd_data, dyd_data, ddyd_data, Time_demo, cmd_args.binary);
 
   int n_data = Time_demo.size();
-  int D = yd_data.n_rows;
+  int Dp = yd_data.n_rows;
   double Ts = arma::min(arma::diff(Time_demo));
   Time_demo = arma::linspace<arma::rowvec>(0,n_data-1,n_data)*Ts;
   double tau = Time_demo(n_data-1);
@@ -56,22 +56,17 @@ int main(int argc, char** argv)
   std::shared_ptr<as64_::GatingFunction> shapeAttrGatingPtr;
   std::shared_ptr<as64_::GatingFunction> goalAttrGatingPtr;
   std::vector<std::shared_ptr<as64_::DMP_>> dmp;
-  get_canClock_gatingFuns_DMP(cmd_args, D, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
+  get_canClock_gatingFuns_DMP(cmd_args, Dp, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
 
   std::shared_ptr<as64_::DMP_CartPos> dmpCartPos(new as64_::DMP_CartPos());
   dmpCartPos->init(dmp);
 
-  for (int i=0;i<D;i++)
-  {
-    std::cout << "DMP " << i+1 << ": number_of_kernels = " << dmp[i]->N_kernels << "\n";
-  }
-  std::cout << "n_data = " << n_data << "\n";
 
   // ======  Train the DMP  =======
-  arma::mat F_offline_train_data(D, n_data);
-  arma::mat Fd_offline_train_data(D, n_data);
+  arma::mat F_offline_train_data(Dp, n_data);
+  arma::mat Fd_offline_train_data(Dp, n_data);
   arma::rowvec Time_offline_train;
-  arma::vec offline_train_mse(D);
+  arma::vec offline_train_mse(Dp);
 
   as64_::param_::ParamList trainParamList;
   trainParamList.setParam("trainMethod", cmd_args.trainMethod);
@@ -85,6 +80,14 @@ int main(int argc, char** argv)
   timer.tic();
   offline_train_mse= dmpCartPos->train(Time_demo, yd_data, dyd_data, ddyd_data, y0, g);
   std::cout << "Elapsed time is " << timer.toc() << "\n";
+
+
+  for (int i=0;i<Dp;i++)
+  {
+    std::cout << "DMP " << i+1 << ": number_of_kernels = " << dmp[i]->N_kernels << "\n";
+  }
+  std::cout << "n_data = " << n_data << "\n";
+
 
   for (int j=0; j<Time_demo.size(); j++)
   {
@@ -100,31 +103,31 @@ int main(int argc, char** argv)
   arma::vec g0 = cmd_args.goal_scale*yd_data.col(n_data-1);
   g = g0;
   arma::vec g2 = g0;
-  arma::vec dg = arma::vec().zeros(D);
+  arma::vec dg = arma::vec().zeros(Dp);
   double x = 0.0;
   double dx = 0.0;
   arma::vec y = y0;
-  arma::vec dy = arma::vec().zeros(D);
-  arma::vec ddy = arma::vec().zeros(D);
+  arma::vec dy = arma::vec().zeros(Dp);
+  arma::vec ddy = arma::vec().zeros(Dp);
   double t = 0.0;
   arma::vec y_robot = y0;
-  arma::vec dy_robot = arma::vec().zeros(D);
-  arma::vec ddy_robot = arma::vec().zeros(D);
-  arma::vec dz = arma::vec().zeros(D);
-  arma::vec z = arma::vec().zeros(D);
+  arma::vec dy_robot = arma::vec().zeros(Dp);
+  arma::vec ddy_robot = arma::vec().zeros(Dp);
+  arma::vec dz = arma::vec().zeros(Dp);
+  arma::vec z = arma::vec().zeros(Dp);
 
-  arma::vec F = arma::vec().zeros(D);
-  arma::vec Fd = arma::vec().zeros(D);
+  arma::vec F = arma::vec().zeros(Dp);
+  arma::vec Fd = arma::vec().zeros(Dp);
 
-  arma::vec Fdist = arma::vec().zeros(D);
+  arma::vec Fdist = arma::vec().zeros(Dp);
 
   // create log_data struct
   LogData log_data;
 
-  log_data.DMP_w.resize(D);
-  log_data.DMP_c.resize(D);
-  log_data.DMP_h.resize(D);
-  for (int i=0;i<D;i++)
+  log_data.DMP_w.resize(Dp);
+  log_data.DMP_c.resize(Dp);
+  log_data.DMP_h.resize(Dp);
+  for (int i=0;i<Dp;i++)
   {
     log_data.DMP_w[i] = dmp[i]->w;
     log_data.DMP_c[i] = dmp[i]->c;
@@ -163,10 +166,10 @@ int main(int argc, char** argv)
 
     // DMP simulation
     arma::vec y_c = cmd_args.a_py*(y_robot-y);
-    arma::vec z_c = arma::vec(D).zeros();
+    arma::vec z_c = arma::vec(Dp).zeros();
 
-    arma::vec X = arma::vec(D).fill(x);
-    arma::vec dX = arma::vec(D).zeros();
+    arma::vec X = arma::vec(Dp).fill(x);
+    arma::vec dX = arma::vec(Dp).zeros();
 
     arma::mat statesDot;
     statesDot = dmpCartPos->getStatesDot(X, y, z, y0, g, y_c, z_c);
@@ -243,16 +246,16 @@ int main(int argc, char** argv)
   log_data.dyd_data = dyd_data;
   log_data.ddyd_data = ddyd_data;
 
-  log_data.D = D;
+  log_data.D = Dp;
   log_data.Ts = Ts;
   log_data.g0 = g0;
 
   log_data.Time_offline_train = Time_offline_train;
   log_data.F_offline_train_data = F_offline_train_data;
   log_data.Fd_offline_train_data = Fd_offline_train_data;
-  log_data.Psi_data_train.resize(D);
+  log_data.Psi_data_train.resize(Dp);
 
-  for (int i=0;i<D;i++)
+  for (int i=0;i<Dp;i++)
   {
     int n_data = Time_offline_train.size();
     log_data.Psi_data_train[i].resize(dmp[i]->N_kernels,n_data);
@@ -263,12 +266,12 @@ int main(int argc, char** argv)
     }
   }
 
-  log_data.Psi_data.resize(D);
-  for (int i=0;i<D;i++)
+  log_data.Psi_data.resize(Dp);
+  for (int i=0;i<Dp;i++)
   {
     int n_data = log_data.Time.size();
     log_data.Psi_data[i].resize(dmp[i]->N_kernels,n_data);
-    log_data.Force_term_data.resize(D,n_data);
+    log_data.Force_term_data.resize(Dp,n_data);
     for (int j=0;j<n_data;j++)
     {
       double x = log_data.x_data(j);
@@ -293,8 +296,8 @@ int main(int argc, char** argv)
   log_data.save(cmd_args.out_CartPos_data_filename, false, 10);
   std::cout << "[DONE]!\n";
 
-  arma::vec sim_mse(D);
-  for (int i=0;i<D;i++)
+  arma::vec sim_mse(Dp);
+  for (int i=0;i<Dp;i++)
   {
     arma::rowvec y_robot_data2;
     arma::rowvec yd_data2;

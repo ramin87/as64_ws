@@ -44,4 +44,5 @@ add_dependencies(filter-lib
 target_link_libraries(filter-lib
   ${catkin_LIBRARIES}
   #orocos-kdl
+  armadillo
 )

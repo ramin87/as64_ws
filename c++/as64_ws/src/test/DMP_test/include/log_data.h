@@ -30,6 +30,7 @@ struct LogData
   arma::rowvec Time;
   arma::mat y_data;
   arma::mat dy_data;
+  arma::mat ddy_data;
   arma::mat z_data;
   arma::mat dz_data;
   arma::rowvec x_data;
@@ -49,6 +50,8 @@ struct LogData
   std::vector<arma::mat> DMP_c;
   std::vector<arma::mat> DMP_h;
 
+  bool poseDataFlag;
+  
   CMD_ARGS cmd_args;
 
   LogData();

@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   param_lib
   signalProcessing_lib
   plot_lib
+  math_lib
 )
 
 # BHand need to know that we are on Linux
@@ -49,6 +50,7 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
+  /usr/include/eigen3
 )
 
 # *************************************************
@@ -142,7 +144,7 @@ target_link_libraries(DMP_CartPos_test
 # *************************************************
 
 add_executable(DMP_orient_test
-  src/DMP_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
+  src/DMP_orient_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
 )
 
 add_dependencies(DMP_orient_test
@@ -159,4 +161,5 @@ target_link_libraries(DMP_orient_test
   param-lib
   signalProcessing-lib
   plot-lib
+  math-lib
 )

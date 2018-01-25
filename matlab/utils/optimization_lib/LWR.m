@@ -25,8 +25,9 @@ function w = LWR(Psi, X, Fd, zero_tol)
 
   for k=1:N_kernels
       X_Psi = X .* repmat(Psi(k,:), size(X,1), 1);
-      wk = (X_Psi*X' + zero_tol) \ X_Psi*Fd';
       w(k,:) = ((X_Psi*X' + zero_tol) \ X_Psi*Fd')';
+      
+%       w(k,:) = (pinv(X_Psi*X' + zero_tol) * X_Psi*Fd')';
   end
 
 end

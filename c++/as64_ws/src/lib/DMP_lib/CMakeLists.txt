@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   param_lib
   signalProcessing_lib
   math_lib
+  plot_lib
+  io_lib
 )
 
 catkin_package(
@@ -58,4 +60,6 @@ target_link_libraries(DMP-lib
   param-lib
   signalProcessing-lib
   math-lib
+  plot-lib
+  io-lib
 )

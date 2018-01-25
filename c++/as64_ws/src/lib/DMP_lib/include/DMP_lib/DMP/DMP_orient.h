@@ -101,8 +101,8 @@ public:
    * velocity and acceleration data in \a Y_data, \a dY_data and \a
    * ddY_data need not be sequantial in time.
    */
-  arma::vec train(const arma::rowvec &Time, const arma::mat &Y_data,
-                  const arma::mat &dY_data, const arma::mat &ddY_data,
+  arma::vec train(const arma::rowvec &Time, const arma::mat &Q_data,
+                  const arma::mat &v_rot_data, const arma::mat &dv_rot_data,
                   const arma::vec &Q0, const arma::vec &Qg);
 
 
@@ -127,8 +127,8 @@ public:
    * @param[in] Yg: Goal Cartesian position.
    * @param[out] Fd: Desired value of the scaled forcing term.
    */
-  arma::vec calcFd(const arma::vec &X, const arma::vec &Q, const arma::vec &dY,
-                  const arma::vec &ddY, const arma::vec &Q0, const arma::vec &Qg) const;
+  arma::vec calcFd(const arma::vec &X, const arma::vec &Q, const arma::vec &v_rot,
+                  const arma::vec &dv_rot, const arma::vec &Q0, const arma::vec &Qg) const;
 
 
   arma::vec learnedForcingTerm(const arma::vec &X, const arma::vec &Q0, const arma::vec &Qg) const;
@@ -178,7 +178,7 @@ public:
    * @param[out] dZ: Derivative of the \a z state of the DMP.
    * @param[out] dX: Derivative of the state variable.
    */
-  arma::mat getStatesDot(const arma::vec &X, const arma::vec &Q, const arma::vec &Z,
+  std::vector<arma::vec> getStatesDot(const arma::vec &X, const arma::vec &Q, const arma::vec &eta,
                               const arma::vec &Q0, const arma::vec &Qg,
                               const arma::vec &Q_c, const arma::vec &eta_c) const;
 

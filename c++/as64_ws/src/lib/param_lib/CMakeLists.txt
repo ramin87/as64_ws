@@ -32,6 +32,7 @@ include_directories(
 
 add_library(param-lib
   src/ParamList.cpp
+  src/parser.cpp
 )
 
 add_dependencies(param-lib
@@ -42,5 +43,5 @@ add_dependencies(param-lib
 target_link_libraries(param-lib
   ${catkin_LIBRARIES}
   #orocos-kdl
-  #armadillo
+  armadillo
 )

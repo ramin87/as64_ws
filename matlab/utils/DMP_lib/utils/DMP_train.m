@@ -46,15 +46,7 @@ function [train_error, F, Fd] = DMP_train(dmp, Time, yd_data, dyd_data, ddyd_dat
     for i=1:size(F,2)
         F(i) = dmp.learnedForcingTerm(x(i), y0, g);
     end
-    
-%     N_kernels = dmp.N_kernels
-%     c = dmp.c(1:10)'
-%     h = dmp.h(1:10)'
-%     w = dmp.w(1:10)'
-%     x = x(1:10)
-%     s = s(1:10)
-%     Fd = Fd(1:10)
-%     F = F(1:10)
+
 
     train_error = norm(F-Fd)/length(F);
 

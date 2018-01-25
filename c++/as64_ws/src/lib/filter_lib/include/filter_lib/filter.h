@@ -1,13 +1,10 @@
-#ifndef FILTER_LIB_FILTER_64_H
-#define FILTER_LIB_FILTER_64_H
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#ifndef SP_FILTER_H
+#define SP_FILTER_H
 
-#include <filter_lib/movingWinMeanFilter.h>
-#include <filter_lib/svf.h>
-
-namespace as64_
-{
+#include <armadillo>
 
 
-} // namespace as64_
-
-#endif // FILTER_LIB_FILTER_64_H
+#endif

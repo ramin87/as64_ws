@@ -42,6 +42,8 @@
 #include <iomanip>
 #include <memory>
 #include <exception>
+#include <fstream>
+#include <sstream>
 #include <armadillo>
 
 #include <DMP_lib/CanonicalClock/CanonicalClock.h>

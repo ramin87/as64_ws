@@ -110,7 +110,7 @@ Eigen::Vector4d quatExp(const Eigen::Vector3d &v_rot, double zero_tol)
 
 arma::vec quatExp(const arma::vec &v_rot, double zero_tol)
 {
-  arma::vec quat;
+  arma::vec quat(4);
   double norm_v_rot = arma::norm(v_rot);
   double theta = norm_v_rot;
 
@@ -145,7 +145,10 @@ arma::vec quatLog(const arma::vec &quat, double zero_tol)
   arma::vec e = quat.subvec(1,3);
   double n = quat(0);
 
-  arma::vec omega;
+  if (n > 1) n = 1;
+  if (n < -1) n = -1;
+
+  arma::vec omega(3);
   double e_norm = arma::norm(e);
 
   if (e_norm > zero_tol) omega = 2*std::acos(n)*e/e_norm;

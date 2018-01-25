@@ -16,9 +16,12 @@
 #include <io_lib/io_lib.h>
 #include <signalProcessing_lib/signalProcessing_lib.h>
 #include <plot_lib/plot_lib.h>
+#include <math_lib/math_lib.h>
 
 #include <utils.h>
 #include <cmd_args.h>
+
+using namespace as64_;
 
 int main(int argc, char** argv)
 {
@@ -44,21 +47,8 @@ int main(int argc, char** argv)
   arma::mat dv_rot_d_data;
   load_data(cmd_args.in_orient_data_filename, Qd_data, v_rot_d_data, dv_rot_d_data, Time_demo, cmd_args.binary);
 
-  // as64_::plot_::GraphObj gObj;
-  // gObj.hold_on();
-  // for (int i=0;i<3;i++)
-  // {
-  //   arma::rowvec v = v_rot_d_data.row(i);
-  //   gObj.plot(Time_demo, v);
-  // }
-  // gObj.title("Rotational velocities");
-  // gObj.xlabel("time [s]");
-  // gObj.ylabel("velocity [rad/s]");
-  // gObj.hold_off();
-  // as64_::io_::wait_for_key();
-
   int n_data = Time_demo.size();
-  int D = v_rot_d_data.n_rows;
+  int Do = v_rot_d_data.n_rows;
   double Ts = arma::min(arma::diff(Time_demo));
   Time_demo = arma::linspace<arma::rowvec>(0,n_data-1,n_data)*Ts;
   double tau = Time_demo(n_data-1);
@@ -68,22 +58,16 @@ int main(int argc, char** argv)
   std::shared_ptr<as64_::GatingFunction> shapeAttrGatingPtr;
   std::shared_ptr<as64_::GatingFunction> goalAttrGatingPtr;
   std::vector<std::shared_ptr<as64_::DMP_>> dmp;
-  get_canClock_gatingFuns_DMP(cmd_args, D, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
+  get_canClock_gatingFuns_DMP(cmd_args, Do, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
 
   std::shared_ptr<as64_::DMP_orient> dmpOrient(new as64_::DMP_orient());
   dmpOrient->init(dmp);
 
-  for (int i=0;i<D;i++)
-  {
-    std::cout << "DMP " << i+1 << ": number_of_kernels = " << dmp[i]->N_kernels << "\n";
-  }
-  std::cout << "n_data = " << n_data << "\n";
-
   // ======  Train the DMP  =======
-  arma::mat F_offline_train_data(D, n_data);
-  arma::mat Fd_offline_train_data(D, n_data);
+  arma::mat F_offline_train_data(Do, n_data);
+  arma::mat Fd_offline_train_data(Do, n_data);
   arma::rowvec Time_offline_train;
-  arma::vec offline_train_mse(D);
+  arma::vec offline_train_mse(Do);
 
   as64_::param_::ParamList trainParamList;
   trainParamList.setParam("trainMethod", cmd_args.trainMethod);
@@ -97,6 +81,14 @@ int main(int argc, char** argv)
   timer.tic();
   offline_train_mse= dmpOrient->train(Time_demo, Qd_data, v_rot_d_data, dv_rot_d_data, Q0, Qg);
   std::cout << "Elapsed time is " << timer.toc() << "\n";
+
+
+  for (int i=0;i<Do;i++)
+  {
+    std::cout << "DMP " << i+1 << ": number_of_kernels = " << dmp[i]->N_kernels << "\n";
+  }
+  std::cout << "n_data = " << n_data << "\n";
+
 
   for (int j=0; j<Time_demo.size(); j++)
   {
@@ -112,31 +104,32 @@ int main(int argc, char** argv)
   arma::vec Qg0 = cmd_args.goal_scale*Qd_data.col(n_data-1);
   Qg = Qg0;
   arma::vec Qg2 = Qg0;
-  arma::vec dg = arma::vec().zeros(D);
+  arma::vec dg = arma::vec().zeros(Do);
   double x = 0.0;
   double dx = 0.0;
   arma::vec Q = Q0;
-  arma::vec v_rot = arma::vec().zeros(D);
-  arma::vec dv_rot = arma::vec().zeros(D);
+  arma::vec dQ = arma::vec(4).zeros();
+  arma::vec v_rot = arma::vec().zeros(Do);
+  arma::vec dv_rot = arma::vec().zeros(Do);
   double t = 0.0;
   arma::vec Q_robot = Q0;
-  arma::vec v_rot_robot = arma::vec().zeros(D);
-  arma::vec dv_rot_robot = arma::vec().zeros(D);
-  arma::vec deta = arma::vec().zeros(D);
-  arma::vec eta = arma::vec().zeros(D);
+  arma::vec v_rot_robot = arma::vec().zeros(Do);
+  arma::vec dv_rot_robot = arma::vec().zeros(Do);
+  arma::vec deta = arma::vec().zeros(Do);
+  arma::vec eta = arma::vec().zeros(Do);
 
-  arma::vec F = arma::vec().zeros(D);
-  arma::vec Fd = arma::vec().zeros(D);
+  arma::vec F = arma::vec().zeros(Do);
+  arma::vec Fd = arma::vec().zeros(Do);
 
-  arma::vec Fdist = arma::vec().zeros(D);
+  arma::vec Fdist = arma::vec().zeros(Do);
 
   // create log_data struct
   LogData log_data;
 
-  log_data.DMP_w.resize(D);
-  log_data.DMP_c.resize(D);
-  log_data.DMP_h.resize(D);
-  for (int i=0;i<D;i++)
+  log_data.DMP_w.resize(Do);
+  log_data.DMP_c.resize(Do);
+  log_data.DMP_h.resize(Do);
+  for (int i=0;i<Do;i++)
   {
     log_data.DMP_w[i] = dmp[i]->w;
     log_data.DMP_c[i] = dmp[i]->c;
@@ -166,7 +159,7 @@ int main(int argc, char** argv)
 
     log_data.x_data = join_horiz(log_data.x_data, x);
 
-    log_data.y_robot_data = join_horiz(log_data.y_robot_data, Q_robot);
+    log_data.y_robot_data = join_horiz(log_data.y_robot_data, as64_::quat2qpos(Q_robot));
     log_data.dy_robot_data = join_horiz(log_data.dy_robot_data, v_rot_robot);
     log_data.ddy_robot_data = join_horiz(log_data.ddy_robot_data, dv_rot_robot);
 
@@ -174,29 +167,32 @@ int main(int argc, char** argv)
     log_data.g_data = join_horiz(log_data.g_data, as64_::quat2qpos(Qg));
 
     // DMP simulation
-    arma::vec Q_c = cmd_args.a_py*as64_::quatLog(as64_::quatProd(Q_robot,as64_::quatInv(Q)));
-    arma::vec eta_c = arma::vec(D).zeros();
+    arma::vec Q_c = cmd_args.a_py*quatLog(quatProd(Q_robot,quatInv(Q)));
+    arma::vec eta_c = arma::vec(Do).zeros();
 
-    arma::vec X = arma::vec(D).fill(x);
-    arma::vec dX = arma::vec(D).zeros();
+    arma::vec X = arma::vec(Do).fill(x);
+    arma::vec dX = arma::vec(Do).zeros();
 
-    arma::mat statesDot;
+    std::vector<arma::vec> statesDot;
     statesDot = dmpOrient->getStatesDot(X, Q, eta, Q0, Qg, Q_c, eta_c);
-    dz = statesDot.col(0);
-    dy = statesDot.col(1);
-    // dX = statesDot.col(2);
+    deta = statesDot[0];
+    dQ = statesDot[1];
+    // dX = statesDot[2];
 
-    ddy = dz/dmpOrient->get_v_scale();
-    ddy_robot = ddy + (1/cmd_args.Md) * ( - cmd_args.Dd*(dy_robot - dy) - cmd_args.Kd*(y_robot-y) + Fdist );
+    arma::vec v_rot_temp = 2*quatProd(dQ,quatInv(Q));
+    v_rot = v_rot_temp.subvec(1,3);
+
+    dv_rot = deta/dmpOrient->get_v_scale();
+    dv_rot_robot = dv_rot + (1/cmd_args.Md) * ( - cmd_args.Dd*(v_rot_robot - v_rot) - cmd_args.Kd*quatLog(quatProd(Q_robot,quatInv(Q))) + Fdist );
 
     // Goal filtering
     if (cmd_args.USE_GOAL_FILT)
     {
-        dg = cmd_args.a_g*(g2-g)/canClockPtr->getTau();
+        dg = cmd_args.a_g*quatLog(quatProd(Qg2,quatInv(Qg)))/canClockPtr->getTau();
     }
     else
     {
-        g = g2;
+        Qg = Qg2;
         dg.fill(0.0);
     }
 
@@ -207,20 +203,20 @@ int main(int argc, char** argv)
     // Update disturbance force
     if (cmd_args.APPLY_DISTURBANCE)
     {
-      // Fdist = Fdist_fun(t, D);
+      // Fdist = Fdist_fun(t, Do);
     }
 
     // Phase stopping
     if (cmd_args.USE_PHASE_STOP)
     {
-        double stop_coeff = 1/(1+cmd_args.a_px*std::pow(arma::norm(y-y_robot),2));
+        double stop_coeff = 1/(1+cmd_args.a_px*std::pow(arma::norm(quatLog(quatProd(Q_robot,quatInv(Q)))),2));
         dx = dx*stop_coeff;
         dg = dg*stop_coeff;
     }
 
     // Stopping criteria
-    double err_p = arma::max(arma::abs(g2-y_robot));
-    if (err_p <= cmd_args.tol_stop && t>=tau)
+    double err_o = arma::norm(quatLog(quatProd(Qg,quatInv(Q_robot))));
+    if (err_o <= cmd_args.orient_tol_stop && t>=tau)
     {
         break;
     }
@@ -238,33 +234,38 @@ int main(int argc, char** argv)
 
     x = x + dx*dt;
 
-    y = y + dy*dt;
-    z = z + dz*dt;
+    Q = quatProd(quatExp(v_rot*dt), Q);
+    eta = eta + deta*dt;
 
-    y_robot = y_robot + dy_robot*dt;
-    dy_robot = dy_robot + ddy_robot*dt;
+    Q_robot = quatProd(quatExp(v_rot_robot*dt),Q_robot);
+    v_rot_robot = v_rot_robot + dv_rot_robot*dt;
 
-    g = g + dg*dt;
+    Qg = quatProd(quatExp(dg*dt),Qg);
 
   }
 
   std::cout << "Elapsed time is " << timer.toc() << "\n";
 
   log_data.Time_demo = Time_demo;
-  //log_data.yd_data = Qd_data;
+  arma::mat yd_data(3,n_data);
+  for (int i=0;i<n_data;i++)
+  {
+    yd_data.col(i) = quat2qpos(Qd_data.col(i));
+  }
+  log_data.yd_data = yd_data;
   log_data.dyd_data = v_rot_d_data;
   log_data.ddyd_data = dv_rot_d_data;
 
-  log_data.D = D;
+  log_data.D = Do;
   log_data.Ts = Ts;
-  log_data.g0 = g0;
+  log_data.g0 = quat2qpos(Q0);
 
   log_data.Time_offline_train = Time_offline_train;
   log_data.F_offline_train_data = F_offline_train_data;
   log_data.Fd_offline_train_data = Fd_offline_train_data;
-  log_data.Psi_data_train.resize(D);
+  log_data.Psi_data_train.resize(Do);
 
-  for (int i=0;i<D;i++)
+  for (int i=0;i<Do;i++)
   {
     int n_data = Time_offline_train.size();
     log_data.Psi_data_train[i].resize(dmp[i]->N_kernels,n_data);
@@ -275,12 +276,14 @@ int main(int argc, char** argv)
     }
   }
 
-  log_data.Psi_data.resize(D);
-  for (int i=0;i<D;i++)
+  log_data.Psi_data.resize(Do);
+  arma::vec y0 = -quatLog(quatProd(Qg0,quatInv(Q0)));
+  arma::vec g0 = arma::vec(3).zeros();
+  for (int i=0;i<Do;i++)
   {
     int n_data = log_data.Time.size();
     log_data.Psi_data[i].resize(dmp[i]->N_kernels,n_data);
-    log_data.Force_term_data.resize(D,n_data);
+    log_data.Force_term_data.resize(Do,n_data);
     for (int j=0;j<n_data;j++)
     {
       double x = log_data.x_data(j);
@@ -305,15 +308,15 @@ int main(int argc, char** argv)
   log_data.save(cmd_args.out_orient_data_filename, false, 10);
   std::cout << "[DONE]!\n";
 
-  arma::vec sim_mse(D);
-  for (int i=0;i<D;i++)
+  arma::vec sim_mse(Do);
+  for (int i=0;i<Do;i++)
   {
     arma::rowvec y_robot_data2;
-    arma::rowvec Qd_data2;
+    arma::rowvec yd_data2;
     as64_::spl_::makeSignalsEqualLength(log_data.Time, log_data.y_robot_data.row(i),
             log_data.Time_demo, log_data.yd_data.row(i), log_data.Time,
-            y_robot_data2, Qd_data2);
-    sim_mse(i) = arma::norm(y_robot_data2-Qd_data2); // /Qd_data2.size();
+            y_robot_data2, yd_data2);
+    sim_mse(i) = arma::norm(y_robot_data2-yd_data2); // /Qd_data2.size();
   }
 
   std::cout << "offline_train_mse = \n" << offline_train_mse << "\n";

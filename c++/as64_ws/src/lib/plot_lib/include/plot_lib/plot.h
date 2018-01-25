@@ -2,6 +2,7 @@
 #ifndef PLOT_LIBRARY_64_H
 #define PLOT_LIBRARY_64_H
 
+#include <cstdarg>
 #include <plot_lib/gnuplot_i.hpp>
 
 namespace as64_
@@ -32,10 +33,10 @@ public:
    *  @param[in] x: Vector of data points.
    */
   template<typename X>
-  void plot(const X& x)
+  void plot(const X& x, const std::string &legend_ = "")
   {
     if (!hold_on_enable) nplots = 0;
-    plot_x(x);
+    plot_x(x, legend_);
   }
 
   /** brief 2D plot.
@@ -46,10 +47,10 @@ public:
    *  @param[in] y: Vector of data points in the y-axis.
    */
   template<typename X, typename Y>
-  void plot(const X& x, const Y& y)
+  void plot(const X& x, const Y& y, const std::string &legend_ = "")
   {
     if (!hold_on_enable) nplots = 0;
-    plot_xy(x, y);
+    plot_xy(x, y, legend_);
   }
 
   /** brief 3D plot.
@@ -61,10 +62,10 @@ public:
    *  @param[in] z: Vector of data points in the z-axis.
    */
   template<typename X, typename Y, typename Z>
-  void plot3(const X& x, const Y& y, const Z& z)
+  void plot3(const X& x, const Y& y, const Z& z, const std::string &legend_ = "")
   {
     if (!hold_on_enable) nplots = 0;
-    plot_xyz(x, y, z);
+    plot_xyz(x, y, z, legend_);
   }
 
   /** brief Enables "hold on" so that the next figures that will
@@ -124,6 +125,64 @@ public:
   {
     set_zlabel(label);
     replot();
+  }
+
+  void legend(int n, ...)
+  {/*
+    std::vector<std::string> legend_str(n);
+    std::va_list vl;
+    va_start(vl,n);
+
+    for (int i=0; i<n; i++)
+    {
+      legend_str[i] = va_arg(vl,char*);
+
+      std::cout << "legend_str[i] = " << legend_str[i] << "\n";
+    }
+
+    if (n > tmpfile_list.size())
+    {
+      std::cerr << "Warning: Ignoring extra legend arguments...\n";
+      n = tmpfile_list.size();
+    }
+
+    for (int i=0; i<n; i++)
+    {
+      std::string filename = tmpfile_list[i];
+      //
+      // check if file exists
+      //
+      file_available(filename);
+
+      std::ostringstream cmdstr;
+      //
+      // command to be sent to gnuplot
+      //
+      if (nplots > 0  &&  two_dim == true)
+          cmdstr << "replot ";
+      else
+          cmdstr << "plot ";
+
+      cmdstr << "\"" << filename << "\" using " << column;
+
+      if (title == "")
+          cmdstr << " notitle ";
+      else
+          cmdstr << " title \"" << title << "\" ";
+
+      if(smooth == "")
+          cmdstr << "with " << pstyle;
+      else
+          cmdstr << "smooth " << smooth;
+
+      //
+      // Do the actual plot
+      //
+      cmd(cmdstr.str()); //nplots++; two_dim = true;  already in cmd();
+    }
+
+    va_end(vl);
+*/
   }
 
   /** brief Sets the x-axis limits.

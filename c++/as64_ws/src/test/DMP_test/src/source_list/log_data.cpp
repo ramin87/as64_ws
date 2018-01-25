@@ -1,7 +1,9 @@
 #include <log_data.h>
 
 LogData::LogData()
-{}
+{
+  poseDataFlag = false;
+}
 
 
 void LogData::save(const std::string &filename, bool binary, int precision)
@@ -62,6 +64,8 @@ void LogData::save(const std::string &filename, bool binary, int precision)
   as64_::io_::write_vec_mat(DMP_w, out, binary, precision);
   as64_::io_::write_vec_mat(DMP_c, out, binary, precision);
   as64_::io_::write_vec_mat(DMP_h, out, binary, precision);
+
+  as64_::io_::write_scalar(poseDataFlag, out, binary, precision);
 
   out.close();
 }

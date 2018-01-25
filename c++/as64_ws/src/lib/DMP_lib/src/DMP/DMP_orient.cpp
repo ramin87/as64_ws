@@ -154,43 +154,30 @@ namespace as64_
   }
 
 
-  arma::mat DMP_orient::getStatesDot(const arma::vec &X, const arma::vec &Q, const arma::vec &eta,
+  std::vector<arma::vec> DMP_orient::getStatesDot(const arma::vec &X, const arma::vec &Q, const arma::vec &eta,
                               const arma::vec &Q0, const arma::vec &Qg,
                               const arma::vec &Q_c, const arma::vec &eta_c) const
   {
-    // arma::mat statesDot(3, this->D);
-    //
-    // arma::vec y = -quatLog(quatProd(Qg,quatInv(Q)));
-    // arma::vec y0 = -quatLog(quatProd(Qg,quatInv(Q0)));
-    // arma::vec g = arma::vec(3).zeros();
-    //
-    // for (int i=0; i<this->D; i++){
-    //   statesDot.col(i) = this->dmp[i]->getStatesDot(X(i), y(i), eta(i), y0(i), g(i), Q_c(i), eta_c(i));
-    // }
-    // return statesDot.t();
-    //
-    // arma::vec v_scale = this->get_v_scale();
-    // arma::vec shape_attr = this->shapeAttractor(X, Q0, Qg);
-    // arma::vec goal_attr = this->goalAttractor(X, Q, eta, Qg);
-    //
-    // arma::vec deta = ( goal_attr + shape_attr + eta_c) / v_scale;
-    //
-    // arma::vec temp(4);
-    // temp << 0 << (eta+Q_c)/v_scale;
-    // arma::vec dQ = 0.5*as64_::quatProd(temp, Q);
-    //
-    // arma::vec dX = this->phaseDot(X);
-    //
-    // arma::vec deta_vec(4);
-    // deta_vec << 0 << deta;
-    //
-    // arma::vec dX_vec(4);
-    // dX_vec << 0 << dX;
-    //
-    // arma::mat statesDot(4,4);
-    // statesDot << deta_vec << dQ << dX_vec;
-    // 
-    // return statesDot;
+    std::vector<arma::vec> statesDot(this->D);
+
+    arma::vec v_scale = this->get_v_scale();
+    arma::vec shape_attr = this->shapeAttractor(X, Q0, Qg);
+    arma::vec goal_attr = this->goalAttractor(X, Q, eta, Qg);
+
+    arma::vec deta = ( goal_attr + shape_attr + eta_c) / v_scale;
+
+    arma::vec temp(4);
+    temp(0) = 0.0;
+    temp.subvec(1,3) = (eta+Q_c)/v_scale;
+    arma::vec dQ = 0.5*as64_::quatProd(temp, Q);
+
+    arma::vec dX = this->phaseDot(X);
+
+    statesDot[0] = deta;
+    statesDot[1] = dQ;
+    statesDot[2] = dX;
+
+    return statesDot;
   }
 
 
@@ -200,6 +187,7 @@ namespace as64_
     for (int i=0; i<this->D; i++){
       Psi[i] = this->dmp[i]->kernelFunction(X(i));
     }
+    return Psi;
   }
 
 

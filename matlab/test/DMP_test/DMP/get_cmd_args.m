@@ -8,7 +8,7 @@ cmd_args = struct();
 cmd_args.a_z = 20.0;
 cmd_args.b_z = cmd_args.a_z/4;
 
-cmd_args.DMP_TYPE = 'DMP-plus'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
+cmd_args.DMP_TYPE = 'DMP'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
 
 cmd_args.N_kernels = 100; % number of kernels used in the DMP
 
