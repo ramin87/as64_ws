@@ -1,7 +1,7 @@
 /** Least Squares based learning techniques
  */
 
-#include <Optimization_lib/LeastSquares.h>
+#include <optimization_lib/LeastSquares.h>
 
 namespace as64_
 {

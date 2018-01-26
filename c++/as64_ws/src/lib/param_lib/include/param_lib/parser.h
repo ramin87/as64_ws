@@ -1,6 +1,3 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SP_PARSER_H
 #define SP_PARSER_H
 
@@ -71,17 +68,51 @@ namespace param_
             /// @param def_val Default value if key was not found in file
             ////////////////////////////////////////////////////////////////////////////////////////////
             template <typename T>
-            T  getParam(const std::string key,const T def_val)
+            bool getParam(const std::string key, T &value)
             {
-                if(!valid_key(key))
-                {
-                    std::cout << "Setting default "<< def_val  <<std::endl;
-                    return def_val;
-                }
-                std::istringstream iss(par_map.find(key)->second);
-                T out;
-                iss >> out;
-                return out;
+              if(!valid_key(key)) return false;
+
+              std::istringstream iss(par_map.find(key)->second);
+              iss >> value;
+              return true;
+            }
+
+            bool getParam(const std::string key, std::string &value)
+            {
+              return getString(key, value);
+            }
+
+            template <typename T>
+            bool getParam(const std::string key, arma::Col<T> &value)
+            {
+              return getCol(key, value);
+            }
+
+            template <typename T>
+            bool getParam(const std::string key, arma::Row<T> &value)
+            {
+              return getRow(key, value);
+            }
+
+            template <typename T>
+            bool getParam(const std::string key, arma::Mat<T> &value)
+            {
+              return getMat(key, value);
+            }
+
+            bool getParam(const std::string key, arma::cx_vec &value)
+            {
+              return getCxCol(key, value);
+            }
+
+            bool getParam(const std::string key, arma::cx_rowvec &value)
+            {
+              return getCxRow(key, value);
+            }
+
+            bool getParam(const std::string key, arma::cx_mat &value)
+            {
+              return getCxMat(key, value);
             }
 
             ////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +121,7 @@ namespace param_
             /// @param key Parameter name
             /// @param def_val Default value if key was not found in file
             ////////////////////////////////////////////////////////////////////////////////////////////
-            std::string getString(const std::string key,const std::string def_val);
+            bool getString(const std::string key, std::string &value);
 
 
             ////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,13 +131,9 @@ namespace param_
             /// @param def_val Default value if key was not found in file
             ////////////////////////////////////////////////////////////////////////////////////////////
             template <typename T>
-            arma::Col<T> getCol(const std::string key,const arma::Col<T> def_val)
+            bool getCol(const std::string key, arma::Col<T> &value)
             {
-                if(!valid_key(key))
-                {
-                    std::cout << "Setting default \n"<< def_val  <<std::endl;
-                    return def_val;
-                }
+                if(!valid_key(key)) return false;
 
                 std::string row,str=par_map.find(key)->second;
                 std::istringstream full_str(str);
@@ -118,7 +145,8 @@ namespace param_
                     std::stringstream iss(row);
                     iss >> x(k);
                 }
-                return x;
+                value = x;
+                return true;
             }
 
             ////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,7 +155,7 @@ namespace param_
             /// @param key Parameter name
             /// @param def_val Default value if key was not found in file
             ////////////////////////////////////////////////////////////////////////////////////////////
-            arma::cx_vec getCxCol(const std::string key,const arma::cx_vec def_val);
+            bool getCxCol(const std::string key, arma::cx_vec &value);
 
 
             ////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,13 +165,9 @@ namespace param_
             /// @param def_val Default value if key was not found in file
             ////////////////////////////////////////////////////////////////////////////////////////////
             template <typename T>
-            arma::Row<T> getRow(const std::string key,const arma::Row<T> def_val)
+            bool getRow(const std::string key, arma::Row<T> &value)
             {
-                if(!valid_key(key))
-                {
-                    std::cout << "Setting default \n"<< def_val  <<std::endl;
-                    return def_val;
-                }
+                if(!valid_key(key)) return false;
 
                 std::string col,str=par_map.find(key)->second;
                 std::istringstream full_str(str);
@@ -155,7 +179,8 @@ namespace param_
                     std::stringstream iss(col);
                     iss >> x(k);
                 }
-                return x;
+                value = x;
+                return true;
             }
 
             ////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,8 +189,7 @@ namespace param_
             /// @param key Parameter name
             /// @param def_val Default value if key was not found in file
             ////////////////////////////////////////////////////////////////////////////////////////////
-            arma::cx_rowvec getCxRow(const std::string key,const arma::cx_rowvec def_val);
-
+            bool getCxRow(const std::string key, arma::cx_rowvec &value);
 
             ////////////////////////////////////////////////////////////////////////////////////////////
             /// \brief Mat type get function.
@@ -174,13 +198,10 @@ namespace param_
             /// @param def_val Default value if key was not found in file
             ////////////////////////////////////////////////////////////////////////////////////////////
             template <typename T>
-            arma::Mat<T> getMat(const std::string key,const arma::Mat<T> def_val)
+            bool getMat(const std::string key, arma::Mat<T> &value)
             {
-                if(!valid_key(key))
-                {
-                    std::cout << "Setting default \n"<< def_val  <<std::endl;
-                    return def_val;
-                }
+                if(!valid_key(key)) return false;
+
                 std::string full_str,row,col;
                 std::istringstream iss_full;
 
@@ -205,7 +226,8 @@ namespace param_
                         iss_col >> x(r,c);
                     }
                 }
-                return x;
+                value = x;
+                return true;
             }
 
             ////////////////////////////////////////////////////////////////////////////////////////////
@@ -214,8 +236,7 @@ namespace param_
             /// @param key Parameter name
             /// @param def_val Default value if key was not found in file
             ////////////////////////////////////////////////////////////////////////////////////////////
-            arma::cx_mat getCxMat(const std::string key,const arma::cx_mat def_val);
-
+            bool getCxMat(const std::string key, arma::cx_mat &value);
 
     }; // end Class
     /// @}

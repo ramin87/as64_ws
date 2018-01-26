@@ -127,6 +127,13 @@ log_data.Fd_online_train_data = [];
 
 log_data.P_lwr = cell(Do,1);
 log_data.DMP_w = cell(Do,1);
+log_data.DMP_c = cell(Do,1);
+log_data.DMP_h = cell(Do,1);
+for i=1:Do
+    log_data.DMP_w{i} = dmp_vec{i}.w;
+    log_data.DMP_c{i} = dmp_vec{i}.c;
+    log_data.DMP_h{i} = dmp_vec{i}.h;
+end
 
 tau = cmd_args.tau_sim_scale*tau;
 canClockPtr.setTau(tau);

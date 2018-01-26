@@ -4,7 +4,7 @@
 %  @param[out] f: The frequncies where the fourier is calculated.
 %  @param[out] P1: The amplitudes of the signal's single sided Fourier.
 %
-function [f, P1] = getSingleSidedFourier(s, Fs)
+function [f, P1, Y] = getSingleSidedFourier(s, Fs)
 
     L = length(s);
     X = s;

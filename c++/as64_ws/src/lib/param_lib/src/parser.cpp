@@ -115,24 +115,18 @@ Parser::Parser(const std::string& fname)
 Parser::~Parser() {}
 
 
-std::string Parser::getString(const std::string key,const std::string def_val)
+bool Parser::getString(const std::string key, std::string &value)
 {
-    if(!valid_key(key))
-    {
-        std::cout << "Setting default " << def_val <<std::endl;
-        return def_val;
-    }
-    return par_map.find(key)->second;
+    if(!valid_key(key)) return false;
+
+    value = par_map.find(key)->second;
+    return true;
 }
 
 
-arma::cx_vec Parser::getCxCol(const std::string key,const arma::cx_vec def_val)
+bool Parser::getCxCol(const std::string key, arma::cx_vec &value)
 {
-    if(!valid_key(key))
-    {
-        std::cout << "Setting default \n"<< def_val  <<std::endl;
-        return def_val;
-    }
+    if(!valid_key(key)) return false;
 
     std::string row,str=par_map.find(key)->second;
     std::istringstream full_str(str);
@@ -143,17 +137,14 @@ arma::cx_vec Parser::getCxCol(const std::string key,const arma::cx_vec def_val)
         std::getline(full_str, row, ';');
         x(k) = parse_cx(row);
     }
-    return x;
+    value = x;
+    return true;
 }
 
 
-arma::cx_rowvec Parser::getCxRow(const std::string key,const arma::cx_rowvec def_val)
+bool Parser::getCxRow(const std::string key, arma::cx_rowvec &value)
 {
-    if(!valid_key(key))
-    {
-        std::cout << "Setting default \n"<< def_val  <<std::endl;
-        return def_val;
-    }
+    if(!valid_key(key)) return false;
 
     std::string col,str=par_map.find(key)->second;
     std::istringstream full_str(str);
@@ -164,17 +155,15 @@ arma::cx_rowvec Parser::getCxRow(const std::string key,const arma::cx_rowvec def
         std::getline(full_str, col, ',');
         x(k) = parse_cx(col);
     }
-    return x;
+    value = x;
+    return true;
 }
 
 
-arma::cx_mat Parser::getCxMat(const std::string key,const arma::cx_mat def_val)
+bool Parser::getCxMat(const std::string key, arma::cx_mat &value)
 {
-    if(!valid_key(key))
-    {
-        std::cout << "Setting default \n"<< def_val  <<std::endl;
-        return def_val;
-    }
+    if(!valid_key(key)) return false;
+
     std::string full_str,row,col;
     std::istringstream iss_full;
 
@@ -198,7 +187,8 @@ arma::cx_mat Parser::getCxMat(const std::string key,const arma::cx_mat def_val)
             x(r,c)=parse_cx(col);
         }
     }
-    return x;
+    value = x;
+    return true;
 }
 
 } // end namespace

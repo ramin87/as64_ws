@@ -134,6 +134,8 @@ log_data.Fd_online_train_data = [];
 
 log_data.P_lwr = cell(D,1);
 log_data.DMP_w = cell(D,1);
+log_data.DMP_c = cell(D,1);
+log_data.DMP_h = cell(D,1);
 for i=1:D
     log_data.DMP_w{i} = dmp{i}.w;
     log_data.DMP_c{i} = dmp{i}.c;

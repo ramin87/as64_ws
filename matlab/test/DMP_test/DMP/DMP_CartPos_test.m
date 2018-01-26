@@ -22,7 +22,7 @@ Yd_data = CartPos_data{1};
 dYd_data = CartPos_data{2};
 ddYd_data = CartPos_data{3};
 Ts = min(diff(Time));
-         
+
 Dp = size(Yd_data,1); % dimensionality of training data
 n_data = size(Yd_data,2); % number of points in each dimension
 Time_demo = ((1:n_data)-1)*Ts;
@@ -127,6 +127,13 @@ log_data.Fd_online_train_data = [];
 
 log_data.P_lwr = cell(Dp,1);
 log_data.DMP_w = cell(Dp,1);
+log_data.DMP_c = cell(Dp,1);
+log_data.DMP_h = cell(Dp,1);
+for i=1:Dp
+    log_data.DMP_w{i} = dmp_vec{i}.w;
+    log_data.DMP_c{i} = dmp_vec{i}.c;
+    log_data.DMP_h{i} = dmp_vec{i}.h;
+end
 
 tau = cmd_args.tau_sim_scale*tau;
 canClockPtr.setTau(tau);

@@ -31,7 +31,6 @@ include_directories(
 ############################
 
 add_library(filter-lib
-  src/filter.cpp
   src/movingWinMeanFilter.cpp
   src/svf.cpp
 )

@@ -176,8 +176,16 @@ log_data.Time_online_train = [];
 log_data.F_online_train_data = [];
 log_data.Fd_online_train_data = [];
 
-log_data.P_lwr = cell(Dp+Do,1);
-log_data.DMP_w = cell(Dp+Do,1);
+D = Dp+Do;
+log_data.P_lwr = cell(D,1);
+log_data.DMP_w = cell(D,1);
+log_data.DMP_c = cell(D,1);
+log_data.DMP_h = cell(D,1);
+for i=1:D
+    log_data.DMP_w{i} = dmp_vec{i}.w;
+    log_data.DMP_c{i} = dmp_vec{i}.c;
+    log_data.DMP_h{i} = dmp_vec{i}.h;
+end
 
 
 tau = cmd_args.tau_sim_scale*tau;

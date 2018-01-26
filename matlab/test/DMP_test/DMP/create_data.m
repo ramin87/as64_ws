@@ -59,7 +59,6 @@ data_pos = [repmat(data_pos(:,1),1,add_points) data_pos repmat(data_pos(:,end),1
 Yd_pos_data = [repmat(Yd_pos_data(:,1),1,add_points) Yd_pos_data repmat(Yd_pos_data(:,end),1,add_points)];
 Qd_pos_data = [repmat(Qd_pos_data(:,1),1,add_points) Qd_pos_data repmat(Qd_pos_data(:,end),1,add_points)];
 
-
 % calculate numerically the 1st and 2nd derivatives
 data_dim_title = cell(0);
 for i=1:D
@@ -85,6 +84,7 @@ end
                              'returnAllDerivatives',true, 'smoothSpan',smooth_points);
                              
 
+                        
 %% Group the generated data in cell arrays
 %  Each cell array is 3x1 containing the position, velocity and acceleration.
 Time = (0:(size(data_pos,2)-1))*Ts;

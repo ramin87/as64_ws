@@ -1,6 +1,6 @@
 #include <DMP_lib/DMP/DMP_Shannon.h>
 #include <signalProcessing_lib/signalProcessing_lib.h>
-#include <Optimization_lib/Optimization_lib.h>
+#include <optimization_lib/optimization_lib.h>
 
 namespace as64_
 {

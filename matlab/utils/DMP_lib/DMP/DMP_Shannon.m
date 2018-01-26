@@ -160,7 +160,7 @@ classdef DMP_Shannon < handle % : public DMP
 
             Ts = Time(2)-Time(1);
             Fs = 1/Ts;
-            [f, P1] = getSingleSidedFourier(Fd, Fs);
+            [f, P1, Y] = getSingleSidedFourier(Fd, Fs);
 
             Freq_max = min(dmp.Freq_max,f(end));
 
@@ -195,12 +195,12 @@ classdef DMP_Shannon < handle % : public DMP
 
             Freq = Fmax; %max(Fmax, 50);
 
-            Freq2 = Freq;
-            fprintf('Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n', dmp.P1_min, Freq2);
+            fprintf('Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n', dmp.P1_min, Freq);
 
             % ==> Filter the signal retaining at least 'Wmin' energy
             [filter_b, filter_a] = butter(6, Freq/(Fs/2), 'low');
             Fd_filt = filtfilt(filter_b, filter_a, Fd);
+            
 
             %[f, P1_filt] = getSingleSidedFourier(Fd_filt, Fs);
             T1 = 1/(2*Fmax);

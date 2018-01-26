@@ -38,15 +38,15 @@ include_directories(
 # *************************************************
 # *************************************************
 
-add_executable(io_test_node
-  src/main.cpp ${INCLUDE_LIST} ${SRC_LIST}
+add_executable(file_io_test
+  src/file_io_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
 )
 
-add_dependencies(io_test_node
+add_dependencies(file_io_test
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(io_test_node
+target_link_libraries(file_io_test
   ${catkin_LIBRARIES}
   io-lib
 )

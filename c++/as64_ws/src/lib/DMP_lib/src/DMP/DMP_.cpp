@@ -1,5 +1,5 @@
 #include <DMP_lib/DMP/DMP_.h>
-#include <Optimization_lib/Optimization_lib.h>
+#include <optimization_lib/optimization_lib.h>
 
 #include <plot_lib/plot_lib.h>
 #include <io_lib/io_lib.h>

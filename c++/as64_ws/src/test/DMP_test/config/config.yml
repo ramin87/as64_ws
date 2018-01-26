@@ -4,7 +4,7 @@
 a_z: 20.0
 # b_z: 5.0
 
-DMP_TYPE: "DMP-Shannon" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
+DMP_TYPE: "DMP" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
 
 N_kernels: 100 # number of kernels used in the DMP
 
@@ -14,12 +14,12 @@ trainMethod: "LWR" # "LWR", "LS", "RLS" , "RLWR"
 
 CAN_CLOCK_TYPE: "lin"
 
-SHAPE_ATTR_GATTING_TYPE: "sigmoid" # "lin", "exp", "spring-damper", "sigmoid", "constant"
+SHAPE_ATTR_GATTING_TYPE: "exp" # "lin", "exp", "spring-damper", "sigmoid", "constant"
 SHAPE_ATTR_GATTING_u0: 1.0 # starting value of the shape attractor gating
-SHAPE_ATTR_GATTING_u_end: 0.5 # ending value of the shape attractor gating
+SHAPE_ATTR_GATTING_u_end: 0.05 # ending value of the shape attractor gating
 
 GOAL_ATTR_GATTING_TYPE: "lin" # "lin", "exp", "spring-damper", "sigmoid", "constant"
-GOAL_ATTR_GATTING_u0: 0.0 # starting value of the goal attractor gating
+GOAL_ATTR_GATTING_u0: 1.0 # starting value of the goal attractor gating
 GOAL_ATTR_GATTING_u_end: 1.0 # ending value of the goal attractor gating
 
 sigmoid_a_u: 280 # steepness of the sigmoid gating function (optional)

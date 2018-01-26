@@ -18,12 +18,12 @@ cmd_args.trainMethod = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 
 cmd_args.CAN_CLOCK_TYPE = 'lin';
 
-cmd_args.SHAPE_ATTR_GATTING_TYPE = 'lin'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
+cmd_args.SHAPE_ATTR_GATTING_TYPE = 'exp'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
 cmd_args.SHAPE_ATTR_GATTING_u0 = 1.0; % starting value of the shape attractor gating
 cmd_args.SHAPE_ATTR_GATTING_u_end = 0.05; % ending value of the shape attractor gating
 
 cmd_args.GOAL_ATTR_GATTING_TYPE = 'lin'; % 'lin', 'exp', 'spring-damper', 'sigmoid', 'constant'
-cmd_args.GOAL_ATTR_GATTING_u0 = 0.0; % starting value of the goal attractor gating
+cmd_args.GOAL_ATTR_GATTING_u0 = 1.0; % starting value of the goal attractor gating
 cmd_args.GOAL_ATTR_GATTING_u_end = 1.0; % ending value of the goal attractor gating
 
 cmd_args.sigmoid_a_u = 280.0; % steepness of the sigmoid gating function (optional)
