@@ -14,12 +14,12 @@ trainMethod: "LWR" # "LWR", "LS", "RLS" , "RLWR"
 
 CAN_CLOCK_TYPE: "lin"
 
-SHAPE_ATTR_GATTING_TYPE: "exp" # "lin", "exp", "spring-damper", "sigmoid", "constant"
+SHAPE_ATTR_GATTING_TYPE: "sigmoid" # "lin", "exp", "spring-damper", "sigmoid", "constant"
 SHAPE_ATTR_GATTING_u0: 1.0 # starting value of the shape attractor gating
-SHAPE_ATTR_GATTING_u_end: 0.05 # ending value of the shape attractor gating
+SHAPE_ATTR_GATTING_u_end: 0.5 # ending value of the shape attractor gating
 
 GOAL_ATTR_GATTING_TYPE: "lin" # "lin", "exp", "spring-damper", "sigmoid", "constant"
-GOAL_ATTR_GATTING_u0: 1.0 # starting value of the goal attractor gating
+GOAL_ATTR_GATTING_u0: 0.0 # starting value of the goal attractor gating
 GOAL_ATTR_GATTING_u_end: 1.0 # ending value of the goal attractor gating
 
 sigmoid_a_u: 280 # steepness of the sigmoid gating function (optional)
@@ -39,10 +39,10 @@ a_py: 40.0
 k_trunc_kernel: 3 # number of stds beyond which the kernel is truncated
 
 # Parameters for DMP-Shannon
-Wmin: 0.9999
+Wmin: 0.995
 Freq_min: 60.0
 Freq_max: 150.0
-P1_min: 0.008
+P1_min: 10000.1
 
 ## Robot controller params
 Md: 1.0 # translational inertia

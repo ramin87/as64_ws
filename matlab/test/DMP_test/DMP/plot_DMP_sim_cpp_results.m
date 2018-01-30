@@ -50,6 +50,7 @@ log_data.DMP_w = read_vec_mat(fid, binary);
 log_data.DMP_c = read_vec_mat(fid, binary);
 log_data.DMP_h = read_vec_mat(fid, binary);
 
+log_data.poseDataFlag = read_scalar(fid, binary, 'uint8');
 
 fclose(fid);
 

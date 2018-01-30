@@ -16,8 +16,8 @@ t = 0:Ts:Tend;
 
 %% Create data
 z(3,:) = 0.8*(t - 2*exp(t)) + sin(2*pi*1.5*t) + t.^2.*exp(-t).*sin(2*pi*1.5*t); % + sin(2*pi*5*t);% + 0.5*sin(2*pi*150*t);
-z(2,:) = cos(12*t) + 2*t.^2 - 3*exp(t);
-z(1,:) = 2*t.^2 - 2*t.^3 - 3*exp(-2*t);
+z(1,:) = cos(12*t) + 2*t.^2 - 3*exp(t);
+z(2,:) = 2*t.^2 - 2*t.^3 - 3*exp(-2*t);
 
 D = 1; % change this to define the data dimensionality
 y = zeros(D,length(t));

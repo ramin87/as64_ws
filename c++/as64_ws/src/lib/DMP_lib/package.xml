@@ -28,6 +28,9 @@
   <build_depend>io_lib</build_depend>
   <run_depend>io_lib</run_depend>
 
+  <build_depend>filter_lib</build_depend>
+  <run_depend>filter_lib</run_depend>
+
   <test_depend>gtest</test_depend>
 
   <export></export>

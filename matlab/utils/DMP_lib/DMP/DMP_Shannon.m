@@ -173,6 +173,12 @@ classdef DMP_Shannon < handle % : public DMP
                 k = k+1;
                 W_temp = W_temp + P1(k)^2;
             end
+            
+            W
+            W_all = sum(P1.^2)
+            W_temp
+            
+            W_temp/W_all
 
             Freq1 = f(k);
             fprintf('Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n', dmp.Wmin, Freq1);
@@ -192,20 +198,52 @@ classdef DMP_Shannon < handle % : public DMP
             end
 
             Fmax = f(k);
-
             Freq = Fmax; %max(Fmax, 50);
 
             fprintf('Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n', dmp.P1_min, Freq);
 
             % ==> Filter the signal retaining at least 'Wmin' energy
-            [filter_b, filter_a] = butter(6, Freq/(Fs/2), 'low');
-            Fd_filt = filtfilt(filter_b, filter_a, Fd);
+            [but_filt_b, but_filt_a] = butter(6, Freq/(Fs/2), 'low');
+            Fd_filt = filtfilt(but_filt_b, but_filt_a, Fd);
             
+%             Fd_filt = filter(filter_b, filter_a, Fd);
+% 
+            ham_filt_b = fir1(500, Freq/(Fs/2), 'low');
+            Fd_filt = filtfilt(ham_filt_b, 1, Fd);
+            Fd_filt2 = filtfilt(but_filt_b, but_filt_a, Fd);
+            
+            figure
+            freqz(ham_filt_b,1);
+            
+            figure
+            freqz(but_filt_b,but_filt_a);
+            
+%             Fd_filt = Fd;
+            
+%             Y(k+1:end) = 0.0;
+%             Fd_filt = real(ifft(2*Y));
+%             
+            figure;
+            plot(Time,Fd, Time,Fd_filt, Time,Fd_filt2);
+            legend('F_d','F_{dfilt-ham}','F_{dfilt-butter}');
+
+
+[f, P1] = getSingleSidedFourier(Fd, Fs);
+[f, P1_filt] = getSingleSidedFourier(Fd_filt, Fs);
+
+figure;
+hold on;
+plot(f,P1, f,P1_filt);
+plot([f(k) f(k)], [-0.1 max(P1)+0.1], 'r--','LineWidth',1.3);
+hold off;
+legend('P_1','P_{1filt}');
+
 
             %[f, P1_filt] = getSingleSidedFourier(Fd_filt, Fs);
             T1 = 1/(2*Fmax);
             %N_sync = ceil(tau/T1);
             T_sync = 0:T1:tau;
+            
             dmp.N_kernels = length(T_sync);
             %           dmp.c = T_sync';
             dmp.c = dmp.phase(T_sync)';
@@ -213,6 +251,7 @@ classdef DMP_Shannon < handle % : public DMP
             dmp.h = T1/tau;
             w_sync = interp1(Time, Fd_filt, T_sync);
             dmp.w = w_sync(:);
+            
 
             F = zeros(size(Fd));
             for i=1:size(F,2)
@@ -220,6 +259,11 @@ classdef DMP_Shannon < handle % : public DMP
             end
 
             train_error = norm(F-Fd)/length(F);
+            
+%             c = dmp.c;
+%             h = dmp.h;
+%             w = dmp.w;
+%             save('Shan_dat.mat','Time','x','s','Fd','F','P1','c','h','w');
 
         end
 

@@ -99,6 +99,7 @@ end
 
 %% DMP simulation
 % set initial values
+t = 0.0;
 x = 0.0;
 dx = 0.0;
 
@@ -117,20 +118,18 @@ dg_o = zeros(Do,1);
 N_g_change = length(cmd_args.time_goal_change);
 ind_g_chage = 1;
 
+Y = Y0;
 dY = zeros(Dp,1);
 ddY = zeros(Dp,1);
-Y = Y0;
-t = 0.0;
 Y_robot = Y0;
 dY_robot = zeros(Dp,1);
 ddY_robot = zeros(Dp,1);
 dZ = zeros(Dp,1);
 Z = zeros(Dp,1);
 
+Q = Q0;
 v_rot = zeros(Do,1);
 dv_rot = zeros(Do,1);
-Q = Q0;
-t = 0.0;
 Q_robot = Q0;
 v_rot_robot = zeros(Do,1);
 dv_rot_robot = zeros(Do,1);
@@ -246,14 +245,10 @@ while (true)
     %% Goal filtering
     if (cmd_args.USE_GOAL_FILT)
         dg_p = cmd_args.a_g*(Yg2 - Yg)/canClockPtr.getTau();
+        dg_o = cmd_args.a_g*quatLog(quatProd(Qg2,quatInv(Qg)))/canClockPtr.getTau();
     else
         Yg = Yg2;
         dg_p = zeros(size(dg_p));
-    end
-    
-    if (cmd_args.USE_GOAL_FILT)
-        dg_o = cmd_args.a_g*quatLog(quatProd(Qg2,quatInv(Qg)))/canClockPtr.getTau();
-    else
         Qg = Qg2;
         dg_o = zeros(size(dg_o));
     end
@@ -279,6 +274,7 @@ while (true)
     
     %% Update disturbance force
     if (cmd_args.APPLY_DISTURBANCE)
+        Fdist_p = Fdist_fun(t);
         Fdist_o = Fdist_fun(t);
     end
      

@@ -163,3 +163,27 @@ target_link_libraries(DMP_orient_test
   plot-lib
   math-lib
 )
+
+# *************************************************
+# *************************************************
+
+add_executable(DMP_CartPos_orient_test
+  src/DMP_CartPos_orient_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
+)
+
+add_dependencies(DMP_CartPos_orient_test
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(DMP_CartPos_orient_test
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
+  DMP-lib
+  io-lib
+  param-lib
+  signalProcessing-lib
+  plot-lib
+  math-lib
+)

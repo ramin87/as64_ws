@@ -1,6 +1,8 @@
 #include <DMP_lib/DMP/DMP_Shannon.h>
 #include <signalProcessing_lib/signalProcessing_lib.h>
 #include <optimization_lib/optimization_lib.h>
+#include <io_lib/io_lib.h>
+#include <filter_lib/filter_lib.h>
 
 namespace as64_
 {
@@ -41,14 +43,15 @@ namespace as64_
     double W = arma::sum(arma::pow(P1.elem(arma::find(f<=Freq_max)),2));
     double W_temp = 0.0;
     int k = -1;
-    while (W_temp < W*this->Wmin)
+    double W_temp_min = W*this->Wmin;
+    while (W_temp < W_temp_min)
     {
       k++;
       W_temp += std::pow(P1(k),2);
     }
 
     double Freq1 = f(k);
-    // printf("Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n", this->Wmin, Freq1);
+    printf("Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n", this->Wmin, Freq1);
 
     while (k < f.size())
     {
@@ -61,22 +64,45 @@ namespace as64_
 
     double Fmax = f(k);
     double Freq = Fmax; // max(Fmax, 50);
-    double Freq2 = Freq;
-    //printf("Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n"'", this->P1_min, Freq2);
+    // printf("Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n", this->P1_min, Freq);
 
+    arma::rowvec Fd_filt = arma::rowvec().zeros(Fd.size());
     // ==> Filter the signal retaining at least 'Wmin' energy
     // [filter_b, filter_a] = butter(6, Freq/(Fs/2), 'low');
     // Fd_filt = filtfilt(filter_b, filter_a, Fd);
-    arma::rowvec Fd_filt = Fd;
+    sp::FIR_filt<double,double,double> fir_filt;
+  	arma::vec filter_b = sp::fir1(27, Freq/(Fs/2));
+  	fir_filt.set_coeffs(filter_b);
+  	// Filter - sample loop
+  	for(int n=0;n<Fd.size();n++)
+  	{
+  		Fd_filt(n) = fir_filt(Fd(n));
+  	}
+
+    // Fd_filt = Fd;
 
     double T1 = 1.0/(2*Fmax);
-    arma::rowvec T_sync = arma::linspace<arma::rowvec>(0, tau, std::ceil(tau/T1));
+    arma::rowvec T_sync(std::round(tau/T1));
+    double t = 0.0;
+    for (int i=0;i<T_sync.size();i++)
+    {
+      T_sync(i) = t;
+      t += T1;
+    }
+
     arma::rowvec w_sync;
     arma::interp1(Time, Fd_filt, T_sync, w_sync);
     this->N_kernels = T_sync.size();
     this->c.resize(this->N_kernels);
     this->h.resize(this->N_kernels);
     this->w.resize(this->N_kernels);
+
+    // std::cout << "Fmax = " << Fmax << "\n";
+    // std::cout << "tau = " << tau << "\n";
+    // std::cout << "T1 = " << T1 << "\n";
+    // std::cout << "round(tau/T1) = " << std::round(tau/T1) << "\n";
+    // std::cout << "T_sync = " << T_sync << "\n";
+
     for (int i=0;i<this->N_kernels;i++)
     {
       this->c(i) = this->phase(T_sync(i));
@@ -89,6 +115,24 @@ namespace as64_
     {
       F(i) = this->learnedForcingTerm(x(i), y0, g);
     }
+
+    // std::ofstream out("/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/Shan_dat.bin", std::ios::binary);
+    // if (!out)
+    // {
+    //   throw std::ios_base::failure("Could create output file...\n");
+    // }
+    //
+    // bool binary = true;
+    // io_::write_mat(Time, out, binary);
+    // io_::write_mat(x, out, binary);
+    // io_::write_mat(s, out, binary);
+    // io_::write_mat(Fd, out, binary);
+    // io_::write_mat(F, out, binary);
+    // io_::write_mat(P1, out, binary);
+    // io_::write_mat(this->c, out, binary);
+    // io_::write_mat(this->h, out, binary);
+    // io_::write_mat(this->w, out, binary);
+    // out.close();
 
     double train_error = arma::norm(F-Fd)/F.size();
     return train_error;

@@ -39,13 +39,13 @@ int main(int argc, char** argv)
   // ======  Read training data  =======
   std::cout << as64_::io_::bold << as64_::io_::green << "Reading training data..." << as64_::io_::reset << "\n";
   arma::rowvec Time_demo;
-  arma::mat yd_data;
-  arma::mat dyd_data;
-  arma::mat ddyd_data;
-  load_data(cmd_args.in_CartPos_data_filename, yd_data, dyd_data, ddyd_data, Time_demo, cmd_args.binary);
+  arma::mat Yd_data;
+  arma::mat dYd_data;
+  arma::mat ddYd_data;
+  load_data(cmd_args.in_CartPos_data_filename, Yd_data, dYd_data, ddYd_data, Time_demo, cmd_args.binary);
 
   int n_data = Time_demo.size();
-  int Dp = yd_data.n_rows;
+  int Dp = Yd_data.n_rows;
   double Ts = arma::min(arma::diff(Time_demo));
   Time_demo = arma::linspace<arma::rowvec>(0,n_data-1,n_data)*Ts;
   double tau = Time_demo(n_data-1);
@@ -74,11 +74,11 @@ int main(int argc, char** argv)
   trainParamList.setParam("P_cov", cmd_args.P_cov);
 
   std::cout << as64_::io_::bold << as64_::io_::green << "DMP training..." << as64_::io_::reset << "\n";
-  arma::vec y0 = yd_data.col(0);
-  arma::vec g = yd_data.col(n_data-1);
+  arma::vec y0 = Yd_data.col(0);
+  arma::vec g = Yd_data.col(n_data-1);
   dmpCartPos->setTrainingParams(&trainParamList);
   timer.tic();
-  offline_train_mse= dmpCartPos->train(Time_demo, yd_data, dyd_data, ddyd_data, y0, g);
+  offline_train_mse= dmpCartPos->train(Time_demo, Yd_data, dYd_data, ddYd_data, y0, g);
   std::cout << "Elapsed time is " << timer.toc() << "\n";
 
 
@@ -93,14 +93,14 @@ int main(int argc, char** argv)
   {
     arma::vec X = dmpCartPos->phase(Time_demo(j));
     F_offline_train_data.col(j) = dmpCartPos->learnedForcingTerm(X, y0, g);
-    Fd_offline_train_data.col(j) = dmpCartPos->calcFd(X, yd_data.col(j), dyd_data.col(j), ddyd_data.col(j), y0, g);
+    Fd_offline_train_data.col(j) = dmpCartPos->calcFd(X, Yd_data.col(j), dYd_data.col(j), ddYd_data.col(j), y0, g);
   }
   Time_offline_train = Time_demo;
 
   // ======  Simulate DMP  =======
   // Set initial conditions
-  y0 = yd_data.col(0);
-  arma::vec g0 = cmd_args.goal_scale*yd_data.col(n_data-1);
+  y0 = Yd_data.col(0);
+  arma::vec g0 = cmd_args.goal_scale*Yd_data.col(n_data-1);
   g = g0;
   arma::vec g2 = g0;
   arma::vec dg = arma::vec().zeros(Dp);
@@ -183,12 +183,12 @@ int main(int argc, char** argv)
     // Goal filtering
     if (cmd_args.USE_GOAL_FILT)
     {
-        dg = cmd_args.a_g*(g2-g)/canClockPtr->getTau();
+      dg = cmd_args.a_g*(g2-g)/canClockPtr->getTau();
     }
     else
     {
-        g = g2;
-        dg.fill(0.0);
+      g = g2;
+      dg.fill(0.0);
     }
 
     // Update phase variable
@@ -242,9 +242,9 @@ int main(int argc, char** argv)
   std::cout << "Elapsed time is " << timer.toc() << "\n";
 
   log_data.Time_demo = Time_demo;
-  log_data.yd_data = yd_data;
-  log_data.dyd_data = dyd_data;
-  log_data.ddyd_data = ddyd_data;
+  log_data.yd_data = Yd_data;
+  log_data.dyd_data = dYd_data;
+  log_data.ddyd_data = ddYd_data;
 
   log_data.D = Dp;
   log_data.Ts = Ts;

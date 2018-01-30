@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   math_lib
   plot_lib
   io_lib
+  filter_lib
 )
 
 catkin_package(
@@ -62,4 +63,5 @@ target_link_libraries(DMP-lib
   math-lib
   plot-lib
   io-lib
+  filter-lib
 )
