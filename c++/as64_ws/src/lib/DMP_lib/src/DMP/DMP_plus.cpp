@@ -14,7 +14,7 @@ namespace as64_
   }
 
   double DMP_plus::train(const arma::rowvec &Time, const arma::rowvec &yd_data,
-    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g)
+    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g, const std::string &train_method)
   {
     int n_data = Time.size();
     arma::rowvec x(n_data);
@@ -34,23 +34,22 @@ namespace as64_
 
     arma::mat X = arma::join_vert(u, arma::rowvec(n_data).ones())*this->forcingTermScaling(y0,g);
 
-    std::string trainMethod = this->trainMethod;
     arma::mat W;
-    if (trainMethod.compare("LWR")==0)
+    if (train_method.compare("LWR")==0)
     {
       W = opt_::LWR(Psi, X, Fd, this->zero_tol);
     }
-    else if (trainMethod.compare("RLWR")==0)
+    else if (train_method.compare("RLWR")==0)
     {
       W = opt_::RLWR(Psi, X, Fd, this->lambda, this->P_cov, this->zero_tol);
     }
-    else if (trainMethod.compare("LS")==0)
+    else if (train_method.compare("LS")==0)
     {
       W = opt_::normKernelLS(Psi, X, Fd, this->zero_tol);
     }
     else
     {
-      throw std::runtime_error(std::string("Unsopported training method \"") + trainMethod);
+      throw std::runtime_error(std::string("Unsopported training method \"") + train_method);
     }
 
     this->w = W.col(0);

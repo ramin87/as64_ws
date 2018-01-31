@@ -46,12 +46,12 @@ namespace as64_
 
   arma::vec DMP_CartPos::train(const arma::rowvec &Time, const arma::mat &Y_data,
                   const arma::mat &dY_data, const arma::mat &ddY_data,
-                  const arma::vec &Y0, const arma::vec &Yg)
+                  const arma::vec &Y0, const arma::vec &Yg, const std::string &train_method)
   {
     arma::vec train_error(this->D);
     for (int i=0; i<this->D; i++)
     {
-      train_error(i) = this->dmp[i]->train(Time, Y_data.row(i), dY_data.row(i), ddY_data.row(i), Y0(i), Yg(i));
+      train_error(i) = this->dmp[i]->train(Time, Y_data.row(i), dY_data.row(i), ddY_data.row(i), Y0(i), Yg(i), train_method);
     }
     return train_error;
   }

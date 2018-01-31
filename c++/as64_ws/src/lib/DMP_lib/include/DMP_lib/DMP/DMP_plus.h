@@ -16,7 +16,7 @@ public:
     const param_::ParamList *paramListPtr=NULL);
 
   virtual double train(const arma::rowvec &Time, const arma::rowvec &yd_data,
-    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g);
+    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g, const std::string &train_method = "LWR");
 
   virtual double learnedForcingTerm(double x, double y0, double g) const;
 
@@ -31,7 +31,7 @@ public:
 private:
   arma::vec b; ///< N_kernelsx1 vector with the bias term for each weight
   int k_trunc_kernel; ///< gain multiplied by the std of each kernel to define the truncated kernels width
-  
+
 }; // class DMP_plus
 
 } // namespace as64_

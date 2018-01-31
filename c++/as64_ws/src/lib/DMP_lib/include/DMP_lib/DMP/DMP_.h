@@ -16,7 +16,7 @@
  *    tau*dy = z + y_c;
  *
  * Assuming y_c=z_c=0, we can write equivalently:
- *    ddy = g1(x)*( a_z*(b_z*(g-y)-dy*tau) + 2(x)*fs*f(x) ) / tau^2;
+ *    ddy = g1(x)*( a_z*(b_z*(g-y)-dy*tau) + g2(x)*fs*f(x) ) / tau^2;
  *
  * where
  *    tau: is scaling factor defining the duration of the motion
@@ -164,17 +164,17 @@ public:
    *  @param[in] ddyd_data Row vector with the desired accelaration.
    *  @param[in] y0 Initial position.
    *  @param[in] g Target-goal position.
+   *  @param[in] train_method Method to train the DMP wieghts (optinal, default = LWR).
    *
    * \note The timestamps in \a Time and the corresponding position,
    * velocity and acceleration data in \a yd_data, \a dyd_data and \a
    * ddyd_data need not be sequantial in time.
    */
   virtual double train(const arma::rowvec &Time, const arma::rowvec &yd_data,
-    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g);
+    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g, const std::string &train_method = "LWR");
 
 
   /** \brief Sets the high level training parameters of the DMP.
-   * @param[in] trainMethod Method used to train the DMP weights.
    * @param[in] extraArgName Names of extra arguments (optional, default = []).
    * @param[in] extraArgValue Values of extra arguemnts (optional, default = []).
    *
@@ -274,7 +274,6 @@ protected:
   double kernelStdScaling; ///< scaling factor for the kernels std
 
   // training params
-  std::string trainMethod; ///< training method for weights of the DMP forcing term
   double lambda; ///< forgetting factor in recursive training methods
   double P_cov; ///< Initial value of covariance matrix in recursive training methods
 

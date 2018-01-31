@@ -47,7 +47,7 @@ namespace as64_
 
   arma::vec DMP_orient::train(const arma::rowvec &Time, const arma::mat &Q_data,
                   const arma::mat &v_rot_data, const arma::mat &dv_rot_data,
-                  const arma::vec &Q0, const arma::vec &Qg)
+                  const arma::vec &Q0, const arma::vec &Qg, const std::string &train_method)
   {
     int n_data = Q_data.n_cols;
     arma::mat yd_data(3, n_data);
@@ -62,7 +62,7 @@ namespace as64_
     arma::vec train_error(this->D);
     for (int i=0; i<this->D; i++)
     {
-      train_error(i) = this->dmp[i]->train(Time, yd_data.row(i), v_rot_data.row(i), dv_rot_data.row(i), y0(i), g(i));
+      train_error(i) = this->dmp[i]->train(Time, yd_data.row(i), v_rot_data.row(i), dv_rot_data.row(i), y0(i), g(i), train_method);
     }
     return train_error;
   }

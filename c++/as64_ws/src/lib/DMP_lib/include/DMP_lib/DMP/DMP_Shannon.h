@@ -16,7 +16,7 @@ public:
     const param_::ParamList *paramListPtr=NULL);
 
   virtual double train(const arma::rowvec &Time, const arma::rowvec &yd_data,
-    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g);
+    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g, const std::string &train_method="");
 
   virtual double calcFd(double x, double y, double dy, double ddy, double y0, double g) const;
 

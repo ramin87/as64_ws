@@ -96,6 +96,7 @@ public:
    * @param[in] ddY_data: Matrix with the Cartesian acceleration in each column.
    * @param[in] Y0: Initial Cartesian position.
    * @param[in] Yg: Target-goal Cartesian position.
+   * @param[in] train_method Method to train the DMP wieghts (optinal, default = LWR).
    *
    * \note The timestamps in \a Time and the corresponding position,
    * velocity and acceleration data in \a Y_data, \a dY_data and \a
@@ -103,7 +104,7 @@ public:
    */
   arma::vec train(const arma::rowvec &Time, const arma::mat &Q_data,
                   const arma::mat &v_rot_data, const arma::mat &dv_rot_data,
-                  const arma::vec &Q0, const arma::vec &Qg);
+                  const arma::vec &Q0, const arma::vec &Qg, const std::string &train_method = "LWR");
 
 
   /** brief Sets the high level training parameters of the DMP

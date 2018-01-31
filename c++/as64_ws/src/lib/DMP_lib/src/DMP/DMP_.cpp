@@ -42,7 +42,6 @@ namespace as64_
 
     param_::ParamList trainParamList;
     trainParamList.setParam("lambda", 0.99);
-    trainParamList.setParam("trainMethod", "LWR");
     trainParamList.setParam("P_cov", 1e6);
     this->setTrainingParams(&trainParamList);
 
@@ -104,7 +103,7 @@ namespace as64_
 
 
   double DMP_::train(const arma::rowvec &Time, const arma::rowvec &yd_data,
-    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g)
+    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g, const std::string &train_method)
   {
     int n_data = Time.size();
     arma::rowvec x(n_data);
@@ -119,22 +118,21 @@ namespace as64_
       Psi.col(i) = this->kernelFunction(x(i));
     }
 
-    std::string trainMethod = this->trainMethod;
-    if (trainMethod.compare("LWR")==0)
+    if (train_method.compare("LWR")==0)
     {
       this->w = opt_::LWR(Psi, s, Fd, this->zero_tol);
     }
-    else if (trainMethod.compare("RLWR")==0)
+    else if (train_method.compare("RLWR")==0)
     {
       this->w = opt_::RLWR(Psi, s, Fd, this->lambda, this->P_cov, this->zero_tol);
     }
-    else if (trainMethod.compare("LS")==0)
+    else if (train_method.compare("LS")==0)
     {
       this->w = opt_::normKernelLS(Psi, s, Fd, this->zero_tol);
     }
     else
     {
-      throw std::runtime_error(std::string("Unsopported training method \"") + trainMethod);
+      throw std::runtime_error(std::string("Unsopported training method \"") + train_method);
     }
 
     arma::rowvec F(Fd.size());
@@ -150,11 +148,9 @@ namespace as64_
 
   void DMP_::setTrainingParams(const param_::ParamList *paramListPtr)
   {
-    this->trainMethod = "LWR";
     this->lambda = 0.995;
     this->P_cov = 1e6;
 
-    paramListPtr->getParam("trainMethod", this->trainMethod);
     paramListPtr->getParam("lambda", this->lambda);
     paramListPtr->getParam("P_cov", this->P_cov);
   }

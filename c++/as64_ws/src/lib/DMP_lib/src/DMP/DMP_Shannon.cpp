@@ -17,7 +17,7 @@ namespace as64_
   }
 
   double DMP_Shannon::train(const arma::rowvec &Time, const arma::rowvec &yd_data,
-    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g)
+    const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g, const std::string &train_method)
   {
     double tau = this->getTau();
     int n_data = Time.size();
