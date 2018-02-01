@@ -40,6 +40,8 @@ struct CMD_ARGS
   double Md; // translational inertia
   double Kd; // translational stiffness
   double Dd; // translational damping
+  double F_dead_zone;
+  double F_retrain_thres;
   double dt; // simulation time_step
   double tol_stop; // position error tolerance to stop the simulation
   double orient_tol_stop; // orientation error tolerance to stop the simulation

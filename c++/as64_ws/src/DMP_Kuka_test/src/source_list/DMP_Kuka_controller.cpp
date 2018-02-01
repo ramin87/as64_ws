@@ -6,16 +6,35 @@ DMP_Kuka_controller::DMP_Kuka_controller(std::shared_ptr<arl::robot::Robot> robo
 	start = true;
 	Ts = robot_->cycle;
 
+	log_reset = false;
+  log_on = false;
+  run_dmp = false;
+  train_dmp = false;
+  goto_start = false;
+  pause_robot = false;
+  stop_robot = false;
+	start_demo = false;
+  end_demo = false;
 
-	
+	std::cout << as64_::io_::bold << as64_::io_::green << "Reading params from yaml file..." << as64_::io_::reset << "\n";
+  cmd_args.parse_cmd_args();
+  cmd_args.print();
+
+	robot_-> getJointPosition(q0_robot, ROBOT_ARM_INDEX);
+	q_robot = q_prev_robot = qd = q0_robot;
+	dq_robot = (q_robot - q_prev_robot) / Ts;
 
 	keyboard_ctrl_thread.reset(new std::thread(&DMP_Kuka_controller::keyboard_ctrl_function, this));
 }
 
 void DMP_Kuka_controller::keyboard_ctrl_function()
 {
+  // run_dmp = false;
+  // train_dmp = false;
+  // goto_start = false;
+
 	int key=0;
-	while (key!=10) // Enter
+	while (!stop_robot) // Enter
 	{
 		key = as64_::io_::getch();
 
@@ -24,16 +43,17 @@ void DMP_Kuka_controller::keyboard_ctrl_function()
 		switch (key)
 		{
 			// case 32: //Spacebar
-			case 'z':
+			case 'c':
+				log_reset = true;
 				break;
 			case 'r':
-
+				log_on = true;
 				break;
-			case 'o':
-
+			case 'p':
+				pause_robot = true;
 				break;
 			case 's':
-
+				stop_robot = true;
 				break;
 		}
 
@@ -42,19 +62,33 @@ void DMP_Kuka_controller::keyboard_ctrl_function()
 
 void DMP_Kuka_controller::read_train_data()
 {
-  std::cout << as64_::io_::bold << as64_::io_::green << "Reading CartPos training data..." << as64_::io_::reset << "\n";
-  load_data(cmd_args.in_CartPos_data_filename, Yd_data, dYd_data, ddYd_data, Time_demo, cmd_args.binary);
+	while (start_demo == false)
+	{
+		command();
+	}
 
-  std::cout << as64_::io_::bold << as64_::io_::green << "Reading orient training data..." << as64_::io_::reset << "\n";
-  load_data(cmd_args.in_orient_data_filename, Qd_data, v_rot_d_data, dv_rot_d_data, Time_demo, cmd_args.binary);
+	while (end_demo == false)
+	{
+		update();
+		log_demo();
+	}
 
-  n_data = Time_demo.size();
-  Dp = dYd_data.n_rows;
-  Do = v_rot_d_data.n_rows;
-  D = Dp+Do;
-  Ts = arma::min(arma::diff(Time_demo));
-  Time_demo = arma::linspace<arma::rowvec>(0,n_data-1,n_data)*Ts;
-  tau = Time_demo(n_data-1);
+	start_demo = false;
+	end_demo = false;
+
+  // std::cout << as64_::io_::bold << as64_::io_::green << "Reading CartPos training data..." << as64_::io_::reset << "\n";
+  // load_data(cmd_args.in_CartPos_data_filename, Yd_data, dYd_data, ddYd_data, Time_demo, cmd_args.binary);
+  //
+  // std::cout << as64_::io_::bold << as64_::io_::green << "Reading orient training data..." << as64_::io_::reset << "\n";
+  // load_data(cmd_args.in_orient_data_filename, Qd_data, v_rot_d_data, dv_rot_d_data, Time_demo, cmd_args.binary);
+  //
+  // n_data = Time_demo.size();
+  // Dp = dYd_data.n_rows;
+  // Do = v_rot_d_data.n_rows;
+  // D = Dp+Do;
+  // Ts = arma::min(arma::diff(Time_demo));
+  // Time_demo = arma::linspace<arma::rowvec>(0,n_data-1,n_data)*Ts;
+  // tau = Time_demo(n_data-1);
 }
 
 void DMP_Kuka_controller::train()
@@ -125,6 +159,11 @@ void DMP_Kuka_controller::init_simulation()
 
   iters = 0;
   dt = cmd_args.dt;
+}
+
+void DMP_Kuka_controller::log_demo()
+{
+
 }
 
 void DMP_Kuka_controller::log_online()
@@ -260,6 +299,7 @@ void DMP_Kuka_controller::calc_simulation_mse()
 
 void DMP_Kuka_controller::execute()
 {
+	read_train_data();
 
   // std::string package_path = ros::package::getPath("dmp_test");
   // std::cout << "package_path = " << package_path << "\n";
@@ -431,13 +471,32 @@ void DMP_Kuka_controller::execute()
   std::cout << "sim_mse = \n" << sim_mse << "\n";
 }
 
+void DMP_Kuka_controller::read_current_robot_state()
+{
+	robot_-> getJointPosition(q_robot, ROBOT_ARM_INDEX);
+	robot_->getTaskPose(T_robot_ee, ROBOT_ARM_INDEX);
+	robot_->getJacobian(J_robot, ROBOT_ARM_INDEX);
+
+	Y_robot = T_robot_ee.submat(0,3,2,3);
+	Q_robot = as64_::rotm2quat(T_robot_ee.submat(0,2,2,2));
+}
+
 void DMP_Kuka_controller::update()
 {
+	read_current_robot_state();
+	dq_robot = (q_robot - q_prev_robot) / Ts;
+	//V_robot = J_robot*dq_robot;
 
+}
+
+void DMP_Kuka_controller::command()
+{
+	robot_->setJointPosition(qd, ROBOT_ARM_INDEX);
 }
 
 void DMP_Kuka_controller::finalize()
 {
+	save_logged_data();
 	keyboard_ctrl_thread->join();
 }
 

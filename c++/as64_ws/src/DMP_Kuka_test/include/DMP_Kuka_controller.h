@@ -62,6 +62,7 @@ public:
   void finalize();
   void execute();
   void update();
+  void command();
 
   void read_train_data();
 
@@ -71,8 +72,16 @@ public:
   void run_simulation();
   void log_online();
   void log_offline();
+  void log_demo();
   void save_logged_data();
   void calc_simulation_mse();
+
+  /**
+   * Reads the current joints, position and orientation and saves them
+   * in 'q_robot', 'Y_robot', 'Q_robot'.
+   * Updates also the 'T_robot_ee' and 'J_robot'
+  */
+  void read_current_robot_state();
 
   ros::NodeHandle n;
 	ros::Publisher n_pub;
@@ -84,6 +93,16 @@ public:
 
   void keyboard_ctrl_function();
 private:
+
+  bool log_reset;
+  bool log_on;
+  bool run_dmp;
+  bool train_dmp;
+  bool goto_start;
+  bool pause_robot;
+  bool stop_robot;
+  bool start_demo;
+  bool end_demo;
 
   std::shared_ptr<std::thread> keyboard_ctrl_thread;
 
@@ -126,6 +145,7 @@ private:
   arma::vec Yg0, Yg, Yg2, dg_p;
   arma::vec Y0, Y, dY, ddY;
   arma::vec Y_robot, dY_robot, ddY_robot;
+  arma::vec V_robot;
   arma::vec Z, dZ;
   arma::vec Fdist_p;
 
@@ -139,13 +159,9 @@ private:
 
   arma::vec sim_mse;
 
-
-	Eigen::Matrix4d T_robot_endEffector;
-	Eigen::Matrix<double,CART_DOF_SIZE,1> V_endEffector, Vd_endEffector;
-	Eigen::Matrix<double,CART_DOF_SIZE,JOINT_SIZE> J_endEffector, J_robot;
-	Eigen::Matrix<double,JOINT_SIZE,1> q_dot, q, q_prev, qd_dot, qd, q0;
-	KDL::JntArray q_kdl;
-	arma::vec q_arma;
+	arma::vec q0_robot, q_prev_robot, q_robot, dq_robot, qd, dqd;
+  arma::mat T_robot_ee;
+  arma::mat J_robot;
 
 	//as64_::JLAv jlav;
 	//as64_::SingularValueFilter svf;

@@ -37,6 +37,8 @@ bool CMD_ARGS::parse_cmd_args()
   if (!nh_.getParam("Md", Md)) Md = 1.0;
   if (!nh_.getParam("Kd", Kd)) Kd = 50.0;
   if (!nh_.getParam("Dd", Dd)) Dd = 2*std::sqrt(Md*Kd);
+  if (!nh_.getParam("F_dead_zone", F_dead_zone)) F_dead_zone = 0.0;
+  if (!nh_.getParam("F_retrain_thres", F_retrain_thres)) F_retrain_thres = 100.0;
   if (!nh_.getParam("dt", dt)) dt = 0.002;
   if (!nh_.getParam("tol_stop", tol_stop)) tol_stop = 0.01;
   if (!nh_.getParam("orient_tol_stop", orient_tol_stop)) orient_tol_stop = 0.005;
@@ -105,6 +107,8 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "Md: " << Md << "\n";
   out << "Kd: " << Kd << "\n";
   out << "Dd: " << Dd << "\n";
+  out << "F_dead_zone: " << F_dead_zone << "\n";
+  out << "F_retrain_thres: " << F_retrain_thres << "\n";
   out << "dt: " << dt << "\n";
   out << "tol_stop: " << tol_stop << "\n";
   out << "orient_tol_stop: " << orient_tol_stop << "\n";
