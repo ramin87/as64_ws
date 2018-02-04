@@ -37,11 +37,15 @@ struct CMD_ARGS
   double Freq_min;
   double Freq_max;
   double P1_min;
-  double Md; // translational inertia
-  double Kd; // translational stiffness
-  double Dd; // translational damping
-  double F_dead_zone;
-  double F_retrain_thres;
+  double Md_p; // translational inertia
+  double Kd_p; // translational stiffness
+  double Dd_p; // translational damping
+  double Md_o; // rotational inertia
+  double Kd_o; // rotational stiffness
+  double Dd_o; // rotational damping
+  double Fp_dead_zone;
+  double Fo_dead_zone;
+  double F_norm_retrain_thres;
   double dt; // simulation time_step
   double tol_stop; // position error tolerance to stop the simulation
   double orient_tol_stop; // orientation error tolerance to stop the simulation

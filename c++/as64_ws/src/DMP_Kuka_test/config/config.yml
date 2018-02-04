@@ -45,11 +45,15 @@ Freq_max: 150.0
 P1_min: 10000.1
 
 ## Robot controller params
-Md: 1.0 # inertia
-Kd: 50.0 # stiffness
-#Dd: 14.2  # damping
-F_dead_zone: 2.5
-F_retrain_thres: 2
+Md_p: 1.0 # translational inertia
+Kd_p: 50.0 # translational stiffness
+#Dd_p: 14.2  # translational damping
+Md_o: 1.0 # rotational inertia
+Kd_o: 10.0 # rotational stiffness
+#Dd_o: 4.5  # rotational damping
+Fp_dead_zone: 2.5
+Fo_dead_zone: 2.5
+F_norm_retrain_thres: 2
 
 ## Simulation params
 dt: 0.002 #simulation time_step

@@ -55,33 +55,32 @@ using namespace as64_;
 class DMP_Kuka_controller : public arl::robot::Controller
 {
 public:
+  bool start;
 
   DMP_Kuka_controller(std::shared_ptr<arl::robot::Robot> robot);
-
-  bool start;
-  void finalize();
+  void init_controller();
   void execute();
   void update();
   void command();
+  void finalize();
 
-  void read_train_data();
+  void record_demo();
+  void goto_start_pose();
 
-  void train();
+  void train_DMP();
+  void init_execution();
+  void execute_DMP();
 
-  void init_simulation();
-  void run_simulation();
+  void log_demo_step();
   void log_online();
   void log_offline();
-  void log_demo();
-  void save_logged_data();
-  void calc_simulation_mse();
 
-  /**
-   * Reads the current joints, position and orientation and saves them
-   * in 'q_robot', 'Y_robot', 'Q_robot'.
-   * Updates also the 'T_robot_ee' and 'J_robot'
-  */
-  void read_current_robot_state();
+  void clear_logged_data();
+  void clear_and_restart_demo();
+  void save_and_restart_demo();
+  void save_logged_data();
+  
+  void calc_simulation_mse();
 
   ros::NodeHandle n;
 	ros::Publisher n_pub;
@@ -94,15 +93,17 @@ public:
   void keyboard_ctrl_function();
 private:
 
-  bool log_reset;
   bool log_on;
   bool run_dmp;
   bool train_dmp;
   bool goto_start;
-  bool pause_robot;
   bool stop_robot;
   bool start_demo;
   bool end_demo;
+  bool save_restart_demo;
+  bool clear_restart_demo;
+
+  int demo_save_counter;
 
   std::shared_ptr<std::thread> keyboard_ctrl_thread;
 
@@ -144,22 +145,26 @@ private:
 
   arma::vec Yg0, Yg, Yg2, dg_p;
   arma::vec Y0, Y, dY, ddY;
-  arma::vec Y_robot, dY_robot, ddY_robot;
+  arma::vec Y_robot, dY_robot, dY_robot_prev, ddY_robot;
   arma::vec V_robot;
   arma::vec Z, dZ;
   arma::vec Fdist_p;
 
   arma::vec Qg0, Qg, Qg2, dg_o;
   arma::vec Q0, Q, dQ, v_rot, dv_rot;
-  arma::vec Q_robot, v_rot_robot, dv_rot_robot;
+  arma::vec Q_robot, v_rot_robot, v_rot_robot_prev, dv_rot_robot;
   arma::vec eta, deta;
   arma::vec Fdist_o;
 
-  arma::vec F, Fd;
+  arma::vec ddEp;
+	arma::vec dEp;
+
+	arma::vec ddEo;
+	arma::vec dEo;
 
   arma::vec sim_mse;
 
-	arma::vec q0_robot, q_prev_robot, q_robot, dq_robot, qd, dqd;
+	arma::vec q0_robot, q_prev_robot, q_robot, dq_robot;
   arma::mat T_robot_ee;
   arma::mat J_robot;
 
@@ -167,9 +172,6 @@ private:
 	//as64_::SingularValueFilter svf;
 
 	std::shared_ptr<arl::robot::Robot> robot_;
-
-	Eigen::Matrix4d robotArm_fkine() const;
-	Eigen::Matrix<double, CART_DOF_SIZE, JOINT_SIZE> robotArm_jacob() const;
 };
 
 #endif

@@ -51,11 +51,12 @@ struct LogData
   std::vector<arma::mat> DMP_h;
 
   bool poseDataFlag;
-  
+
   CMD_ARGS cmd_args;
 
   LogData();
   void save(const std::string &filename, bool binary=false, int precision = 6);
+  void clear();
 };
 
 #endif // LOG_DATA_H

@@ -44,19 +44,6 @@ int main(int argc, char** argv)
 
   controller->execute();
 
-  // while(ros::ok() && controller->start) {
-  //
-  //   //std::cout << "[MAIN]: Entered loop...\n";
-  //
-  //   // Controller execution
-  //   controller->execute();
-  //   if (use_sim == 1) {
-  //     loop_rate->sleep();
-  //   }
-  //   // Process ROS callbacks on each loop
-  //   ros::spinOnce();
-  // }
-
   std::cout << "[MAIN]: Exited loop...\n";
 
   controller->finalize();

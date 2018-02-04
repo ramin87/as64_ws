@@ -5,6 +5,45 @@ LogData::LogData()
   poseDataFlag = false;
 }
 
+void LogData::clear()
+{
+  Time_demo.clear();
+  yd_data.clear();
+  dyd_data.clear();
+  ddyd_data.clear();
+
+  g0.clear();
+
+  Time_offline_train.clear();
+  F_offline_train_data.clear();
+  Fd_offline_train_data.clear();
+  Psi_data_train.clear();
+
+  Time.clear();
+  y_data.clear();
+  dy_data.clear();
+  ddy_data.clear();
+  z_data.clear();
+  dz_data.clear();
+  x_data.clear();
+  goalAttr_data.clear();
+  shapeAttr_data.clear();
+  Psi_data.clear();
+
+  y_robot_data.clear();
+  dy_robot_data.clear();
+  ddy_robot_data.clear();
+
+  Fdist_data.clear();
+  Force_term_data.clear();
+  g_data.clear();
+
+  DMP_w.clear();
+  DMP_c.clear();
+  DMP_h.clear();
+
+  poseDataFlag = false;
+}
 
 void LogData::save(const std::string &filename, bool binary, int precision)
 {
