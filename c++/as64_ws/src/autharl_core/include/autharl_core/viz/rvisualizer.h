@@ -1,16 +1,16 @@
 /*******************************************************************************
  * Copyright (c) 2016-2017 Automation and Robotics Lab, AUTh
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
  * deal in the Software without restriction, including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -80,15 +80,22 @@ public:
                                           double lifetime = 0)
   {
     std::vector<Eigen::Vector3d> p(points.size());
+    std::vector<geometry_msgs::Pose> path;
     for (int i = 0; i < points.size(); i++)
     {
-      for (int j = 0; j < 3; j++)
-      p.at(i)(j) = points.at(i)(j);
+      for (int j = 0; j < 3; j++) p.at(i)(j) = points.at(i)(j);
+      path[i].position.x = p.at(i)(0);
+      path[i].position.y = p.at(i)(1);
+      path[i].position.z = p.at(i)(2);
+      path[i].orientation.w = 1.0;
+      path[i].orientation.x = 0.0;
+      path[i].orientation.y = 0.0;
+      path[i].orientation.z = 0.0;
     }
 
     setAlpha(alpha);
     setLifetime(lifetime);
-    this->publishPath(p, color, radius);
+    this->publishPath(path, color, rviz_visual_tools::MEDIUM);
     this->triggerBatchPublish();
   }
 
@@ -283,7 +290,7 @@ public:
 
   /**
    * @brief Visualizes a cuboid (a paralliped box) in RViz. Needs two 3D points in space
-   * which represent the top corner of the box and the bottom opposite corner. 
+   * which represent the top corner of the box and the bottom opposite corner.
    *
    * @param top The top corner of the box
    * @param bottom The bottom corner of the box

@@ -129,8 +129,6 @@ public:
   // Saves all data from struct 'log_data' in an output file.
   void save_logged_data();
 
-  void calc_simulation_mse();
-
   // ros::NodeHandle n;
 	// ros::Publisher n_pub;
 	// ros::Subscriber n_sub;

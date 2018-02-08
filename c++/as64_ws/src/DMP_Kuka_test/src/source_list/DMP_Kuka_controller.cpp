@@ -9,6 +9,10 @@ DMP_Kuka_controller::DMP_Kuka_controller(std::shared_ptr<arl::robot::Robot> robo
   cmd_args.parse_cmd_args();
   cmd_args.print();
 
+	Dp = 3;
+	Do = 3;
+	Dp = Dp + Do;
+
 	F_dead_zone.resize(6);
 	F_dead_zone.subvec(0,2).fill(cmd_args.Fp_dead_zone);
 	F_dead_zone.subvec(3,5).fill(cmd_args.Fo_dead_zone);
@@ -129,16 +133,16 @@ void DMP_Kuka_controller::record_demo()
 	clear_train_data();
 	while (!start_demo)
 	{
+		update();
 		command();
 	}
 
-	update();
 	q0_robot = q_robot; // save intial joint positions
 	while (!end_demo)
 	{
 		log_demo_step();
-		command();
 		update();
+		command();
 	}
 
 	start_demo = false;
@@ -164,7 +168,7 @@ void DMP_Kuka_controller::record_demo()
 
 void DMP_Kuka_controller::goto_start_pose()
 {
-	robot_->setJointTrajectory(q0_robot, 6.0, ROBOT_ARM_INDEX);
+	robot_->setJointTrajectory(q0_robot, tau + 2, ROBOT_ARM_INDEX);
 	init_program_variables();
 }
 
@@ -449,21 +453,6 @@ void DMP_Kuka_controller::save_logged_data()
 	demo_save_counter++;
 }
 
-void DMP_Kuka_controller::calc_simulation_mse()
-{
-  sim_mse.resize(D);
-  for (int i=0;i<D;i++)
-  {
-    arma::rowvec y_robot_data2;
-    arma::rowvec yd_data2;
-    as64_::spl_::makeSignalsEqualLength(log_data.Time, log_data.y_robot_data.row(i),
-            log_data.Time_demo, log_data.yd_data.row(i), log_data.Time,
-            y_robot_data2, yd_data2);
-    sim_mse(i) = arma::norm(y_robot_data2-yd_data2);
-  }
-}
-
-
 
 void DMP_Kuka_controller::execute()
 {
@@ -595,9 +584,4 @@ void DMP_Kuka_controller::finalize()
 {
 	save_logged_data();
 	keyboard_ctrl_thread->join();
-
-	// calc_simulation_mse();
-  // std::cout << "offline_train_p_mse = \n" << offline_train_p_mse << "\n";
-  // std::cout << "offline_train_o_mse = \n" << offline_train_o_mse << "\n";
-  // std::cout << "sim_mse = \n" << sim_mse << "\n";
 }
