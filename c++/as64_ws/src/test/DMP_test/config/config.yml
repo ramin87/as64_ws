@@ -4,7 +4,7 @@
 a_z: 20.0
 # b_z: 5.0
 
-DMP_TYPE: "DMP" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
+DMP_TYPE: "DMP-bio" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
 
 N_kernels: 100 # number of kernels used in the DMP
 

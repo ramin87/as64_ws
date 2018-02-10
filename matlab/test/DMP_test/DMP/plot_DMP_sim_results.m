@@ -4,6 +4,8 @@ function plot_DMP_sim_results()
 % close all;
 clear;
 
+set_matlab_utils_path();
+
 load data/dmp_results.mat log_data
 
 plot_DMP_sim_results_helper(log_data);

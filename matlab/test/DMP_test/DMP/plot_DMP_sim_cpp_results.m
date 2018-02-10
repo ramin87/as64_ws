@@ -1,5 +1,8 @@
 % function load_DMP_cpp_results()
 
+set_matlab_utils_path();
+
+
 filename = 'data/data_out.bin';
 fid = fopen(filename,'r');
 if (fid < 0), error(['Failed to open file ' filename]); end

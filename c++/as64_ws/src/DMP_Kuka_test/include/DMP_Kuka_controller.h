@@ -93,6 +93,9 @@ public:
   // Robot moves in admittance.
   void record_demo();
 
+  // Runs update and command keeping the robot at its current pose waiting.
+  void robot_wait();
+
   // Moves the robot to its starting position as recorded by the last call to "record_demo".
   // Blocking.
   // Uses position control (no admittance here).

@@ -16,6 +16,7 @@ if (D == 2)
     plot(yd_data(1,1), yd_data(2,1),'mo','Markersize',markerSize, 'LineWidth',lineWidth);
     plot(yd_data(1,end), yd_data(2,end),'rx','Markersize',markerSize, 'LineWidth',lineWidth);
     legend({y_label, yd_label, 'start', 'end'}, 'Interpreter','latex', 'fontsize',fontsize);
+    axis equal;
     hold off;
 elseif (D == 3)
     figure;
@@ -24,6 +25,7 @@ elseif (D == 3)
     plot3(yd_data(1,1), yd_data(2,1),yd_data(3,1),'mo','Markersize',markerSize, 'LineWidth',lineWidth);
     plot3(yd_data(1,end), yd_data(2,end),yd_data(3,end),'rx','Markersize',markerSize, 'LineWidth',lineWidth);
     legend({y_label, yd_label, 'start', 'end'}, 'Interpreter','latex', 'fontsize',fontsize);
+    axis equal;
     hold off;
 else
    error('Unsopported dimensionality of data D = %i',D); 

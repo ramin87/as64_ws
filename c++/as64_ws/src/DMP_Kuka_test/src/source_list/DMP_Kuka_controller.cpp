@@ -1,4 +1,5 @@
 #include <DMP_Kuka_controller.h>
+#include <io_lib/io_lib.h>
 
 DMP_Kuka_controller::DMP_Kuka_controller(std::shared_ptr<arl::robot::Robot> robot)
 {
@@ -86,8 +87,15 @@ void DMP_Kuka_controller::init_controller()
 	init_program_variables();
 }
 
+void DMP_Kuka_controller::robot_wait()
+{
+	update();
+	command();
+}
+
 void DMP_Kuka_controller::keyboard_ctrl_function()
 {
+	using namespace as64_::io_;
   // run_dmp = false;
   // train_dmp = false;
   // goto_start = false;
@@ -101,15 +109,22 @@ void DMP_Kuka_controller::keyboard_ctrl_function()
 
 		switch (key)
 		{
-			// case 32: //Spacebar
+			std::cout << green << bold << "[KEY PRESSED]: ";
+			case 32: //Spacebar, to start/stop the dmp (toggle)
+				run_dmp = !run_dmp;
+				std::cout << (run_dmp?"run DMP\n":"stop DMP\n");
+				break;
 			case 'c':
 				clear_restart_demo = true;
+				std::cout << "Clear and restart demo\n";
 				break;
 			case 'r':
 				save_restart_demo = true;
+				std::cout << "Save and restart demo\n";
 				break;
 			case 'l':
 				log_on = true;
+				std::cout << "Log on enabled\n";
 				break;
 			case 's':
 				stop_robot = true;
@@ -122,6 +137,7 @@ void DMP_Kuka_controller::keyboard_ctrl_function()
 				break;
 		}
 
+		std::cout << reset;
 	}
 }
 
@@ -133,8 +149,7 @@ void DMP_Kuka_controller::record_demo()
 	clear_train_data();
 	while (!start_demo)
 	{
-		update();
-		command();
+		robot_wait();
 	}
 
 	q0_robot = q_robot; // save intial joint positions
@@ -171,7 +186,6 @@ void DMP_Kuka_controller::goto_start_pose()
 	robot_->setJointTrajectory(q0_robot, tau + 2, ROBOT_ARM_INDEX);
 	init_program_variables();
 }
-
 
 void DMP_Kuka_controller::train_DMP()
 {
@@ -453,7 +467,6 @@ void DMP_Kuka_controller::save_logged_data()
 	demo_save_counter++;
 }
 
-
 void DMP_Kuka_controller::execute()
 {
 	restart_demo_label:
@@ -474,6 +487,7 @@ void DMP_Kuka_controller::execute()
   dmpOrient->init(dmpVec2);
 
 	restart_dmp_execution_label:
+	run_dmp = false;
 	clear_logged_data();
 
 	goto_start_pose();
@@ -481,6 +495,8 @@ void DMP_Kuka_controller::execute()
 	if (train_dmp) train_DMP();
 
 	clear_train_data();
+
+	while (!run_dmp) robot_wait();
 
   // Start simulation
   while (ros::ok() && robot_->isOk() && !stop_robot)
