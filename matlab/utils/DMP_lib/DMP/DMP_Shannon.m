@@ -111,7 +111,8 @@ classdef DMP_Shannon < handle % : public DMP
             end
 
             DMP_init(dmp, N_kernels, a_z, b_z, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, kernelStdScaling, extraArgName, extraArgValue);
-
+            
+%             dmp.a_s = 1.0;
         end
 
 
@@ -162,23 +163,25 @@ classdef DMP_Shannon < handle % : public DMP
             Fs = 1/Ts;
             [f, P1, Y] = getSingleSidedFourier(Fd, Fs);
 
-            Freq_max = min(dmp.Freq_max,f(end));
+            Freq_max = f(end);
 
             % find the maximum required frequency to get at least 'Wmin' percent of the
             % total signal's energy
-            W = sum(P1(f<=Freq_max).^2);
+%             W = sum(P1(f<=Freq_max).^2);
+            W = sum(P1.^2);
             W_temp = 0;
             k = 0;
+            
             while (W_temp < W*dmp.Wmin)
                 k = k+1;
                 W_temp = W_temp + P1(k)^2;
             end
             
-            W
-            W_all = sum(P1.^2)
-            W_temp
-            
-            W_temp/W_all
+%             W
+%             W_all = sum(P1.^2)
+%             W_temp
+%             
+%             W_temp/W_all
 
             Freq1 = f(k);
             fprintf('Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n', dmp.Wmin, Freq1);
@@ -196,47 +199,72 @@ classdef DMP_Shannon < handle % : public DMP
                 end
                 k = k+1;
             end
-
+           
             Fmax = f(k);
-            Freq = Fmax; %max(Fmax, 50);
+            Fmax = min(dmp.Freq_max,Fmax);
+            Fmax = max(dmp.Freq_min, Fmax);
+            
 
-            fprintf('Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n', dmp.P1_min, Freq);
+            fprintf('Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n', dmp.P1_min, Fmax);
 
             % ==> Filter the signal retaining at least 'Wmin' energy
-            [but_filt_b, but_filt_a] = butter(6, Freq/(Fs/2), 'low');
-            Fd_filt = filtfilt(but_filt_b, but_filt_a, Fd);
-            
-%             Fd_filt = filter(filter_b, filter_a, Fd);
-% 
-            ham_filt_b = fir1(500, Freq/(Fs/2), 'low');
+            [but_filt_b, but_filt_a] = butter(6, Fmax/(Fs/2), 'low');
+%             Fd_filt = filtfilt(but_filt_b, but_filt_a, Fd);
+%             Fd_filt = filter(but_filt_b, but_filt_a, Fd);
+
+%             n_ham_filter = min(round(n_data*0.01), 50);
+            n_ham_filter = round(Fs/dmp.Freq_min);
+            ham_filt_b = fir1(n_ham_filter, Fmax/(Fs/2), 'low');
             Fd_filt = filtfilt(ham_filt_b, 1, Fd);
-            Fd_filt2 = filtfilt(but_filt_b, but_filt_a, Fd);
+%             Fd_filt = filter(ham_filt_b, 1, Fd);
             
-            figure
-            freqz(ham_filt_b,1);
+            nf = length(ham_filt_b);
+%             Fd_filt = [ones(1,nf)*Fd(1) zeros(1,n_data)];
+
+
+%             Fd_filt2 = filtfilt(but_filt_b, but_filt_a, Fd);
             
-            figure
-            freqz(but_filt_b,but_filt_a);
-            
-%             Fd_filt = Fd;
-            
-%             Y(k+1:end) = 0.0;
-%             Fd_filt = real(ifft(2*Y));
+
+%             figure;
 %             
+%             [hy,hx] = freqz(ham_filt_b,1);
+%             hx = Fs*hx/(2*pi);
+%             ham_dB = mag2db(abs(hy));
+%             subplot(2,1,1);
+%             plot(hx, ham_dB);
+%             xlabel('f [$Hz$]', 'Interpreter','latex', 'FontSize',14);
+%             ylabel('Magnitude ($dB$)', 'Interpreter','latex', 'FontSize',14);
+%             title('Hamming filter', 'Interpreter','latex', 'FontSize',14);
+%             
+%             [hy,hx] = freqz(but_filt_b,but_filt_a);
+%             hx = Fs*hx/(2*pi);
+%             but_dB = mag2db(abs(hy));
+%             subplot(2,1,2);
+%             plot(hx, but_dB);
+%             xlabel('f [$Hz$]', 'Interpreter','latex', 'FontSize',14);
+%             ylabel('Magnitude ($dB$)', 'Interpreter','latex', 'FontSize',14);
+%             title('Butterworth filter', 'Interpreter','latex', 'FontSize',14);
+                
+
             figure;
-            plot(Time,Fd, Time,Fd_filt, Time,Fd_filt2);
-            legend('F_d','F_{dfilt-ham}','F_{dfilt-butter}');
+            plot(Time,Fd, Time,Fd_filt);
+            legend('F_d','F_{dfilt-ham}');
+            
+%             figure;
+%             plot(Time,Fd, Time,Fd_filt, Time,Fd_filt2);
+%             legend('F_d','F_{dfilt-ham}','F_{dfilt-butter}');
+          
+            [f, P1] = getSingleSidedFourier(Fd, Fs);
+            [f, P1_filt] = getSingleSidedFourier(Fd_filt, Fs);
 
-
-[f, P1] = getSingleSidedFourier(Fd, Fs);
-[f, P1_filt] = getSingleSidedFourier(Fd_filt, Fs);
-
-figure;
-hold on;
-plot(f,P1, f,P1_filt);
-plot([f(k) f(k)], [-0.1 max(P1)+0.1], 'r--','LineWidth',1.3);
-hold off;
-legend('P_1','P_{1filt}');
+            figure;
+            hold on;
+            plot(f,P1, f,P1_filt);
+            plot([Fmax Fmax], [-0.1 max(P1)+0.1], 'r--','LineWidth',1.3);
+            ylabel('Magnitude ($dB$)', 'Interpreter','latex', 'FontSize',14);
+            xlabel('f [$Hz$]', 'Interpreter','latex', 'FontSize',14);
+            hold off;
+            legend('P_1','P_{1filt}');
 
 
             %[f, P1_filt] = getSingleSidedFourier(Fd_filt, Fs);

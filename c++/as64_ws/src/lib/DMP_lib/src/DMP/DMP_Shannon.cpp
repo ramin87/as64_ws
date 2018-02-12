@@ -36,11 +36,13 @@ namespace as64_
     arma::rowvec f, P1;
     as64_::spl_::getSingleSidedFourier(Fd, Fs, f, P1);
 
-    double Freq_max = std::min(this->Freq_max, f(f.size()-1));
+    // double Freq_max = std::min(this->Freq_max, f(f.size()-1));
+    double Freq_max = f(f.size()-1);
 
     // find the maximum required frequency to get at least 'Wmin' percent of the
     // total signal's energy
-    double W = arma::sum(arma::pow(P1.elem(arma::find(f<=Freq_max)),2));
+    // double W = arma::sum(arma::pow(P1.elem(arma::find(f<=Freq_max)),2));
+    double W = arma::sum(arma::pow(P1.t(),2));
     double W_temp = 0.0;
     int k = -1;
     double W_temp_min = W*this->Wmin;
@@ -51,7 +53,7 @@ namespace as64_
     }
 
     double Freq1 = f(k);
-    printf("Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n", this->Wmin, Freq1);
+    // printf("Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n", this->Wmin, Freq1);
 
     while (k < f.size())
     {
@@ -63,23 +65,21 @@ namespace as64_
     if (k == f.size()) k--;
 
     double Fmax = f(k);
-    double Freq = Fmax; // max(Fmax, 50);
-    // printf("Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n", this->P1_min, Freq);
+    Fmax = std::min(this->Freq_max,Fmax);
+    Fmax = std::max(this->Freq_min, Fmax);
+    // printf("Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n", this->P1_min, Fmax);
 
-    arma::rowvec Fd_filt = arma::rowvec().zeros(Fd.size());
     // ==> Filter the signal retaining at least 'Wmin' energy
-    // [filter_b, filter_a] = butter(6, Freq/(Fs/2), 'low');
-    // Fd_filt = filtfilt(filter_b, filter_a, Fd);
     sp::FIR_filt<double,double,double> fir_filt;
-  	arma::vec filter_b = sp::fir1(27, Freq/(Fs/2));
-  	fir_filt.set_coeffs(filter_b);
+  	arma::vec filter_b = sp::fir1(Fs/this->Freq_min, Fmax/(Fs/2));
+  	// fir_filt.set_coeffs(filter_b);
+    // arma::rowvec Fd_filt = arma::rowvec().zeros(Fd.size());
   	// Filter - sample loop
-  	for(int n=0;n<Fd.size();n++)
-  	{
-  		Fd_filt(n) = fir_filt(Fd(n));
-  	}
-
-    // Fd_filt = Fd;
+  	// for(int n=0;n<Fd.size();n++)
+  	// {
+  	// 	Fd_filt(n) = fir_filt(Fd(n));
+  	// }
+    arma::rowvec Fd_filt = arma::conv(Fd, filter_b.t(), "same");
 
     double T1 = 1.0/(2*Fmax);
     arma::rowvec T_sync(std::round(tau/T1));

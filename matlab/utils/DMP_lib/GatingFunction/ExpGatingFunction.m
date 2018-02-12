@@ -10,6 +10,7 @@ classdef ExpGatingFunction < handle
    properties
        u0 % initial value of the gating function
        a_u % the rate of evolution of the gating function
+       dec_flag % true of the gating is decreasing, false otherwise
    end
 
    methods
@@ -42,6 +43,9 @@ classdef ExpGatingFunction < handle
       function setGatingFunParams(gating_fun, u0, u_end)
 
           gating_fun.u0 = u0;
+          
+          dec_flag = (u0 > u_end);
+ 
           x = u_end/gating_fun.u0;
 
           if (u0 == 0)
