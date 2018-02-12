@@ -1,7 +1,8 @@
 ## Set up DMP params
 
 # Parameters of the linear part of the DMP (spring-damper)
-a_z: 20.0
+a_z: 15.0
+#a_z: 4.0
 # b_z: 5.0
 
 DMP_TYPE: "DMP" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
@@ -29,9 +30,9 @@ ONLINE_DMP_UPDATE_enable: false
 lambda: 0.99 # forgetting factor for recursive training methods
 P_cov: 1e8 # initial value of covariance matrix for recursive training methods
 
-USE_GOAL_FILT: true
+USE_GOAL_FILT: false
 a_g: 20.0
-USE_PHASE_STOP: true
+USE_PHASE_STOP: false
 a_px: 50.0
 a_py: 40.0
 
@@ -45,15 +46,16 @@ Freq_max: 150.0
 P1_min: 10000.1
 
 ## Robot controller params
-Md_p: 1.0 # translational inertia
-Kd_p: 50.0 # translational stiffness
-#Dd_p: 14.2  # translational damping
+Md_p: 5.0 # translational inertia
+Kd_p: 1000.0 # translational stiffness
+Dd_p: 14.2  # translational damping
 Md_o: 1.0 # rotational inertia
-Kd_o: 10.0 # rotational stiffness
-#Dd_o: 4.5  # rotational damping
-Fp_dead_zone: 2.5
+Kd_o: 1000.0 # rotational stiffness
+Dd_o: 4.5  # rotational damping
+
+Fp_dead_zone: 3.0
 Fo_dead_zone: 2.5
-F_norm_retrain_thres: 2
+F_norm_retrain_thres: 5
 
 ## Simulation params
 dt: 0.002 #simulation time_step
@@ -73,8 +75,8 @@ t2_fdist: 2.2 # End of Fdist_max
 
 #:===  Path to input-output data :===
 binary: true
-data_input_path: "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/"
-data_output_path: "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/"
+data_input_path: "/home/user/Sinc_DMP/as64_ws/matlab/test/DMP_test/DMP/data/"
+data_output_path: "/home/user/Sinc_DMP/as64_ws/matlab/test/DMP_test/DMP/data/"
 
 in_data_filename: "data.bin"
 out_data_filename: "data_out"

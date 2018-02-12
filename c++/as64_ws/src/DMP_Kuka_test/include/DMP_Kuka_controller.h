@@ -76,6 +76,8 @@ public:
   // Initializes the program's variables.
   void init_program_variables();
 
+  void robot_wait();
+
   // Executes the main control loop.
   void execute();
 
@@ -92,9 +94,6 @@ public:
   // Blocking.
   // Robot moves in admittance.
   void record_demo();
-
-  // Runs update and command keeping the robot at its current pose waiting.
-  void robot_wait();
 
   // Moves the robot to its starting position as recorded by the last call to "record_demo".
   // Blocking.
@@ -132,6 +131,8 @@ public:
   // Saves all data from struct 'log_data' in an output file.
   void save_logged_data();
 
+  void calc_simulation_mse();
+
   // ros::NodeHandle n;
 	// ros::Publisher n_pub;
 	// ros::Subscriber n_sub;
@@ -143,9 +144,11 @@ public:
   // Uses the keyboard as interface between the user and the program.
   // Runs on the different thread from the main program.
   void keyboard_ctrl_function();
+  void save_execution_results();
 private:
 
   // Program control flags
+  bool save_exec_results;
   bool log_on; // if true, at each step of the execution, intermediate data are logged.
   bool run_dmp; // if true the dmp is executed
   bool train_dmp; // if true the DMP is (re)trained
@@ -159,6 +162,7 @@ private:
   int demo_save_counter; // add a number to the data output file to avoid overriding the previous one
 
   std::shared_ptr<std::thread> keyboard_ctrl_thread; // thread for the "keyboard_ctrl_function()"
+  std::shared_ptr<std::thread> save_exec_results_thread; // thread for the "keyboard_ctrl_function()"
 
   arma::wall_clock timer; // timer to measure elapsed time
 
