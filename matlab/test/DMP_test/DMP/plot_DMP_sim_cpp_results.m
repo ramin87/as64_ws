@@ -147,29 +147,29 @@ end
 %% Plot the training data
 plotPosVelAccel(Time_demo, yd_data, dyd_data, ddyd_data, 'LineWidth',2, 'FontSize',14, 'Interpreter','latex');
 
-for i=1:D
-    n_splots = 3;
-    figure;
-    subplot(n_splots,1,1);
-    plot(Time,x_data, Time,shapeAttrGating_data, Time, goalAttrGating_data);
-    legend({'$x$','$shapeAttrGating$', '$goalAttrGating$'},'Interpreter','latex','fontsize',fontsize);
-    subplot(n_splots,1,2);
-    plot(Time,y_robot_data(i,:), Time,y_data(i,:), Time_demo,yd_data(i,:), Time,g_data(i,:), '--', Time(end),g0(i),'r*','Markersize',10);
-    legend({'$p_{robot}$','$p_{DMP}$','$p_{train}$','goal evolution','$p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
-    subplot(n_splots,1,3);
-    plot(Time,Fdist_data(i,:));
-    legend({'Disturbance force'},'Interpreter','latex','fontsize',fontsize);
+% for i=1:D
+%     n_splots = 3;
+%     figure;
+%     subplot(n_splots,1,1);
+%     plot(Time,x_data, Time,shapeAttrGating_data, Time, goalAttrGating_data);
+%     legend({'$x$','$shapeAttrGating$', '$goalAttrGating$'},'Interpreter','latex','fontsize',fontsize);
+%     subplot(n_splots,1,2);
+%     plot(Time,y_robot_data(i,:), Time,y_data(i,:), Time_demo,yd_data(i,:), Time,g_data(i,:), '--', Time(end),g0(i),'r*','Markersize',10);
+%     legend({'$p_{robot}$','$p_{DMP}$','$p_{train}$','goal evolution','$p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
+%     subplot(n_splots,1,3);
+%     plot(Time,Fdist_data(i,:));
+%     legend({'Disturbance force'},'Interpreter','latex','fontsize',fontsize);
+% 
+% end
 
-end
-
-%% Plot 'F' training
-for i=1:D
-    lineWidth = 1.2;
-    F = F_offline_train_data(i,:);
-    Fd = Fd_offline_train_data(i,:);
-    Psi = Psi_data_train{i};
-    plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Offline training', '$F$', '$F_d$');
-end
+% %% Plot 'F' training
+% for i=1:D
+%     lineWidth = 1.2;
+%     F = F_offline_train_data(i,:);
+%     Fd = Fd_offline_train_data(i,:);
+%     Psi = Psi_data_train{i};
+%     plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Offline training', '$F$', '$F_d$');
+% end
 
 
 %% Plot DMP simulation and demo pos, vel, accel
@@ -182,6 +182,8 @@ plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,yd_data, 'robot', 'dem
 plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dyd_data, 'robot', 'demo', 'Velocity', lineWidth);
 plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddyd_data, 'robot', 'demo', 'Acceleration', lineWidth);
 
+plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'dmp', 'demo', 'Position', lineWidth);
+
 % plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
 % plot_signals_and_errorSignal(Time,dy_data, Time_demo,dyd_data, 'DMP', 'demo', 'Velocity', lineWidth);
 % plot_signals_and_errorSignal(Time,ddy_data, Time_demo,ddyd_data, 'DMP', 'demo', 'Acceleration', lineWidth);
@@ -193,10 +195,10 @@ if (D==2 || D==3)
     plot_line_path(y_data, yd_data, 'DMP', 'demo', 2, 10);
 end
 
-for i=1:D
-    lineWidth = 1.2;
-    plot_F1_F2_Psi(Time, Force_term_data(i,:), Time_offline_train, Fd_offline_train_data(i,:), Time, Psi_data{i}, lineWidth, fontsize, 'Forcing term - Simulation', '$F_{sim}$', '$F_d$');
-end
+% for i=1:D
+%     lineWidth = 1.2;
+%     plot_F1_F2_Psi(Time, Force_term_data(i,:), Time_offline_train, Fd_offline_train_data(i,:), Time, Psi_data{i}, lineWidth, fontsize, 'Forcing term - Simulation', '$F_{sim}$', '$F_d$');
+% end
 
 
 figure;

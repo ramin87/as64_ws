@@ -163,6 +163,7 @@ private:
 
   std::shared_ptr<std::thread> keyboard_ctrl_thread; // thread for the "keyboard_ctrl_function()"
   std::shared_ptr<std::thread> save_exec_results_thread; // thread for the "keyboard_ctrl_function()"
+  std::shared_ptr<std::thread> train_DMP_thread; // thread for the "keyboard_ctrl_function()"
 
   arma::wall_clock timer; // timer to measure elapsed time
 
@@ -215,6 +216,8 @@ private:
 	arma::vec dEp;
 	arma::vec ddEo;
 	arma::vec dEo;
+
+	arma::vec Ep;
 
   arma::vec sim_mse;
 

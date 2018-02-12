@@ -1,12 +1,12 @@
 ## Set up DMP params
 
 # Parameters of the linear part of the DMP (spring-damper)
-a_z: 15.0
+a_z: 10.0
 # b_z: 5.0
 
-DMP_TYPE: "DMP" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
+DMP_TYPE: "DMP-Shannon" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
 
-N_kernels: 60 # number of kernels used in the DMP
+N_kernels: 54 # number of kernels used in the DMP
 
 kernelStdScaling: 1.0 # scaling factor for the kernels std
 
@@ -16,7 +16,7 @@ CAN_CLOCK_TYPE: "lin"
 
 SHAPE_ATTR_GATTING_TYPE: "sigmoid" # "lin", "exp", "spring-damper", "sigmoid", "constant"
 SHAPE_ATTR_GATTING_u0: 1.0 # starting value of the shape attractor gating
-SHAPE_ATTR_GATTING_u_end: 0.99 # ending value of the shape attractor gating
+SHAPE_ATTR_GATTING_u_end: 0.95 # ending value of the shape attractor gating
 
 GOAL_ATTR_GATTING_TYPE: "lin" # "lin", "exp", "spring-damper", "sigmoid", "constant"
 GOAL_ATTR_GATTING_u0: 0.0 # starting value of the goal attractor gating
@@ -67,8 +67,8 @@ t2_fdist: 2.2 # End of Fdist_max
 
 #:===  Path to input-output data :===
 binary: true
-data_input_path: "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/"
-data_output_path: "/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/data/"
+data_input_path: "/home/user/as64_ws/as64_ws/matlab/test/DMP_test/DMP/data/"
+data_output_path: "/home/user/as64_ws/as64_ws/matlab/test/DMP_test/DMP/data/"
 
 in_data_filename: "data.bin"
 out_data_filename: "data_out"

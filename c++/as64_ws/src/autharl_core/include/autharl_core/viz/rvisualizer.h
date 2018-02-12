@@ -95,7 +95,7 @@ public:
 
     setAlpha(alpha);
     setLifetime(lifetime);
-    this->publishPath(path, color, rviz_visual_tools::MEDIUM);
+    //this->publishPath(path, color, rviz_visual_tools::MEDIUM);
     this->triggerBatchPublish();
   }
 
