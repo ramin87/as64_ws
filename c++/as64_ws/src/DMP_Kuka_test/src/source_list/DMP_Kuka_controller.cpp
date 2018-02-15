@@ -1,5 +1,6 @@
 #include <DMP_Kuka_controller.h>
 #include <io_lib/io_lib.h>
+#include <time_lib/time.h>
 
 DMP_Kuka_controller::DMP_Kuka_controller(std::shared_ptr<arl::robot::Robot> robot)
 {
@@ -28,7 +29,9 @@ DMP_Kuka_controller::DMP_Kuka_controller(std::shared_ptr<arl::robot::Robot> robo
 
 void DMP_Kuka_controller::init_control_flags()
 {
-  save_exec_results = false;
+    pause_robot = false;
+    train_from_file = false;
+    save_exec_results = false;
     log_on = false;
     run_dmp = false;
     train_dmp = false;
@@ -149,6 +152,10 @@ void DMP_Kuka_controller::keyboard_ctrl_function()
             stop_robot = true;
             std::cout << "Stop robot\n";
             break;
+        case 'p':
+            pause_robot = !pause_robot;
+            std::cout << (pause_robot?"Pause":"Start") << " robot\n";
+            break;
         case 'n':
             start_demo = true;
             std::cout << "Start demo\n";
@@ -160,7 +167,12 @@ void DMP_Kuka_controller::keyboard_ctrl_function()
         case 'v':
             std::cout << "Saving execution results\n";
             save_exec_results_thread.reset(new std::thread(&DMP_Kuka_controller::save_execution_results, this));
+            save_exec_results_thread->detach();
             break;
+        case 'f':
+          train_from_file = !train_from_file;
+          std::cout << "Training: use training data from " << (train_from_file?"file":"demo recording") << "\n";
+          break;
         }
 
         std::cout << reset;
@@ -170,6 +182,13 @@ void DMP_Kuka_controller::keyboard_ctrl_function()
 
 void DMP_Kuka_controller::save_execution_results()
 {
+  using namespace as64_::io_;
+  if (log_on)
+  {
+    std::cout << red << bold << "Cannot save execution results!\n";
+    std::cout << "Reason: \"log on\" is enabled...\n" << reset;
+    return;
+  }
   save_exec_results = true;
   save_logged_data();
   save_exec_results = false;
@@ -187,25 +206,43 @@ void DMP_Kuka_controller::record_demo()
     train_dmp = false;
     init_program_variables(); // to zero all velocities and accelerations and set all poses/joints to the current ones
     clear_train_data();
-    while (!start_demo) {
-        robot_wait();
-    }
 
-    t = 0.0;
+    pause_robot = true;
+
+    using namespace as64_::io_;
+    std::cout << blue << bold << "Robot paused ! Please press 'p' to continue ..." << std::endl << reset;
+
+
+
+    while (pause_robot) robot_wait();
+
+    if(!train_from_file){
+      while (!start_demo) {
+          robot_wait();
+      }
+
+      t = 0.0;
 
     //update();
-    q0_robot = q_robot; // save intial joint positions
-    while (!end_demo) {
-        log_demo_step();
-        command();
-        update();
+
+      q0_robot = q_robot; // save intial joint positions
+      while (!end_demo) {
+          log_demo_step();
+          command();
+          update();
+      }
+      trainData.q0 = q0_robot;
+      trainData.n_data = trainData.Time.size();
+    }
+    else
+    {
+      load_demo_data();
     }
 
     start_demo = false;
     end_demo = false;
     train_dmp = true; // the DMP must be trained now with the demo data
 
-    trainData.n_data = trainData.Time.size();
     Dp = trainData.dY_data.n_rows;
     Do = trainData.v_rot_data.n_rows;
     D = Dp + Do;
@@ -221,22 +258,84 @@ void DMP_Kuka_controller::record_demo()
     Yg0 = trainData.Y_data.col(trainData.n_data - 1);
     Qg0 = trainData.Q_data.col(trainData.n_data - 1);
 
-    // std::cout << "trainData.n_data = " << trainData.n_data << "\n";
-    // std::cout << "trainData.Time: " << trainData.Time.size() << "\n";
-    // std::cout << "trainData.Y_data: " << trainData.Y_data.n_rows << " x " << trainData.Y_data.n_cols << "\n";
-    // std::cout << "trainData.dY_data: " << trainData.dY_data.n_rows << " x " << trainData.dY_data.n_cols << "\n";
-    // std::cout << "trainData.ddY_data: " << trainData.ddY_data.n_rows << " x " << trainData.ddY_data.n_cols << "\n";
+    trainData0 = trainData;
+
+    save_demo_data();
+
+     //std::cout << "trainData.n_data = " << trainData.n_data << "\n";
+     //std::cout << "trainData.Time: " << trainData.Time.size() << "\n";
+     //std::cout << "trainData.Y_data: " << trainData.Y_data.n_rows << " x " << trainData.Y_data.n_cols << "\n";
+     //std::cout << "trainData.dY_data: " << trainData.dY_data.n_rows << " x " << trainData.dY_data.n_cols << "\n";
+     //std::cout << "trainData.ddY_data: " << trainData.ddY_data.n_rows << " x " << trainData.ddY_data.n_cols << "\n";
+}
+
+
+void DMP_Kuka_controller::save_demo_data()
+{
+  std::string train_data_save_file = cmd_args.data_output_path + "/kuka_demo_data.bin";
+  bool binary = true;
+
+  std::ofstream out;
+  out.open(train_data_save_file, std::ios::binary);
+
+  if (!out) throw std::ios_base::failure(std::string("Couldn't create file: \"") + train_data_save_file + "\"");
+
+  as64_::io_::write_mat(trainData0.Time, out, binary);
+
+  as64_::io_::write_mat(trainData0.Y_data, out, binary);
+  as64_::io_::write_mat(trainData0.dY_data, out, binary);
+  as64_::io_::write_mat(trainData0.ddY_data, out, binary);
+
+  as64_::io_::write_mat(trainData0.Q_data, out, binary);
+  as64_::io_::write_mat(trainData0.v_rot_data, out, binary);
+  as64_::io_::write_mat(trainData0.dv_rot_data, out, binary);
+
+  as64_::io_::write_mat(trainData0.q0, out, binary);
+
+  out.close();
+}
+
+
+void DMP_Kuka_controller::load_demo_data()
+{
+  std::string train_data_load_file = cmd_args.data_output_path + "/kuka_demo_data.bin";
+  bool binary = true;
+
+  std::ifstream in;
+  in.open(train_data_load_file, std::ios::binary);
+
+  if (!in) throw std::ios_base::failure(std::string("Couldn't open file: \"") + train_data_load_file + "\"");
+
+  as64_::io_::read_mat(trainData.Time, in, binary);
+
+  as64_::io_::read_mat(trainData.Y_data, in, binary);
+  as64_::io_::read_mat(trainData.dY_data, in, binary);
+  as64_::io_::read_mat(trainData.ddY_data, in, binary);
+
+  as64_::io_::read_mat(trainData.Q_data, in, binary);
+  as64_::io_::read_mat(trainData.v_rot_data, in, binary);
+  as64_::io_::read_mat(trainData.dv_rot_data, in, binary);
+
+  as64_::io_::read_mat(trainData.q0, in, binary);
+
+  trainData.n_data = trainData.Time.size();
+
+  in.close();
 }
 
 void DMP_Kuka_controller::goto_start_pose()
 {
+    using namespace as64_::io_;
 
-    if(robot_->mode == arl::robot::Mode::VELOCITY_CONTROL){
-      robot_->setMode(arl::robot::Mode::POSITION_CONTROL);
-    }
-    robot_->setJointTrajectory(q0_robot, tau + 1.5, ROBOT_ARM_INDEX);
+    robot_->setMode(arl::robot::Mode::POSITION_CONTROL);
+
+    std::cout << bold << cyan << "Moving to start pose...\n" << reset;
+
+    robot_->setJointTrajectory(trainData0.q0, tau + 1.5, ROBOT_ARM_INDEX);
     init_program_variables();
     goto_start = false;
+
+    std::cout << bold << cyan << "Reached start pose!\n" << reset;
 }
 
 
@@ -245,6 +344,9 @@ void DMP_Kuka_controller::train_DMP()
     // as64_::param_::ParamList trainParamList;
     // trainParamList.setParam("lambda", cmd_args.lambda);
     // trainParamList.setParam("P_cov", cmd_args.P_cov);
+
+    using namespace as64_::io_;
+    std::cout << yellow << bold << "Training DMP...\n" << reset;
 
     //std::cout << as64_::io_::bold << as64_::io_::green << "DMP CartPos training..." << as64_::io_::reset << "\n";
     trainData.n_data = trainData.Time.size();
@@ -426,13 +528,6 @@ void DMP_Kuka_controller::log_offline()
     arma::mat F_o_offline_train_data;
     arma::mat Fd_o_offline_train_data;
 
-    std::cout << "trainData.n_data = " << trainData.n_data << "\n";
-    std::cout << "trainData.Time: " << trainData.Time.size() << "\n";
-    std::cout << "trainData.Y_data: " << trainData.Y_data.n_rows << " x " << trainData.Y_data.n_cols << "\n";
-    std::cout << "trainData.dY_data: " << trainData.dY_data.n_rows << " x " << trainData.dY_data.n_cols << "\n";
-    std::cout << "trainData.ddY_data: " << trainData.ddY_data.n_rows << " x " << trainData.ddY_data.n_cols << "\n";
-
-
     arma::vec y0 = trainData.Y_data.col(0);
     arma::vec g = trainData.Y_data.col(trainData.n_data - 1);
     F_p_offline_train_data.resize(Dp, trainData.n_data);
@@ -542,6 +637,22 @@ void DMP_Kuka_controller::clear_and_restart_demo()
     init_controller();
 }
 
+
+std::string getTimeStamp()
+{
+	std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	std::ostringstream out_s;
+	out_s << std::ctime(&t);
+	std::string time_stamp = out_s.str();
+	for (int i=0;i<time_stamp.size();i++)
+	{
+		if (time_stamp[i]==' ') time_stamp[i] = '_';
+		else if (time_stamp[i]==':') time_stamp[i] = 'x';
+	}
+
+	return time_stamp;
+}
+
 void DMP_Kuka_controller::save_logged_data()
 {
     log_offline();
@@ -550,10 +661,15 @@ void DMP_Kuka_controller::save_logged_data()
     o_str << "";
     if (demo_save_counter > 0) o_str << demo_save_counter + 1;
 
+    std::string suffix = cmd_args.DMP_TYPE + "_" + getTimeStamp();
+
     std::cout << "Saving results...";
     log_data.cmd_args = cmd_args;
+    std::cout << "Saving to \"" << cmd_args.out_data_filename + o_str.str() <<"\" ...\n";
     log_data.save(cmd_args.out_data_filename + o_str.str(), true);
-    log_data.save(cmd_args.out_data_filename + o_str.str(), false, 10);
+    std::cout << "Saving to \"" << cmd_args.out_data_filename + suffix <<"\" ...\n";
+    log_data.save(cmd_args.out_data_filename + suffix, true);
+    //log_data.save(cmd_args.out_data_filename + o_str.str(), false, 10);
     std::cout << "[DONE]!\n";
 
     demo_save_counter++;
@@ -576,7 +692,7 @@ void DMP_Kuka_controller::calc_simulation_mse()
 
 void DMP_Kuka_controller::execute()
 {
-restart_demo_label:
+  restart_demo_label:
     // ======  Read training data  =======
     record_demo();
 
@@ -595,19 +711,20 @@ restart_demo_label:
 
 restart_dmp_execution_label:
 
+    run_dmp = false;
+    log_on = false;
+
     goto_start_pose();
 
     if (train_dmp)
     {
-      //std::cout << "Training DMP\n";
       train_DMP_thread.reset(new std::thread(&DMP_Kuka_controller::train_DMP, this));
-      //train_DMP();
+      train_DMP_thread->detach();
     }
 
     while (train_dmp) robot_wait();
 
-    run_dmp = false;
-    log_on = false;
+
     while (!run_dmp) robot_wait();
 
     while (save_exec_results) robot_wait();
@@ -649,10 +766,14 @@ restart_dmp_execution_label:
         if (run_dmp) {
             // Stopping criteria
             double err_p = arma::max(arma::abs(Yg2 - Y_robot));
-            double err_o = arma::norm(quatLog(quatProd(Qg, quatInv(Q_robot))));
+            double err_o = 0*arma::norm(quatLog(quatProd(Qg, quatInv(Q_robot))));
 	    //std::cout << "err_p !!:  " << err_p <<std::endl;
 	    //std::cout << "err_o !!:  " << err_o <<std::endl;
-            if (err_p <= cmd_args.tol_stop && err_o <= cmd_args.orient_tol_stop && t >= tau) goto_start = true;
+            if (err_p <= cmd_args.tol_stop && err_o <= cmd_args.orient_tol_stop && t >= tau)
+            {
+              goto_start = true;
+              std::cout << as64_::io_::cyan << "Target reached. Moving to start pose...\n" << as64_::io_::reset;
+            }
         }
 
     }
@@ -739,20 +860,31 @@ void DMP_Kuka_controller::command()
 
 
 
-    arma::vec qd = arma::pinv(J_robot) * Vd;
 
-     if(robot_->mode == arl::robot::Mode::POSITION_CONTROL){
-      robot_->setMode(arl::robot::Mode::VELOCITY_CONTROL);
+
+    if(run_dmp || goto_start){
+      if(robot_->mode != arl::robot::Mode::VELOCITY_CONTROL){
+        robot_->setMode(arl::robot::Mode::VELOCITY_CONTROL);
+      }
+      Vd.rows(3,5) = arma::zeros<arma::vec>(3);
+      arma::vec qd = arma::pinv(J_robot) * Vd;
+      robot_->setJointVelocity(qd, ROBOT_ARM_INDEX);
+    }else{
+      if(robot_->mode != arl::robot::Mode::TORQUE_CONTROL){
+        robot_->setMode(arl::robot::Mode::TORQUE_CONTROL);
+      }
+      arma::vec torque_for_rotation = arma::zeros<arma::vec>(7);
+        //  torque_for_rotation = - (J_robot.rows(3,5)).t() * 5.0* quatLog(quatProd(Q_robot, quatInv(trainData.Q_data.col(0))));
+      robot_->setJointTorque(torque_for_rotation, ROBOT_ARM_INDEX);
+      //std::cout<<"torque_for_rotation: " << torque_for_rotation.t() <<std::endl;
     }
-    robot_->setMode(arl::robot::Mode::VELOCITY_CONTROL);
-    robot_->setJointVelocity(qd, ROBOT_ARM_INDEX);
     robot_->waitNextCycle();
 
 }
 
 void DMP_Kuka_controller::finalize()
 {
-    save_logged_data();
+    //save_logged_data();
     keyboard_ctrl_thread->join();
 
     // calc_simulation_mse();

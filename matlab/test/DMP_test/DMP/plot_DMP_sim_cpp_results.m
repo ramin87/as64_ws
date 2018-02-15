@@ -3,7 +3,7 @@
 set_matlab_utils_path();
 
 
-filename = 'data/data_out.bin';
+filename = 'data/data_outDMP_Thu_Feb_15_16x39x14_2018.bin';
 fid = fopen(filename,'r');
 if (fid < 0), error(['Failed to open file ' filename]); end
 
@@ -125,7 +125,7 @@ if (log_data.poseDataFlag)
    ax = axes();
    
    plot_3Dpath_with_orientFrames(Pos_d, Quat_d, ax, ...
-    'numberOfFrames',12, 'frameScale',0.2, 'frameLineWidth',1.8, ...
+    'numberOfFrames',12, 'frameScale',0.08, 'frameLineWidth',1.8, ...
     'frameXAxisColor', [0.64 0.08 0.18], 'frameYAxisColor', [0.75 0.75 0], 'frameZAxisColor', [0.3 0.75 0.93], ...
     'LineWidth',1.4, 'LineColor',[0.5 0.5 0.5], 'LineStyle','--', 'LineLegend', 'Demo path', ...
     'title','3D path with frames', 'xlabel','x-axis[$m$]', 'ylabel','y-axis[$m$]', 'zlabel','z-axis[$m$]', ...
@@ -177,6 +177,11 @@ lineWidth = 1.2;
 % plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,y_data, 'robot', 'DMP', 'Position', lineWidth);
 % plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dy_data, 'robot', 'DMP', 'Velocity', lineWidth);
 % plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddy_data, 'robot', 'DMP', 'Acceleration', lineWidth);
+
+size(Time)
+size(y_robot_data)
+size(Time_demo)
+size(yd_data)
 
 plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,yd_data, 'robot', 'demo', 'Position', lineWidth);
 plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dyd_data, 'robot', 'demo', 'Velocity', lineWidth);

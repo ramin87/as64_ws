@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   #robotics_lib
   autharl_core
   lwr_robot
+  time_lib
 )
 
 # BHand need to know that we are on Linux
@@ -85,4 +86,5 @@ target_link_libraries(DMP_Kuka_test
   autharl-robot
   autharl-utils
   lwr-robot
+  time-lib
 )

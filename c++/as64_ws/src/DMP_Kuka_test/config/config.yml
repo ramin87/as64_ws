@@ -1,13 +1,13 @@
 ## Set up DMP params
 
 # Parameters of the linear part of the DMP (spring-damper)
-a_z: 10.0
+a_z: 15.0
 #a_z: 4.0
 # b_z: 5.0
 
-DMP_TYPE: "DMP-Shannon" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
+DMP_TYPE: "DMP" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
 
-N_kernels: 100 # number of kernels used in the DMP
+N_kernels: [88, 78, 78, 3, 3, 3] # number of kernels used in the DMP
 
 kernelStdScaling: 1.0 # scaling factor for the kernels std
 
@@ -17,7 +17,7 @@ CAN_CLOCK_TYPE: "lin"
 
 SHAPE_ATTR_GATTING_TYPE: "sigmoid" # "lin", "exp", "spring-damper", "sigmoid", "constant"
 SHAPE_ATTR_GATTING_u0: 1.0 # starting value of the shape attractor gating
-SHAPE_ATTR_GATTING_u_end: 0.95 # ending value of the shape attractor gating
+SHAPE_ATTR_GATTING_u_end: 0.99 # ending value of the shape attractor gating
 
 GOAL_ATTR_GATTING_TYPE: "lin" # "lin", "exp", "spring-damper", "sigmoid", "constant"
 GOAL_ATTR_GATTING_u0: 0.0 # starting value of the goal attractor gating
@@ -40,9 +40,9 @@ a_py: 40.0
 k_trunc_kernel: 3 # number of stds beyond which the kernel is truncated
 
 # Parameters for DMP-Shannon
-Wmin: 0.6861
-Freq_min: 2.5
-Freq_max: 15.0
+Wmin: 0.99
+Freq_min: 3.5
+Freq_max: 12.0
 P1_min: 1000000000.1
 
 ## Robot controller params
@@ -53,8 +53,8 @@ Md_o: 1.0 # rotational inertia
 Kd_o: 1000.0 # rotational stiffness
 Dd_o: 4.5  # rotational damping
 
-Fp_dead_zone: 3.0
-Fo_dead_zone: 2.5
+Fp_dead_zone: 0.0
+Fo_dead_zone: 200.5
 F_norm_retrain_thres: 5
 
 ## Simulation params

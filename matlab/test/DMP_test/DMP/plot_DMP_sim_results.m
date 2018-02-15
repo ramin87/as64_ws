@@ -68,21 +68,21 @@ for j=1:length(x_data)
     end
 end
 
-Psi_data_train = cell(D,1);
-for i=1:D
-    x_data_train = dmp{i}.phase(Time_offline_train);
-    for j=1:length(x_data_train)
-        Psi_data_train{i} = [Psi_data_train{i} dmp{i}.kernelFunction(x_data_train(j))];
-    end
-end
-
-Psi_data = cell(D,1);
-for i=1:D
-    x_data_train = dmp{i}.phase(Time);
-    for j=1:length(x_data_train)
-        Psi_data{i} = [Psi_data{i} dmp{i}.kernelFunction(x_data(j))];
-    end
-end
+% Psi_data_train = cell(D,1);
+% for i=1:D
+%     x_data_train = dmp{i}.phase(Time_offline_train);
+%     for j=1:length(x_data_train)
+%         Psi_data_train{i} = [Psi_data_train{i} dmp{i}.kernelFunction(x_data_train(j))];
+%     end
+% end
+% 
+% Psi_data = cell(D,1);
+% for i=1:D
+%     x_data_train = dmp{i}.phase(Time);
+%     for j=1:length(x_data_train)
+%         Psi_data{i} = [Psi_data{i} dmp{i}.kernelFunction(x_data(j))];
+%     end
+% end
 
 e_track_data = y_data - y_robot_data;
 
@@ -141,17 +141,17 @@ for i=1:D
 %     plot(Time,y_robot_data(i,:)-g0(i));
 %     legend({'$e_{robot}=p_{robot}-p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
 
-    n_splots = 3;
-    figure;
-    subplot(n_splots,1,1);
-    plot(Time,x_data, Time,shapeAttrGating_data, Time, goalAttrGating_data);
-    legend({'$x$','$shapeAttrGating$', '$goalAttrGating$'},'Interpreter','latex','fontsize',fontsize);
-    subplot(n_splots,1,2);
-    plot(Time,y_robot_data(i,:), Time,y_data(i,:), Time_demo,yd_data(i,:), Time,g_data(i,:), '--', Time(end),g0(i),'r*','Markersize',10);
-    legend({'$p_{robot}$','$p_{DMP}$','$p_{train}$','goal evolution','$p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
-    subplot(n_splots,1,3);
-    plot(Time,Fdist_data(i,:));
-    legend({'Disturbance force'},'Interpreter','latex','fontsize',fontsize);
+%     n_splots = 3;
+%     figure;
+%     subplot(n_splots,1,1);
+%     plot(Time,x_data, Time,shapeAttrGating_data, Time, goalAttrGating_data);
+%     legend({'$x$','$shapeAttrGating$', '$goalAttrGating$'},'Interpreter','latex','fontsize',fontsize);
+%     subplot(n_splots,1,2);
+%     plot(Time,y_robot_data(i,:), Time,y_data(i,:), Time_demo,yd_data(i,:), Time,g_data(i,:), '--', Time(end),g0(i),'r*','Markersize',10);
+%     legend({'$p_{robot}$','$p_{DMP}$','$p_{train}$','goal evolution','$p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
+%     subplot(n_splots,1,3);
+%     plot(Time,Fdist_data(i,:));
+%     legend({'Disturbance force'},'Interpreter','latex','fontsize',fontsize);
 
 %     n_splots = 4;
 %     figure;
@@ -171,27 +171,27 @@ for i=1:D
 
 end
 
-%% Plot 'F' training
-if (OFFLINE_DMP_TRAINING_enable)
-    for i=1:D 
-        lineWidth = 1.2;
-        F = F_offline_train_data(i,:);
-        Fd = Fd_offline_train_data(i,:);
-        Psi = Psi_data_train{i};
-        plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Offline training', '$F$', '$F_d$');
-    end
-end
-
-
-%% Plot 'F' online training
-if (ONLINE_DMP_UPDATE_enable)
-    for i=1:D
-        F = F_online_train_data(i,:);
-        Fd = Fd_online_train_data(i,:);
-        Psi = Psi_data{i};
-        plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Online training', '$F$', '$F_d$');
-    end
-end
+% %% Plot 'F' training
+% if (OFFLINE_DMP_TRAINING_enable)
+%     for i=1:D 
+%         lineWidth = 1.2;
+%         F = F_offline_train_data(i,:);
+%         Fd = Fd_offline_train_data(i,:);
+%         Psi = Psi_data_train{i};
+%         plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Offline training', '$F$', '$F_d$');
+%     end
+% end
+% 
+% 
+% %% Plot 'F' online training
+% if (ONLINE_DMP_UPDATE_enable)
+%     for i=1:D
+%         F = F_online_train_data(i,:);
+%         Fd = Fd_online_train_data(i,:);
+%         Psi = Psi_data{i};
+%         plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Online training', '$F$', '$F_d$');
+%     end
+% end
 
 %% Plot DMP RLWR cov 'P' evoultion
 if (ONLINE_DMP_UPDATE_enable)
@@ -250,22 +250,22 @@ if (D==2 || D==3)
     plot_line_path(y_data, yd_data, 'DMP', 'demo', 2, 10);
 end
 
-for i=1:D
-    lineWidth = 1.2;
-    plot_F1_F2_Psi(Time, Force_term_data(i,:), Time_offline_train, Fd_offline_train_data(i,:), Time, Psi_data{i}, lineWidth, fontsize, 'Forcing term - Simulation', '$F_{sim}$', '$F_d$');
-end
+% for i=1:D
+%     lineWidth = 1.2;
+%     plot_F1_F2_Psi(Time, Force_term_data(i,:), Time_offline_train, Fd_offline_train_data(i,:), Time, Psi_data{i}, lineWidth, fontsize, 'Forcing term - Simulation', '$F_{sim}$', '$F_d$');
+% end
 
-figure;
-for i=1:D
-subplot(D,1,i);
-bar(DMP_c{i}, DMP_w{i});%, 3*sqrt(1/DMP_h{i}(1)));
-if (i==1)
-    title('DMP weights');
-end
-ylabel(['DMP ' num2str(i)]);
-xlabel('DMP centers');
-axis tight;
-end
+% figure;
+% for i=1:D
+% subplot(D,1,i);
+% bar(DMP_c{i}, DMP_w{i});%, 3*sqrt(1/DMP_h{i}(1)));
+% if (i==1)
+%     title('DMP weights');
+% end
+% ylabel(['DMP ' num2str(i)]);
+% xlabel('DMP centers');
+% axis tight;
+% end
 
 toc
 

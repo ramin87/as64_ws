@@ -55,7 +55,7 @@ struct LogData
   CMD_ARGS cmd_args;
 
   LogData();
-  void save(const std::string &filename, bool binary=false, int precision = 6);
+  void save(std::string filename, bool binary=false, int precision = 6);
   void clear();
 };
 

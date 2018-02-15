@@ -2,6 +2,10 @@
 ## matlab
 ##---------------------------------------------------
 
+# ignore logged *.bin files
+data_outDMP*.bin
+
+
 # Windows default autosave extension
 *.asv
 

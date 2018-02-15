@@ -163,12 +163,14 @@ classdef DMP_Shannon < handle % : public DMP
             Fs = 1/Ts;
             [f, P1, Y] = getSingleSidedFourier(Fd, Fs);
 
-            Freq_max = f(end);
+            %Freq_max = f(end);
+            Freq_max = min([dmp.Freq_max, f(end)]);
 
             % find the maximum required frequency to get at least 'Wmin' percent of the
             % total signal's energy
-%             W = sum(P1(f<=Freq_max).^2);
-            W = sum(P1.^2);
+          
+            W = sum(P1(f<=Freq_max).^2);
+           % W = sum(P1.^2);
             W_temp = 0;
             k = 0;
             
@@ -254,7 +256,7 @@ classdef DMP_Shannon < handle % : public DMP
 %             plot(Time,Fd, Time,Fd_filt, Time,Fd_filt2);
 %             legend('F_d','F_{dfilt-ham}','F_{dfilt-butter}');
           
-            [f, P1] = getSingleSidedFourier(Fd, Fs);
+            [f, P1, y_temp] = getSingleSidedFourier(Fd, Fs);
             [f, P1_filt] = getSingleSidedFourier(Fd_filt, Fs);
 
             figure;
@@ -287,7 +289,11 @@ classdef DMP_Shannon < handle % : public DMP
             end
 
             train_error = norm(F-Fd)/length(F);
-            
+            y_temp(f>Fmax) = 0;
+            Fd_temp = ifft(  y_temp);
+            accuracy = sum((F-Fd_temp).^2) / sum(Fd_temp.^2);
+            fprintf('Achieved accuracy: %.6f\n',accuracy);
+
 %             c = dmp.c;
 %             h = dmp.h;
 %             w = dmp.w;

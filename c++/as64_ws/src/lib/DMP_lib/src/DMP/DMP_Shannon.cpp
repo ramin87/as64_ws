@@ -36,13 +36,13 @@ namespace as64_
     arma::rowvec f, P1;
     as64_::spl_::getSingleSidedFourier(Fd, Fs, f, P1);
 
-    // double Freq_max = std::min(this->Freq_max, f(f.size()-1));
-    double Freq_max = f(f.size()-1);
+    double Freq_max = std::min(this->Freq_max, f(f.size()-1));
+    // double Freq_max = f(f.size()-1);
 
     // find the maximum required frequency to get at least 'Wmin' percent of the
     // total signal's energy
-    // double W = arma::sum(arma::pow(P1.elem(arma::find(f<=Freq_max)),2));
-    double W = arma::sum(arma::pow(P1.t(),2));
+    double W = arma::sum(arma::pow(P1.elem(arma::find(f<=Freq_max)),2));
+    //double W = arma::sum(arma::pow(P1.t(),2));
     double W_temp = 0.0;
     int k = -1;
     double W_temp_min = W*this->Wmin;

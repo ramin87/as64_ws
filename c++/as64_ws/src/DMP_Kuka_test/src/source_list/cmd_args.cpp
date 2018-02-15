@@ -9,7 +9,11 @@ bool CMD_ARGS::parse_cmd_args()
   if (!nh_.getParam("a_z", a_z)) a_z = 20.0;
   if (!nh_.getParam("b_z", b_z)) b_z = a_z/4;
   if (!nh_.getParam("DMP_TYPE", DMP_TYPE)) DMP_TYPE = "DMP";
-  if (!nh_.getParam("N_kernels", N_kernels)) N_kernels = 80;
+  if (!nh_.getParam("N_kernels", N_kernels))
+  {
+    N_kernels.resize(6);
+    for (int i=0;i<6;i++) N_kernels[i] = 80;
+  }
   if (!nh_.getParam("kernelStdScaling", kernelStdScaling)) kernelStdScaling = 1.0;
   if (!nh_.getParam("trainMethod", trainMethod)) trainMethod = "LWR";
   if (!nh_.getParam("CAN_CLOCK_TYPE", CAN_CLOCK_TYPE)) CAN_CLOCK_TYPE = "lin";
@@ -83,7 +87,7 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "a_z: " << a_z << "\n";
   out << "b_z: " << b_z << "\n";
   out << "DMP_TYPE: " << DMP_TYPE << "\n";
-  out << "N_kernels: " << N_kernels << "\n";
+  for (int i=0;i<N_kernels.size();i++) std::cout << "N_kernels[" << i+1 << "] = " << N_kernels[i] << "\n";
   out << "kernelStdScaling: " << kernelStdScaling << "\n";
   out << "trainMethod: " << trainMethod << "\n";
   out << "CAN_CLOCK_TYPE: " << CAN_CLOCK_TYPE << "\n";

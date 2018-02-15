@@ -57,6 +57,7 @@ class DMP_Kuka_controller : public arl::robot::Controller
   struct TrainData
   {
     int n_data;
+    arma::vec q0;
     arma::rowvec Time;
     arma::mat Y_data, dY_data, ddY_data;
     arma::mat Q_data, v_rot_data, dv_rot_data;
@@ -131,6 +132,9 @@ public:
   // Saves all data from struct 'log_data' in an output file.
   void save_logged_data();
 
+  void save_demo_data();
+  void load_demo_data();
+
   void calc_simulation_mse();
 
   // ros::NodeHandle n;
@@ -148,12 +152,14 @@ public:
 private:
 
   // Program control flags
+  bool train_from_file;
   bool save_exec_results;
   bool log_on; // if true, at each step of the execution, intermediate data are logged.
   bool run_dmp; // if true the dmp is executed
   bool train_dmp; // if true the DMP is (re)trained
   bool goto_start; // if true the robot goes to its starting pose
   bool stop_robot; // if true the program terminates
+  bool pause_robot;
   bool start_demo; // if true the program starts logging data in the "trainData" struct
   bool end_demo; // if true the program stops logging data in the "trainData" struct
   bool save_restart_demo; // if true saves all loged data and restarts the demo process
@@ -170,6 +176,7 @@ private:
   CMD_ARGS cmd_args; // used to parse and store the arguments from the yaml file
   LogData log_data; // struct used for logging data on/off-line
   TrainData trainData; // Data used for (re)training the DMP
+  TrainData trainData0; // Data used for (re)training the DMP
 
   // for the DMP
   std::shared_ptr<as64_::CanonicalClock> canClockPtr; // pointer to the canonical clock

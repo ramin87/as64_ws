@@ -19,11 +19,12 @@ Freq_cut = 20;
 k = find(f<Freq_cut);
 k = k(end);
 F_Y = F_X;
-F_Y(k:end) = 0.0;
+F_Y(k:end) = [];
+Time2(k:end) = [];
 F_Y = 2*F_Y; % * sum(abs(F_X))/sum(abs(F_Y));
 Y = ifft(F_Y);
 Y = real(Y);
-[~, Pfy, F_Y] = getSingleSidedFourier(Y, Fs);
+[f2, Pfy, F_Y] = getSingleSidedFourier(Y, Fs);
 
 
 figure
@@ -35,6 +36,6 @@ xlabel('time [s]');
 figure
 hold on
 plot(f,Pfx);
-plot(f,Pfy);
+plot(f2,Pfy);
 legend('Pfx','Pfy');
 xlabel('frequency [Hz]');

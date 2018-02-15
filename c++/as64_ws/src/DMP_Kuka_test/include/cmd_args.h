@@ -12,7 +12,7 @@ struct CMD_ARGS
   double a_z;
   double b_z;
   std::string DMP_TYPE; // "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
-  int N_kernels; // number of kernels used in the DMP
+  std::vector<int> N_kernels;
   double kernelStdScaling; // scaling factor for the kernels std
   std::string trainMethod; // "LWR", "LS", "RLS" , "RLWR"
   std::string CAN_CLOCK_TYPE;

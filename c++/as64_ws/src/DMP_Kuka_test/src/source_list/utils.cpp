@@ -31,7 +31,7 @@ void get_canClock_gatingFuns_DMP(const CMD_ARGS &cmd_args, int D, double tau,
   dmp.resize(D);
   for (int i=0;i<D;i++)
   {
-  dmp[i] = as64_::getDMP(cmd_args.DMP_TYPE, cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z,
+  dmp[i] = as64_::getDMP(cmd_args.DMP_TYPE, cmd_args.N_kernels[i], cmd_args.a_z, cmd_args.b_z,
       canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, &paramList);
   }
 
