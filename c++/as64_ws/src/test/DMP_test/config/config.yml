@@ -12,7 +12,7 @@ N_kernels: [218, 186, 44, 3, 3, 3] # number of kernels used in the DMP
 
 kernelStdScaling: 1.0 # scaling factor for the kernels std
 
-trainMethod: "LWR" # "LWR", "LS", "RLS" , "RLWR"
+trainMethod: "LS" # "LWR", "LS", "RLS" , "RLWR"
 
 CAN_CLOCK_TYPE: "lin"
 

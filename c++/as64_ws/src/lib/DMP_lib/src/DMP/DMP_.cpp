@@ -105,6 +105,11 @@ namespace as64_
   double DMP_::train(const arma::rowvec &Time, const arma::rowvec &yd_data,
     const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g, const std::string &train_method)
   {
+
+    arma::wall_clock timer;
+
+    timer.tic();
+
     int n_data = Time.size();
     arma::rowvec x(n_data);
     arma::rowvec s(n_data);
@@ -117,6 +122,10 @@ namespace as64_
       Fd(i) = this->calcFd(x(i), yd_data(i), dyd_data(i), ddyd_data(i), y0, g);
       Psi.col(i) = this->kernelFunction(x(i));
     }
+
+    std::cout << "Gaussian training calc Fd time: " << timer.toc() << " sec\n";
+
+    timer.tic();
 
     if (train_method.compare("LWR")==0)
     {
@@ -135,13 +144,15 @@ namespace as64_
       throw std::runtime_error(std::string("Unsopported training method \"") + train_method);
     }
 
-    arma::rowvec F(Fd.size());
-    for (int i=0; i<F.size(); i++)
-    {
-      F(i) = this->learnedForcingTerm(x(i), y0, g);
-    }
+    std::cout << "Gaussian training elapsed time: " << timer.toc() << " sec\n";
 
-    double train_error = arma::norm(F-Fd)/F.size();
+    //arma::rowvec F(Fd.size());
+    //for (int i=0; i<F.size(); i++)
+    //{
+    //  F(i) = this->learnedForcingTerm(x(i), y0, g);
+    //}
+
+    double train_error = 0; //arma::norm(F-Fd)/F.size();
     return train_error;
   }
 

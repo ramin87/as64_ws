@@ -19,6 +19,9 @@ namespace as64_
   double DMP_Shannon::train(const arma::rowvec &Time, const arma::rowvec &yd_data,
     const arma::rowvec &dyd_data, const arma::rowvec &ddyd_data, double y0, double g, const std::string &train_method)
   {
+    arma::wall_clock timer;
+    timer.tic();
+
     double tau = this->getTau();
     int n_data = Time.size();
     arma::rowvec x(n_data);
@@ -31,10 +34,16 @@ namespace as64_
         Fd(i) = this->calcFd(x(i), yd_data(i), dyd_data(i), ddyd_data(i), y0, g);
     }
 
+    std::cout << "Shannon training calc Fd time: " << timer.toc() << " sec\n";
+
     double Ts = Time(1)-Time(0);
     double Fs = 1.0/Ts;
     arma::rowvec f, P1;
+
+    timer.tic();
     as64_::spl_::getSingleSidedFourier(Fd, Fs, f, P1);
+
+
 
     double Freq_max = std::min(this->Freq_max, f(f.size()-1));
     // double Freq_max = f(f.size()-1);
@@ -53,22 +62,25 @@ namespace as64_
     }
 
     double Freq1 = f(k);
+
+    std::cout << "Shannon training FFT+cut-off freq calculation time: " << timer.toc() << " sec\n";
     // printf("Frequency to get at least %.3f of the energy: Freq=%.3f Hz\n", this->Wmin, Freq1);
 
-    while (k < f.size())
+    /*while (k < f.size())
     {
         if (f(k) >= Freq_max) break;
         if (P1(k) < this->P1_min) break;
         k++;
-    }
+    }*/
 
-    if (k == f.size()) k--;
+    //if (k == f.size()) k--;
 
     double Fmax = f(k);
     Fmax = std::min(this->Freq_max,Fmax);
     Fmax = std::max(this->Freq_min, Fmax);
     // printf("Frequency after which the amplitude drops below %.3f: Freq=%.3f Hz\n", this->P1_min, Fmax);
 
+    timer.tic();
     // ==> Filter the signal retaining at least 'Wmin' energy
     sp::FIR_filt<double,double,double> fir_filt;
   	arma::vec filter_b = sp::fir1(Fs/this->Freq_min, Fmax/(Fs/2));
@@ -81,6 +93,8 @@ namespace as64_
   	// }
     arma::rowvec Fd_filt = arma::conv(Fd, filter_b.t(), "same");
 
+    std::cout << "Shannon training filtering time: " << timer.toc() << " sec\n";
+
     double T1 = 1.0/(2*Fmax);
     arma::rowvec T_sync(std::round(tau/T1));
     double t = 0.0;
@@ -91,7 +105,9 @@ namespace as64_
     }
 
     arma::rowvec w_sync;
+    timer.tic();
     arma::interp1(Time, Fd_filt, T_sync, w_sync);
+    std::cout << "Shannon training interpolation time: " << timer.toc() << " sec\n";
     this->N_kernels = T_sync.size();
     this->c.resize(this->N_kernels);
     this->h.resize(this->N_kernels);
@@ -110,31 +126,14 @@ namespace as64_
       this->w(i) = w_sync(i);
     }
 
-    arma::rowvec F(Fd.size());
+    /*arma::rowvec F(Fd.size());
     for (int i=0; i<F.size(); i++)
     {
       F(i) = this->learnedForcingTerm(x(i), y0, g);
-    }
+    }*/
 
-    // std::ofstream out("/home/slifer/Dropbox/64631466/lib/as64_ws/matlab/test/DMP_test/DMP/Shan_dat.bin", std::ios::binary);
-    // if (!out)
-    // {
-    //   throw std::ios_base::failure("Could create output file...\n");
-    // }
-    //
-    // bool binary = true;
-    // io_::write_mat(Time, out, binary);
-    // io_::write_mat(x, out, binary);
-    // io_::write_mat(s, out, binary);
-    // io_::write_mat(Fd, out, binary);
-    // io_::write_mat(F, out, binary);
-    // io_::write_mat(P1, out, binary);
-    // io_::write_mat(this->c, out, binary);
-    // io_::write_mat(this->h, out, binary);
-    // io_::write_mat(this->w, out, binary);
-    // out.close();
 
-    double train_error = arma::norm(F-Fd)/F.size();
+    double train_error = 0;
     return train_error;
   }
 

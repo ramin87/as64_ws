@@ -97,7 +97,7 @@ void DMP_CartPos_test::train()
   // dmpCartPos->setTrainingParams(&trainParamList);
   timer.tic();
   offline_train_p_mse= dmpCartPos->train(Time_demo, Yd_data, dYd_data, ddYd_data, Y0, Yg, cmd_args.trainMethod);
-  std::cout << "Elapsed time is " << timer.toc() << "\n";
+  std::cout << "Training elapsed time is " << timer.toc() << "\n";
 }
 
 void DMP_CartPos_test::init_simulation()
