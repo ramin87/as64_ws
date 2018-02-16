@@ -12,7 +12,7 @@ struct CMD_ARGS
   double a_z;
   double b_z;
   std::string DMP_TYPE; // "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
-  int N_kernels; // number of kernels used in the DMP
+  std::vector<int> N_kernels;
   double kernelStdScaling; // scaling factor for the kernels std
   std::string trainMethod; // "LWR", "LS", "RLS" , "RLWR"
   std::string CAN_CLOCK_TYPE;
@@ -37,9 +37,15 @@ struct CMD_ARGS
   double Freq_min;
   double Freq_max;
   double P1_min;
-  double Md; // translational inertia
-  double Kd; // translational stiffness
-  double Dd; // translational damping
+  double Md_p; // translational inertia
+  double Kd_p; // translational stiffness
+  double Dd_p; // translational damping
+  double Md_o; // rotational inertia
+  double Kd_o; // rotational stiffness
+  double Dd_o; // rotational damping
+  double Fp_dead_zone;
+  double Fo_dead_zone;
+  double F_norm_retrain_thres;
   double dt; // simulation time_step
   double tol_stop; // position error tolerance to stop the simulation
   double orient_tol_stop; // orientation error tolerance to stop the simulation

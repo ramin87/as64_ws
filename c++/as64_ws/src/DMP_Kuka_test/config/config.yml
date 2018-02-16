@@ -5,9 +5,10 @@ a_z: 15.0
 #a_z: 4.0
 # b_z: 5.0
 
-DMP_TYPE: "DMP" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
+DMP_TYPE: "DMP-Shannon" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
 
-N_kernels: [88, 78, 78, 3, 3, 3] # number of kernels used in the DMP
+#N_kernels: [218, 186, 44, 3, 3, 3] # number of kernels used in the DMP
+N_kernels: [100, 100, 100, 3, 3, 3] # number of kernels used in the DMP
 
 kernelStdScaling: 1.0 # scaling factor for the kernels std
 
@@ -27,7 +28,7 @@ sigmoid_a_u: 280 # steepness of the sigmoid gating function (optional)
 
 OFFLINE_DMP_TRAINING_enable: true
 ONLINE_DMP_UPDATE_enable: false
-lambda: 0.99 # forgetting factor for recursive training methods
+lambda: 0.999 # forgetting factor for recursive training methods
 P_cov: 1e8 # initial value of covariance matrix for recursive training methods
 
 USE_GOAL_FILT: false
@@ -41,8 +42,8 @@ k_trunc_kernel: 3 # number of stds beyond which the kernel is truncated
 
 # Parameters for DMP-Shannon
 Wmin: 0.99
-Freq_min: 3.5
-Freq_max: 12.0
+Freq_min: 0.5
+Freq_max: 20.0
 P1_min: 1000000000.1
 
 ## Robot controller params

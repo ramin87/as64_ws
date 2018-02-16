@@ -3,7 +3,7 @@
 set_matlab_utils_path();
 
 
-filename = 'data/data_outDMP_Thu_Feb_15_16x39x14_2018.bin';
+filename = 'data/data_out.bin';
 fid = fopen(filename,'r');
 if (fid < 0), error(['Failed to open file ' filename]); end
 

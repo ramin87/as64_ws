@@ -374,7 +374,7 @@ void DMP_CartPos_orient_test::run()
     // dX = statesDot.col(2);
 
     ddY = dZ/dmpCartPos->get_v_scale();
-    ddY_robot = ddY + (1/cmd_args.Md) * ( - cmd_args.Dd*(dY_robot - dY) - cmd_args.Kd*(Y_robot-Y) + Fdist_p );
+    ddY_robot = ddY + (1/cmd_args.Md_p) * ( - cmd_args.Dd_p*(dY_robot - dY) - cmd_args.Kd_p*(Y_robot-Y) + Fdist_p );
 
     // DMP orient simulation
     arma::vec Q_c = cmd_args.a_py*quatLog(quatProd(Q_robot,quatInv(Q)));
@@ -393,7 +393,7 @@ void DMP_CartPos_orient_test::run()
     v_rot = v_rot_temp.subvec(1,3);
 
     dv_rot = deta/dmpOrient->get_v_scale();
-    dv_rot_robot = dv_rot + (1/cmd_args.Md) * ( - cmd_args.Dd*(v_rot_robot - v_rot) - cmd_args.Kd*quatLog(quatProd(Q_robot,quatInv(Q))) + Fdist_o );
+    dv_rot_robot = dv_rot + (1/cmd_args.Md_o) * ( - cmd_args.Dd_o*(v_rot_robot - v_rot) - cmd_args.Kd_o*quatLog(quatProd(Q_robot,quatInv(Q))) + Fdist_o );
 
     // Goal filtering
     if (cmd_args.USE_GOAL_FILT)

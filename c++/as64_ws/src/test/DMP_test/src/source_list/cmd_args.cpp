@@ -9,7 +9,11 @@ bool CMD_ARGS::parse_cmd_args()
   if (!nh_.getParam("a_z", a_z)) a_z = 20.0;
   if (!nh_.getParam("b_z", b_z)) b_z = a_z/4;
   if (!nh_.getParam("DMP_TYPE", DMP_TYPE)) DMP_TYPE = "DMP";
-  if (!nh_.getParam("N_kernels", N_kernels)) N_kernels = 80;
+  if (!nh_.getParam("N_kernels", N_kernels))
+  {
+    N_kernels.resize(6);
+    for (int i=0;i<6;i++) N_kernels[i] = 80;
+  }
   if (!nh_.getParam("kernelStdScaling", kernelStdScaling)) kernelStdScaling = 1.0;
   if (!nh_.getParam("trainMethod", trainMethod)) trainMethod = "LWR";
   if (!nh_.getParam("CAN_CLOCK_TYPE", CAN_CLOCK_TYPE)) CAN_CLOCK_TYPE = "lin";
@@ -34,9 +38,15 @@ bool CMD_ARGS::parse_cmd_args()
   if (!nh_.getParam("Freq_min", Freq_min)) Freq_min = 60.0;
   if (!nh_.getParam("Freq_max", Freq_max)) Freq_max = 150.0;
   if (!nh_.getParam("P1_min", P1_min)) P1_min = 0.008;
-  if (!nh_.getParam("Md", Md)) Md = 1.0;
-  if (!nh_.getParam("Kd", Kd)) Kd = 50.0;
-  if (!nh_.getParam("Dd", Dd)) Dd = 2*std::sqrt(Md*Kd);
+  if (!nh_.getParam("Md_p", Md_p)) Md_p = 2.0;
+  if (!nh_.getParam("Kd_p", Kd_p)) Kd_p = 500.0;
+  if (!nh_.getParam("Dd_p", Dd_p)) Dd_p = 2*std::sqrt(Md_p*Kd_p);
+  if (!nh_.getParam("Md_o", Md_o)) Md_o = 2.0;
+  if (!nh_.getParam("Kd_o", Kd_o)) Kd_o = 500.0;
+  if (!nh_.getParam("Dd_o", Dd_o)) Dd_o = 2*std::sqrt(Md_o*Kd_o);
+  if (!nh_.getParam("Fp_dead_zone", Fp_dead_zone)) Fp_dead_zone = 0.0;
+  if (!nh_.getParam("Fo_dead_zone", Fo_dead_zone)) Fo_dead_zone = 0.0;
+  if (!nh_.getParam("F_norm_retrain_thres", F_norm_retrain_thres)) F_norm_retrain_thres = 100.0;
   if (!nh_.getParam("dt", dt)) dt = 0.002;
   if (!nh_.getParam("tol_stop", tol_stop)) tol_stop = 0.01;
   if (!nh_.getParam("orient_tol_stop", orient_tol_stop)) orient_tol_stop = 0.005;
@@ -77,7 +87,7 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "a_z: " << a_z << "\n";
   out << "b_z: " << b_z << "\n";
   out << "DMP_TYPE: " << DMP_TYPE << "\n";
-  out << "N_kernels: " << N_kernels << "\n";
+  for (int i=0;i<N_kernels.size();i++) std::cout << "N_kernels[" << i+1 << "] = " << N_kernels[i] << "\n";
   out << "kernelStdScaling: " << kernelStdScaling << "\n";
   out << "trainMethod: " << trainMethod << "\n";
   out << "CAN_CLOCK_TYPE: " << CAN_CLOCK_TYPE << "\n";
@@ -102,9 +112,15 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "Freq_min: " << Freq_min << "\n";
   out << "Freq_max: " << Freq_max << "\n";
   out << "P1_min: " << P1_min << "\n";
-  out << "Md: " << Md << "\n";
-  out << "Kd: " << Kd << "\n";
-  out << "Dd: " << Dd << "\n";
+  out << "Md_p: " << Md_p << "\n";
+  out << "Kd_p: " << Kd_p << "\n";
+  out << "Dd_p: " << Dd_p << "\n";
+  out << "Fp_dead_zone: " << Fp_dead_zone << "\n";
+  out << "Md_o: " << Md_o << "\n";
+  out << "Kd_o: " << Kd_o << "\n";
+  out << "Dd_o: " << Dd_o << "\n";
+  out << "Fo_dead_zone: " << Fo_dead_zone << "\n";
+  out << "F_norm_retrain_thres: " << F_norm_retrain_thres << "\n";
   out << "dt: " << dt << "\n";
   out << "tol_stop: " << tol_stop << "\n";
   out << "orient_tol_stop: " << orient_tol_stop << "\n";

@@ -305,7 +305,7 @@ void DMP_test::run()
       // dx = statesDot(2);
 
       ddy(i) = dz(i)/dmp[i]->get_v_scale();
-      ddy_robot(i) = ddy(i) + (1/cmd_args.Md) * ( - cmd_args.Dd*(dy_robot(i) - dy(i)) - cmd_args.Kd*(y_robot(i)-y(i)) + Fdist(i) );
+      ddy_robot(i) = ddy(i) + (1/cmd_args.Md_p) * ( - cmd_args.Dd_p*(dy_robot(i) - dy(i)) - cmd_args.Kd_p*(y_robot(i)-y(i)) + Fdist(i) );
     }
 
     // Goal filtering

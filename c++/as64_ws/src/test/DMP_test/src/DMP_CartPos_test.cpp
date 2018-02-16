@@ -301,7 +301,7 @@ void DMP_CartPos_test::run()
     // dX = statesDot.col(2);
 
     ddY = dZ/dmpCartPos->get_v_scale();
-    ddY_robot = ddY + (1/cmd_args.Md) * ( - cmd_args.Dd*(dY_robot - dY) - cmd_args.Kd*(Y_robot-Y) + Fdist_p );
+    ddY_robot = ddY + (1/cmd_args.Md_p) * ( - cmd_args.Dd_p*(dY_robot - dY) - cmd_args.Kd_p*(Y_robot-Y) + Fdist_p );
 
     // Goal filtering
     if (cmd_args.USE_GOAL_FILT)
