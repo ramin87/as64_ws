@@ -1,30 +1,21 @@
 # Try to find TypeIRML Lib
 
 find_path( TypeIRML_INCLUDE_DIR TypeIRML.h
-  $ENV{FRIL_PATH}/include
-  $ENV{HOME}/FRILibrary/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../FRILibrary/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../FRILibrary/include
 )
 
 find_library( TypeIRML_LIBRARY_DEBUG
   LIBRARY_NAMES
     TypeIRML
   PATHS
-  $ENV{FRIL_PATH}/Linux/x64/debug/lib
-  $ENV{HOME}/FRILibrary/Linux/x64/debug/lib
   ${CMAKE_CURRENT_SOURCE_DIR}/../FRILibrary/Linux/x64/debug/lib
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../FRILibrary/Linux/x64/debug/lib
 )
 
 find_library( TypeIRML_LIBRARY_RELEASE
   LIBRARY_NAMES
     TypeIRML
   PATHS
-  $ENV{FRIL_PATH}/Linux/x64/release/lib
-  $ENV{HOME}/FRILibrary/Linux/x64/release/lib
   ${CMAKE_CURRENT_SOURCE_DIR}/../FRILibrary/Linux/x64/release/lib
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../FRILibrary/Linux/x64/release/lib
 )
 
 if(TypeIRML_INCLUDE_DIR AND

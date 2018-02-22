@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(lwr_robot)
 
-# Use C++  for initialise an std::vector without a constructor
+# Use C++ for initialise an std::vector without a constructor
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 # Set the path containing additional modules
@@ -13,7 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   kdl_parser
   std_msgs
   autharl_core
-  roslint)
+  roslint
+)
 
 link_libraries(pthread)
 
