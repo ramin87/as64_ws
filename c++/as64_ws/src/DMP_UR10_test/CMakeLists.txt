@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(dmp_kuka_test)
+project(dmp_ur10_test)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
@@ -15,10 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   filter_lib
   plot_lib
   math_lib
-  #robotics_lib
-  autharl_core
-  lwr_robot
   time_lib
+  ur10_robot
 )
 
 # BHand need to know that we are on Linux
@@ -38,7 +36,7 @@ set(SRC_LIST
 	src/source_list/utils.cpp
 	src/source_list/cmd_args.cpp
 	src/source_list/log_data.cpp
-  src/source_list/DMP_Kuka_controller.cpp
+  src/source_list/DMP_UR10_controller.cpp
 )
 
 file(GLOB INCLUDE_LIST "")
@@ -62,15 +60,15 @@ include_directories(
 # *************************************************
 # *************************************************
 
-add_executable(DMP_Kuka_test
+add_executable(DMP_UR10_test
   src/main.cpp ${INCLUDE_LIST} ${SRC_LIST}
 )
 
-add_dependencies(DMP_Kuka_test
+add_dependencies(DMP_UR10_test
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(DMP_Kuka_test
+target_link_libraries(DMP_UR10_test
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
   ${PCL_LIBRARIES}
@@ -80,11 +78,8 @@ target_link_libraries(DMP_Kuka_test
   param-lib
   signalProcessing-lib
   filter-lib
-  plot-lib
+  #plot-lib
   math-lib
-  #robotics-lib
-  autharl-robot
-  autharl-utils
-  lwr-robot
   time-lib
+  ur10-robot
 )
