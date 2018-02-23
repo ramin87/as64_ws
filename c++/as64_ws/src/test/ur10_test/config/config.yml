@@ -1,4 +1,3 @@
 # ====  params  ====
-binary: true
-precision: 16
-filename: "data"
+command_ur10_topic: "/ur_driver/URScript"
+pub_rate: 10

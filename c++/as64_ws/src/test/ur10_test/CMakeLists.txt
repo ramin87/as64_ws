@@ -6,6 +6,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   roslib
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+  tf2_ros
+  math_lib
 )
 
 ###################################
@@ -18,7 +23,8 @@ catkin_package(
 )
 
 set(SRC_LIST
-	""
+	src/source_list/cmd_args.cpp
+  src/source_list/ur10_robot.cpp
 )
 
 file(GLOB INCLUDE_LIST "")
@@ -31,6 +37,7 @@ file(GLOB INCLUDE_LIST "")
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  /usr/include/eigen3
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -47,6 +54,8 @@ add_dependencies(ur10_test
 
 target_link_libraries(ur10_test
   ${catkin_LIBRARIES}
+  armadillo
+  math-lib
 )
 
 

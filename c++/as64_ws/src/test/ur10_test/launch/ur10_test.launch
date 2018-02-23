@@ -1,13 +1,13 @@
 <launch>
-    <arg name="node_name" default="file_io_test_node" />
+    <arg name="node_name" default="ur10_test_node" />
 
-    <node pkg="io_test"
-          type="file_io_test"
+    <node pkg="ur10_test"
+          type="ur10_test"
           name="$(arg node_name)"
           output="screen">
 
         <rosparam command="load"
-                  file="$(find io_test)/config/config.yml" />
+                  file="$(find ur10_test)/config/config.yml" />
 
     </node>
 </launch>

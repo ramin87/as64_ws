@@ -17,6 +17,7 @@ fi
 
 cd ../
 catkin_make ${CATKIN_MAKE_OPTIONS}
+source devel/setup.bash
 
 
 
