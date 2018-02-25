@@ -2,6 +2,9 @@
 #include <io_lib/io_lib.h>
 #include <time_lib/time.h>
 
+using namespace as64_::math_;
+using namespace as64_;
+
 DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
 {
     Dp = 3;
@@ -11,7 +14,7 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
     robot_ = robot;
     Ts = 0.008;// robot_->cycle;
 
-    std::cout << as64_::io_::bold << as64_::io_::green << "Reading params from yaml file..." << as64_::io_::reset << "\n";
+    std::cout << io_::bold << io_::green << "Reading params from yaml file..." << io_::reset << "\n";
     cmd_args.parse_cmd_args();
     cmd_args.print();
 
@@ -51,7 +54,7 @@ void DMP_UR10_controller::init_program_variables()
 
     robot_->getTaskPose(T_robot_ee);
     Y_robot = T_robot_ee.submat(0, 3, 2, 3);
-    Q_robot = as64_::rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
+    Q_robot = rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
 
     t = 0.0;
     x = 0.0;
@@ -115,14 +118,14 @@ void DMP_UR10_controller::init_controller()
 
 void DMP_UR10_controller::keyboard_ctrl_function()
 {
-  using namespace as64_::io_;
+  using namespace io_;
     // run_dmp = false;
     // train_dmp = false;
     // goto_start = false;
 
     int key = 0;
     while (!stop_robot) { // Enter
-        key = as64_::io_::getch();
+        key = io_::getch();
 
         //std::cout << "Pressed " << (char)key  << "\n";
 
@@ -179,7 +182,7 @@ void DMP_UR10_controller::keyboard_ctrl_function()
 
 void DMP_UR10_controller::save_execution_results()
 {
-  using namespace as64_::io_;
+  using namespace io_;
   if (log_on)
   {
     std::cout << red << bold << "Cannot save execution results!\n";
@@ -206,7 +209,7 @@ void DMP_UR10_controller::record_demo()
 
     pause_robot = true;
 
-    using namespace as64_::io_;
+    using namespace io_;
     std::cout << blue << bold << "Robot paused ! Please press 'p' to continue ..." << std::endl << reset;
 
 
@@ -277,17 +280,17 @@ void DMP_UR10_controller::save_demo_data()
 
   if (!out) throw std::ios_base::failure(std::string("Couldn't create file: \"") + train_data_save_file + "\"");
 
-  as64_::io_::write_mat(trainData0.Time, out, binary);
+  io_::write_mat(trainData0.Time, out, binary);
 
-  as64_::io_::write_mat(trainData0.Y_data, out, binary);
-  as64_::io_::write_mat(trainData0.dY_data, out, binary);
-  as64_::io_::write_mat(trainData0.ddY_data, out, binary);
+  io_::write_mat(trainData0.Y_data, out, binary);
+  io_::write_mat(trainData0.dY_data, out, binary);
+  io_::write_mat(trainData0.ddY_data, out, binary);
 
-  as64_::io_::write_mat(trainData0.Q_data, out, binary);
-  as64_::io_::write_mat(trainData0.v_rot_data, out, binary);
-  as64_::io_::write_mat(trainData0.dv_rot_data, out, binary);
+  io_::write_mat(trainData0.Q_data, out, binary);
+  io_::write_mat(trainData0.v_rot_data, out, binary);
+  io_::write_mat(trainData0.dv_rot_data, out, binary);
 
-  as64_::io_::write_mat(trainData0.q0, out, binary);
+  io_::write_mat(trainData0.q0, out, binary);
 
   out.close();
 }
@@ -303,17 +306,17 @@ void DMP_UR10_controller::load_demo_data()
 
   if (!in) throw std::ios_base::failure(std::string("Couldn't open file: \"") + train_data_load_file + "\"");
 
-  as64_::io_::read_mat(trainData.Time, in, binary);
+  io_::read_mat(trainData.Time, in, binary);
 
-  as64_::io_::read_mat(trainData.Y_data, in, binary);
-  as64_::io_::read_mat(trainData.dY_data, in, binary);
-  as64_::io_::read_mat(trainData.ddY_data, in, binary);
+  io_::read_mat(trainData.Y_data, in, binary);
+  io_::read_mat(trainData.dY_data, in, binary);
+  io_::read_mat(trainData.ddY_data, in, binary);
 
-  as64_::io_::read_mat(trainData.Q_data, in, binary);
-  as64_::io_::read_mat(trainData.v_rot_data, in, binary);
-  as64_::io_::read_mat(trainData.dv_rot_data, in, binary);
+  io_::read_mat(trainData.Q_data, in, binary);
+  io_::read_mat(trainData.v_rot_data, in, binary);
+  io_::read_mat(trainData.dv_rot_data, in, binary);
 
-  as64_::io_::read_mat(trainData.q0, in, binary);
+  io_::read_mat(trainData.q0, in, binary);
 
   trainData.n_data = trainData.Time.size();
 
@@ -322,7 +325,7 @@ void DMP_UR10_controller::load_demo_data()
 
 void DMP_UR10_controller::goto_start_pose()
 {
-    using namespace as64_::io_;
+    using namespace io_;
 
     robot_->setMode(ur10_::Mode::POSITION_CONTROL);
 
@@ -338,14 +341,14 @@ void DMP_UR10_controller::goto_start_pose()
 
 void DMP_UR10_controller::train_DMP()
 {
-    // as64_::param_::ParamList trainParamList;
+    // param_::ParamList trainParamList;
     // trainParamList.setParam("lambda", cmd_args.lambda);
     // trainParamList.setParam("P_cov", cmd_args.P_cov);
 
-    using namespace as64_::io_;
+    using namespace io_;
     std::cout << yellow << bold << "Training DMP...\n" << reset;
 
-    //std::cout << as64_::io_::bold << as64_::io_::green << "DMP CartPos training..." << as64_::io_::reset << "\n";
+    //std::cout << io_::bold << io_::green << "DMP CartPos training..." << io_::reset << "\n";
     trainData.n_data = trainData.Time.size();
     arma::vec y0 = trainData.Y_data.col(0);
     arma::vec g = trainData.Y_data.col(trainData.n_data - 1);
@@ -356,7 +359,7 @@ void DMP_UR10_controller::train_DMP()
     offline_train_p_mse = dmpCartPos->train(trainData.Time, trainData.Y_data, trainData.dY_data, trainData.ddY_data, y0, g, cmd_args.trainMethod);
     std::cout << "CartPos: Elapsed time is " << timer.toc() << "\n";
 
-    //std::cout << as64_::io_::bold << as64_::io_::green << "DMP orient training..." << as64_::io_::reset << "\n";
+    //std::cout << io_::bold << io_::green << "DMP orient training..." << io_::reset << "\n";
     arma::vec Q0 = trainData.Q_data.col(0);
     arma::vec Qg = trainData.Q_data.col(trainData.n_data - 1);
     // dmpOrient->setTrainingParams(&trainParamList);
@@ -383,115 +386,115 @@ void DMP_UR10_controller::train_DMP()
 
 void DMP_UR10_controller::execute_DMP()
 {
-    // DMP CartPos simulation
-    arma::vec Y_c = cmd_args.a_py * (Y_robot - Y);
-    arma::vec Z_c = arma::vec(Dp).zeros();
+  // DMP CartPos simulation
+  arma::vec Y_c = cmd_args.a_py * (Y_robot - Y);
+  arma::vec Z_c = arma::vec(Dp).zeros();
 
-    arma::vec X = arma::vec(Dp).fill(x);
-    arma::vec dX = arma::vec(Dp).zeros();
+  arma::vec X = arma::vec(Dp).fill(x);
+  arma::vec dX = arma::vec(Dp).zeros();
 
-    arma::mat statesDot;
-    statesDot = dmpCartPos->getStatesDot(X, Y, Z, Y0, Yg, Y_c, Z_c);
-    dZ = statesDot.col(0);
-    dY = statesDot.col(1);
-    // dX = statesDot.col(2);
+  arma::mat statesDot;
+  statesDot = dmpCartPos->getStatesDot(X, Y, Z, Y0, Yg, Y_c, Z_c);
+  dZ = statesDot.col(0);
+  dY = statesDot.col(1);
+  // dX = statesDot.col(2);
 
-   // arma::vec dZ_dmp = dZ;
+ // arma::vec dZ_dmp = dZ;
 
-   // statesDot.resize(Dp,3);
-    //for (int i=0; i<Dp; i++){
-    //  statesDot.row(i) = dmp[i]->getStatesDot(X(i), Y(i), Z(i), Y0(i), Yg(i), Y_c(i), Z_c(i)).t();
-    //}
-
-
-    //dZ = statesDot.col(0);
-    //dY = statesDot.col(1);
+ // statesDot.resize(Dp,3);
+  //for (int i=0; i<Dp; i++){
+  //  statesDot.row(i) = dmp[i]->getStatesDot(X(i), Y(i), Z(i), Y0(i), Yg(i), Y_c(i), Z_c(i)).t();
+  //}
 
 
-
-    /*
-
-    double gAttrGating = dmp[0]->goalAttrGating(x);
-    dZ = dmp[0]->goalAttrGating(x)*dmp[0]->a_z*(dmp[0]->b_z*(Yg-Y)-Z)/ ( dmp[0]->get_v_scale() );
-    */
+  //dZ = statesDot.col(0);
+  //dY = statesDot.col(1);
 
 
-    //std::cout << "Z_err " << arma::norm(dZ_dmp - dZ) << std::endl;
 
-    ddY = dZ / dmpCartPos->get_v_scale();
+  /*
 
-    // std::cout << " dmpCartPos->get_v_scale(): "<<  dmpCartPos->get_v_scale() << std::endl;
-    // ddY_robot = ddY + (1/cmd_args.Md_p) * ( - cmd_args.Dd_p*(dY_robot - dY) - cmd_args.Kd_p*(Y_robot-Y) + Fdist_p );
+  double gAttrGating = dmp[0]->goalAttrGating(x);
+  dZ = dmp[0]->goalAttrGating(x)*dmp[0]->a_z*(dmp[0]->b_z*(Yg-Y)-Z)/ ( dmp[0]->get_v_scale() );
+  */
 
-    // DMP orient simulation
-    arma::vec Q_c = cmd_args.a_py * quatLog(quatProd(Q_robot, quatInv(Q)));
-    arma::vec eta_c = arma::vec(Do).zeros();
 
-    X = arma::vec(Do).fill(x);
-    dX = arma::vec(Do).zeros();
+  //std::cout << "Z_err " << arma::norm(dZ_dmp - dZ) << std::endl;
 
-    std::vector<arma::vec> statesDot_o;
-    statesDot_o = dmpOrient->getStatesDot(X, Q, eta, Q0, Qg, Q_c, eta_c);
-    deta = statesDot_o[0];
-    dQ = statesDot_o[1];
-    // dX = statesDot_o[2];
+  ddY = dZ / dmpCartPos->get_v_scale();
 
-    arma::vec v_rot_temp = 2 * quatProd(dQ, quatInv(Q));
-    v_rot = v_rot_temp.subvec(1, 3);
+  // std::cout << " dmpCartPos->get_v_scale(): "<<  dmpCartPos->get_v_scale() << std::endl;
+  // ddY_robot = ddY + (1/cmd_args.Md_p) * ( - cmd_args.Dd_p*(dY_robot - dY) - cmd_args.Kd_p*(Y_robot-Y) + Fdist_p );
 
-    dv_rot = deta / dmpOrient->get_v_scale();
-    // dv_rot_robot = dv_rot + (1/cmd_args.Md_o) * ( - cmd_args.Dd_o*(v_rot_robot - v_rot) - cmd_args.Kd_o*quatLog(quatProd(Q_robot,quatInv(Q))) + Fdist_o );
+  // DMP orient simulation
+  arma::vec Q_c = cmd_args.a_py * quatLog(quatProd(Q_robot, quatInv(Q)));
+  arma::vec eta_c = arma::vec(Do).zeros();
 
-    // Goal filtering
-    if (cmd_args.USE_GOAL_FILT) {
-        dg_p = cmd_args.a_g * (Yg2 - Yg) / canClockPtr->getTau();
-        dg_o = cmd_args.a_g * quatLog(quatProd(Qg2, quatInv(Qg))) / canClockPtr->getTau();
-    } else {
-        Yg = Yg2;
-        dg_p.fill(0.0);
-        Qg = Qg2;
-        dg_o.fill(0.0);
-    }
+  X = arma::vec(Do).fill(x);
+  dX = arma::vec(Do).zeros();
 
-    // Update phase variable
+  std::vector<arma::vec> statesDot_o;
+  statesDot_o = dmpOrient->getStatesDot(X, Q, eta, Q0, Qg, Q_c, eta_c);
+  deta = statesDot_o[0];
+  dQ = statesDot_o[1];
+  // dX = statesDot_o[2];
 
-    dx = canClockPtr->getPhaseDot(x);
+  arma::vec v_rot_temp = 2 * quatProd(dQ, quatInv(Q));
+  v_rot = v_rot_temp.subvec(1, 3);
 
-    // Phase stopping
-    if (cmd_args.USE_PHASE_STOP) {
-        double stop_coeff = 1 / (1 + 0.5 * cmd_args.a_px * arma::norm(Y_robot - Y) + 0.5 * cmd_args.a_px * arma::norm(quatLog(quatProd(Q_robot, quatInv(Q)))));
+  dv_rot = deta / dmpOrient->get_v_scale();
+  // dv_rot_robot = dv_rot + (1/cmd_args.Md_o) * ( - cmd_args.Dd_o*(v_rot_robot - v_rot) - cmd_args.Kd_o*quatLog(quatProd(Q_robot,quatInv(Q))) + Fdist_o );
 
-        dx = dx * stop_coeff;
-        dg_p = dg_p * stop_coeff;
-        dg_o = dg_o * stop_coeff;
-    }
+  // Goal filtering
+  if (cmd_args.USE_GOAL_FILT) {
+      dg_p = cmd_args.a_g * (Yg2 - Yg) / canClockPtr->getTau();
+      dg_o = cmd_args.a_g * quatLog(quatProd(Qg2, quatInv(Qg))) / canClockPtr->getTau();
+  } else {
+      Yg = Yg2;
+      dg_p.fill(0.0);
+      Qg = Qg2;
+      dg_o.fill(0.0);
+  }
 
-    // Numerical integration
-    x = x + dx * Ts;
-    Y = Y + dY * Ts;
-    Z = Z + dZ * Ts;
-    Yg = Yg + dg_p * Ts;
+  // Update phase variable
 
-    // std::cout << "------------------------" <<   std::endl ;
-    // std::cout << "Y: " << Y.t() <<  std::endl ;
-    // std::cout << "dY: " << dY.t() <<  std::endl ;
+  dx = canClockPtr->getPhaseDot(x);
 
-    Q = quatProd(quatExp(v_rot * Ts), Q);
+  // Phase stopping
+  if (cmd_args.USE_PHASE_STOP) {
+      double stop_coeff = 1 / (1 + 0.5 * cmd_args.a_px * arma::norm(Y_robot - Y) + 0.5 * cmd_args.a_px * arma::norm(quatLog(quatProd(Q_robot, quatInv(Q)))));
 
-    eta = eta + deta * Ts;
-    Qg = quatProd(quatExp(dg_o * Ts), Qg);
+      dx = dx * stop_coeff;
+      dg_p = dg_p * stop_coeff;
+      dg_o = dg_o * stop_coeff;
+  }
+
+  // Numerical integration
+  x = x + dx * Ts;
+  Y = Y + dY * Ts;
+  Z = Z + dZ * Ts;
+  Yg = Yg + dg_p * Ts;
+
+  // std::cout << "------------------------" <<   std::endl ;
+  // std::cout << "Y: " << Y.t() <<  std::endl ;
+  // std::cout << "dY: " << dY.t() <<  std::endl ;
+
+  Q = quatProd(quatExp(v_rot * Ts), Q);
+
+  eta = eta + deta * Ts;
+  Qg = quatProd(quatExp(dg_o * Ts), Qg);
 }
 
 void DMP_UR10_controller::log_demo_step()
 {
   //  std::cout << "Log Demo step\n";
-    trainData.Time = join_horiz(trainData.Time, t);
-    trainData.Y_data = join_horiz(trainData.Y_data, Y_robot);
-    trainData.dY_data = join_horiz(trainData.dY_data, dY_robot);
-    trainData.ddY_data = join_horiz(trainData.ddY_data, ddY_robot);
-    trainData.Q_data = join_horiz(trainData.Q_data, Q_robot);
-    trainData.v_rot_data = join_horiz(trainData.v_rot_data, v_rot_robot);
-    trainData.dv_rot_data = join_horiz(trainData.dv_rot_data, dv_rot_robot);
+  trainData.Time = join_horiz(trainData.Time, t);
+  trainData.Y_data = join_horiz(trainData.Y_data, Y_robot);
+  trainData.dY_data = join_horiz(trainData.dY_data, dY_robot);
+  trainData.ddY_data = join_horiz(trainData.ddY_data, ddY_robot);
+  trainData.Q_data = join_horiz(trainData.Q_data, Q_robot);
+  trainData.v_rot_data = join_horiz(trainData.v_rot_data, v_rot_robot);
+  trainData.dv_rot_data = join_horiz(trainData.dv_rot_data, dv_rot_robot);
 }
 
 void DMP_UR10_controller::log_online()
@@ -501,7 +504,7 @@ void DMP_UR10_controller::log_online()
 
     log_data.Time = join_horiz(log_data.Time, t);
 
-    log_data.y_data = join_horiz(log_data.y_data, arma::join_vert(Y, as64_::quat2qpos(Q)));
+    log_data.y_data = join_horiz(log_data.y_data, arma::join_vert(Y, quat2qpos(Q)));
 
     log_data.dy_data = join_horiz(log_data.dy_data, arma::join_vert(dY, v_rot));
     log_data.z_data = join_horiz(log_data.z_data, arma::join_vert(Z, eta));
@@ -509,116 +512,116 @@ void DMP_UR10_controller::log_online()
 
     log_data.x_data = join_horiz(log_data.x_data, x);
 
-    log_data.y_robot_data = join_horiz(log_data.y_robot_data, arma::join_vert(Y_robot, as64_::quat2qpos(Q_robot)));
+    log_data.y_robot_data = join_horiz(log_data.y_robot_data, arma::join_vert(Y_robot, quat2qpos(Q_robot)));
     log_data.dy_robot_data = join_horiz(log_data.dy_robot_data, arma::join_vert(dY_robot, v_rot_robot));
     log_data.ddy_robot_data = join_horiz(log_data.ddy_robot_data, arma::join_vert(ddY_robot, dv_rot_robot));
 
     log_data.Fdist_data = join_horiz(log_data.Fdist_data, arma::join_vert(Fdist_p, Fdist_o));
-    log_data.g_data = join_horiz(log_data.g_data, arma::join_vert(Yg, as64_::quat2qpos(Qg)));
+    log_data.g_data = join_horiz(log_data.g_data, arma::join_vert(Yg, quat2qpos(Qg)));
 }
 
 void DMP_UR10_controller::log_offline()
 {
-    arma::rowvec Time_offline_train;
-    arma::mat F_p_offline_train_data;
-    arma::mat Fd_p_offline_train_data;
-    arma::mat F_o_offline_train_data;
-    arma::mat Fd_o_offline_train_data;
+  arma::rowvec Time_offline_train;
+  arma::mat F_p_offline_train_data;
+  arma::mat Fd_p_offline_train_data;
+  arma::mat F_o_offline_train_data;
+  arma::mat Fd_o_offline_train_data;
 
-    arma::vec y0 = trainData.Y_data.col(0);
-    arma::vec g = trainData.Y_data.col(trainData.n_data - 1);
-    F_p_offline_train_data.resize(Dp, trainData.n_data);
-    Fd_p_offline_train_data.resize(Dp, trainData.n_data);
-    F_o_offline_train_data.resize(Do, trainData.n_data);
-    Fd_o_offline_train_data.resize(Do, trainData.n_data);
+  arma::vec y0 = trainData.Y_data.col(0);
+  arma::vec g = trainData.Y_data.col(trainData.n_data - 1);
+  F_p_offline_train_data.resize(Dp, trainData.n_data);
+  Fd_p_offline_train_data.resize(Dp, trainData.n_data);
+  F_o_offline_train_data.resize(Do, trainData.n_data);
+  Fd_o_offline_train_data.resize(Do, trainData.n_data);
 
-    for (int j = 0; j < trainData.Time.size(); j++) {
-        arma::vec X = dmpCartPos->phase(trainData.Time(j));
-        F_p_offline_train_data.col(j) = dmpCartPos->learnedForcingTerm(X, y0, g);
-        Fd_p_offline_train_data.col(j) = dmpCartPos->calcFd(X, trainData.Y_data.col(j), trainData.dY_data.col(j), trainData.ddY_data.col(j), y0, g);
+  for (int j = 0; j < trainData.Time.size(); j++) {
+      arma::vec X = dmpCartPos->phase(trainData.Time(j));
+      F_p_offline_train_data.col(j) = dmpCartPos->learnedForcingTerm(X, y0, g);
+      Fd_p_offline_train_data.col(j) = dmpCartPos->calcFd(X, trainData.Y_data.col(j), trainData.dY_data.col(j), trainData.ddY_data.col(j), y0, g);
 
-        X = dmpOrient->phase(trainData.Time(j));
-        F_o_offline_train_data.col(j) = dmpOrient->learnedForcingTerm(X, Q0, Qg);
-        Fd_o_offline_train_data.col(j) = dmpOrient->calcFd(X, trainData.Q_data.col(j), trainData.v_rot_data.col(j), trainData.dv_rot_data.col(j), Q0, Qg);
-    }
-    Time_offline_train = trainData.Time;
+      X = dmpOrient->phase(trainData.Time(j));
+      F_o_offline_train_data.col(j) = dmpOrient->learnedForcingTerm(X, Q0, Qg);
+      Fd_o_offline_train_data.col(j) = dmpOrient->calcFd(X, trainData.Q_data.col(j), trainData.v_rot_data.col(j), trainData.dv_rot_data.col(j), Q0, Qg);
+  }
+  Time_offline_train = trainData.Time;
 
-    log_data.poseDataFlag = true;
+  log_data.poseDataFlag = true;
 
-    log_data.DMP_w.resize(D);
-    log_data.DMP_c.resize(D);
-    log_data.DMP_h.resize(D);
-    for (int i = 0; i < D; i++) {
-        log_data.DMP_w[i] = dmp[i]->w;
-        log_data.DMP_c[i] = dmp[i]->c;
-        log_data.DMP_h[i] = dmp[i]->h;
-    }
+  log_data.DMP_w.resize(D);
+  log_data.DMP_c.resize(D);
+  log_data.DMP_h.resize(D);
+  for (int i = 0; i < D; i++) {
+      log_data.DMP_w[i] = dmp[i]->w;
+      log_data.DMP_c[i] = dmp[i]->c;
+      log_data.DMP_h[i] = dmp[i]->h;
+  }
 
-    log_data.Time_demo = trainData.Time;
-    arma::mat yd_data(Do, trainData.n_data);
-    for (int i = 0; i < trainData.n_data; i++) {
-        yd_data.col(i) = quat2qpos(trainData.Q_data.col(i));
-    }
-    log_data.yd_data = arma::join_vert(trainData.Y_data, yd_data);
-    log_data.dyd_data = arma::join_vert(trainData.dY_data, trainData.v_rot_data);
-    log_data.ddyd_data = arma::join_vert(trainData.ddY_data, trainData.dv_rot_data);
+  log_data.Time_demo = trainData.Time;
+  arma::mat yd_data(Do, trainData.n_data);
+  for (int i = 0; i < trainData.n_data; i++) {
+      yd_data.col(i) = quat2qpos(trainData.Q_data.col(i));
+  }
+  log_data.yd_data = arma::join_vert(trainData.Y_data, yd_data);
+  log_data.dyd_data = arma::join_vert(trainData.dY_data, trainData.v_rot_data);
+  log_data.ddyd_data = arma::join_vert(trainData.ddY_data, trainData.dv_rot_data);
 
-    log_data.D = D;
-    log_data.Ts = Ts;
-    log_data.g0 = arma::join_vert(Yg0, quat2qpos(Q0));
+  log_data.D = D;
+  log_data.Ts = Ts;
+  log_data.g0 = arma::join_vert(Yg0, quat2qpos(Q0));
 
-    log_data.Time_offline_train = Time_offline_train;
-    log_data.F_offline_train_data = arma::join_vert(F_p_offline_train_data, F_o_offline_train_data);
-    log_data.Fd_offline_train_data = arma::join_vert(Fd_p_offline_train_data, Fd_o_offline_train_data);
-    log_data.Psi_data_train.resize(D);
+  log_data.Time_offline_train = Time_offline_train;
+  log_data.F_offline_train_data = arma::join_vert(F_p_offline_train_data, F_o_offline_train_data);
+  log_data.Fd_offline_train_data = arma::join_vert(Fd_p_offline_train_data, Fd_o_offline_train_data);
+  log_data.Psi_data_train.resize(D);
 
-    for (int i = 0; i < D; i++) {
-        int n_data = Time_offline_train.size();
-        log_data.Psi_data_train[i].resize(dmp[i]->N_kernels, n_data);
-        for (int j = 0; j < n_data; j++) {
-            double x = canClockPtr->getPhase(Time_offline_train(j));
-            log_data.Psi_data_train[i].col(j) = dmp[i]->kernelFunction(x);
-        }
-    }
+  for (int i = 0; i < D; i++) {
+      int n_data = Time_offline_train.size();
+      log_data.Psi_data_train[i].resize(dmp[i]->N_kernels, n_data);
+      for (int j = 0; j < n_data; j++) {
+          double x = canClockPtr->getPhase(Time_offline_train(j));
+          log_data.Psi_data_train[i].col(j) = dmp[i]->kernelFunction(x);
+      }
+  }
 
-    log_data.Psi_data.resize(D);
-    y0 = arma::join_vert(Y0, -quatLog(quatProd(Qg0, quatInv(Q0))));
-    arma::vec g0 = arma::join_vert(Yg0, arma::vec(Do).zeros());
-    for (int i = 0; i < D; i++) {
-        int n_data = log_data.Time.size();
-        log_data.Psi_data[i].resize(dmp[i]->N_kernels, n_data);
-        log_data.Force_term_data.resize(D, n_data);
-        for (int j = 0; j < n_data; j++) {
-            double x = log_data.x_data(j);
-            log_data.Psi_data[i].col(j) = dmp[i]->kernelFunction(x);
-            log_data.Force_term_data(i, j) = dmp[i]->learnedForcingTerm(x, y0(i), g0(i));
-        }
-    }
+  log_data.Psi_data.resize(D);
+  y0 = arma::join_vert(Y0, -quatLog(quatProd(Qg0, quatInv(Q0))));
+  arma::vec g0 = arma::join_vert(Yg0, arma::vec(Do).zeros());
+  for (int i = 0; i < D; i++) {
+      int n_data = log_data.Time.size();
+      log_data.Psi_data[i].resize(dmp[i]->N_kernels, n_data);
+      log_data.Force_term_data.resize(D, n_data);
+      for (int j = 0; j < n_data; j++) {
+          double x = log_data.x_data(j);
+          log_data.Psi_data[i].col(j) = dmp[i]->kernelFunction(x);
+          log_data.Force_term_data(i, j) = dmp[i]->learnedForcingTerm(x, y0(i), g0(i));
+      }
+  }
 
-    log_data.goalAttr_data.resize(log_data.Time.size());
-    log_data.shapeAttr_data.resize(log_data.Time.size());
-    for (int j = 0; j < log_data.Time.size(); j++) {
-        double x = log_data.x_data(j);
-        log_data.goalAttr_data(j) = dmp[0]->goalAttrGating(x);
-        log_data.shapeAttr_data(j) = dmp[0]->shapeAttrGating(x);
-    }
+  log_data.goalAttr_data.resize(log_data.Time.size());
+  log_data.shapeAttr_data.resize(log_data.Time.size());
+  for (int j = 0; j < log_data.Time.size(); j++) {
+      double x = log_data.x_data(j);
+      log_data.goalAttr_data(j) = dmp[0]->goalAttrGating(x);
+      log_data.shapeAttr_data(j) = dmp[0]->shapeAttrGating(x);
+  }
 }
 
 void DMP_UR10_controller::clear_train_data()
 {
-    trainData.n_data = 0;
-    trainData.Time.clear();
-    trainData.Y_data.clear();
-    trainData.dY_data.clear();
-    trainData.ddY_data.clear();
-    trainData.Q_data.clear();
-    trainData.v_rot_data.clear();
-    trainData.dv_rot_data.clear();
+  trainData.n_data = 0;
+  trainData.Time.clear();
+  trainData.Y_data.clear();
+  trainData.dY_data.clear();
+  trainData.ddY_data.clear();
+  trainData.Q_data.clear();
+  trainData.v_rot_data.clear();
+  trainData.dv_rot_data.clear();
 }
 
 void DMP_UR10_controller::clear_logged_data()
 {
-    log_data.clear();
+  log_data.clear();
 }
 
 void DMP_UR10_controller::save_and_restart_demo()
@@ -634,22 +637,6 @@ void DMP_UR10_controller::clear_and_restart_demo()
     init_controller();
 }
 
-
-std::string getTimeStamp()
-{
-	std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-	std::ostringstream out_s;
-	out_s << std::ctime(&t);
-	std::string time_stamp = out_s.str();
-	for (int i=0;i<time_stamp.size();i++)
-	{
-		if (time_stamp[i]==' ') time_stamp[i] = '_';
-		else if (time_stamp[i]==':') time_stamp[i] = 'x';
-	}
-
-	return time_stamp;
-}
-
 void DMP_UR10_controller::save_logged_data()
 {
     log_offline();
@@ -658,7 +645,7 @@ void DMP_UR10_controller::save_logged_data()
     o_str << "";
     if (demo_save_counter > 0) o_str << demo_save_counter + 1;
 
-    std::string suffix = cmd_args.DMP_TYPE + "_" + getTimeStamp();
+    std::string suffix = cmd_args.DMP_TYPE + "_" + tm_::getTimeStamp();
 
     std::cout << "Saving results...";
     log_data.cmd_args = cmd_args;
@@ -678,7 +665,7 @@ void DMP_UR10_controller::calc_simulation_mse()
     for (int i = 0; i < D; i++) {
         arma::rowvec y_robot_data2;
         arma::rowvec yd_data2;
-        as64_::spl_::makeSignalsEqualLength(log_data.Time, log_data.y_robot_data.row(i),
+        spl_::makeSignalsEqualLength(log_data.Time, log_data.y_robot_data.row(i),
                                             log_data.Time_demo, log_data.yd_data.row(i), log_data.Time,
                                             y_robot_data2, yd_data2);
         sim_mse(i) = arma::norm(y_robot_data2 - yd_data2);
@@ -696,14 +683,14 @@ void DMP_UR10_controller::execute()
     // ======  Get DMP  =======
     get_canClock_gatingFuns_DMP(cmd_args, D, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
 
-    std::vector<std::shared_ptr<as64_::DMP_>> dmpVec1(Dp);
+    std::vector<std::shared_ptr<DMP_>> dmpVec1(Dp);
     for (int i = 0; i < Dp; i++) dmpVec1[i] = dmp[i];
-    dmpCartPos.reset(new as64_::DMP_CartPos());
+    dmpCartPos.reset(new DMP_CartPos());
     dmpCartPos->init(dmpVec1);
 
-    std::vector<std::shared_ptr<as64_::DMP_>> dmpVec2(Do);
+    std::vector<std::shared_ptr<DMP_>> dmpVec2(Do);
     for (int i = 0; i < Do; i++) dmpVec2[i] = dmp[Dp + i];
-    dmpOrient.reset(new as64_::DMP_orient());
+    dmpOrient.reset(new DMP_orient());
     dmpOrient->init(dmpVec2);
 
 restart_dmp_execution_label:
@@ -769,7 +756,7 @@ restart_dmp_execution_label:
             if (err_p <= cmd_args.tol_stop && err_o <= cmd_args.orient_tol_stop && t >= tau)
             {
               goto_start = true;
-              std::cout << as64_::io_::cyan << "Target reached. Moving to start pose...\n" << as64_::io_::reset;
+              std::cout << io_::cyan << "Target reached. Moving to start pose...\n" << io_::reset;
             }
         }
 
@@ -809,7 +796,7 @@ void DMP_UR10_controller::update()
     dY_robot = V_robot.subvec(0, 2);
     ddY_robot = (dY_robot - dY_robot_prev) / Ts;
 
-    Q_robot = as64_::rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
+    Q_robot = rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
     v_rot_robot = V_robot.subvec(3, 5);
     dv_rot_robot = (v_rot_robot - v_rot_robot_prev) / Ts;
 
@@ -820,62 +807,62 @@ void DMP_UR10_controller::update()
 
 void DMP_UR10_controller::command()
 {
-    double Kp = cmd_args.Kd_p;
-    double Ko = cmd_args.Kd_o;
-    double  factor_force = 0;
+  double Kp = cmd_args.Kd_p;
+  double Ko = cmd_args.Kd_o;
+  double  factor_force = 0;
 
-    // set the stiffness to a low value when the dmp is inactive so that the
-    // user can move the robot freely
-    if (!run_dmp) {
-        Kp = 0.0;
-        Ko = 0.0;
-        factor_force = 1.0;
+  // set the stiffness to a low value when the dmp is inactive so that the
+  // user can move the robot freely
+  if (!run_dmp) {
+      Kp = 0.0;
+      Ko = 0.0;
+      factor_force = 1.0;
+  }
+
+
+
+  //ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * (dY_robot - dY) - Kp * (Y_robot - Y) + factor_force*Fdist_p);
+  ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - Kp * Ep + factor_force*Fdist_p);
+
+
+
+
+  //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot - v_rot) - Ko * quatLog(quatProd(Q_robot, quatInv(Q))) + factor_force*Fdist_o);
+  //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot) + factor_force*Fdist_o);
+  ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo + factor_force*Fdist_o);
+
+
+
+  dEp = dEp + ddEp * Ts;
+  dEo = dEo + ddEo * Ts;
+  Ep = Ep + dEp * Ts;
+
+
+  arma::vec Vd(6);
+  Vd.subvec(0, 2) = (dEp + dY - 4.0*(Y_robot - (Y + Ep)));
+  Vd.subvec(3, 5) = (dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
+
+
+
+
+
+  if(run_dmp || goto_start){
+    if(robot_->getMode() != ur10_::Mode::VELOCITY_CONTROL){
+      robot_->setMode(ur10_::Mode::VELOCITY_CONTROL);
     }
-
-
-
-    //ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * (dY_robot - dY) - Kp * (Y_robot - Y) + factor_force*Fdist_p);
-    ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - Kp * Ep + factor_force*Fdist_p);
-
-
-
-
-    //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot - v_rot) - Ko * quatLog(quatProd(Q_robot, quatInv(Q))) + factor_force*Fdist_o);
-    //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot) + factor_force*Fdist_o);
-    ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo + factor_force*Fdist_o);
-
-
-
-    dEp = dEp + ddEp * Ts;
-    dEo = dEo + ddEo * Ts;
-    Ep = Ep + dEp * Ts;
-
-
-    arma::vec Vd(6);
-    Vd.subvec(0, 2) = (dEp + dY - 4.0*(Y_robot - (Y + Ep)));
-    Vd.subvec(3, 5) = (dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
-
-
-
-
-
-    if(run_dmp || goto_start){
-      if(robot_->getMode() != ur10_::Mode::VELOCITY_CONTROL){
-        robot_->setMode(ur10_::Mode::VELOCITY_CONTROL);
-      }
-      Vd.rows(3,5) = arma::zeros<arma::vec>(3);
-      arma::vec qd = arma::pinv(J_robot) * Vd;
-      robot_->setJointVelocity(qd);
-    }else{
-      if(robot_->getMode() != ur10_::Mode::TORQUE_CONTROL){
-        robot_->setMode(ur10_::Mode::TORQUE_CONTROL);
-      }
-      arma::vec torque_for_rotation = arma::zeros<arma::vec>(7);
-        //  torque_for_rotation = - (J_robot.rows(3,5)).t() * 5.0* quatLog(quatProd(Q_robot, quatInv(trainData.Q_data.col(0))));
-      robot_->setJointTorque(torque_for_rotation);
-      //std::cout<<"torque_for_rotation: " << torque_for_rotation.t() <<std::endl;
+    Vd.rows(3,5) = arma::zeros<arma::vec>(3);
+    arma::vec qd = arma::pinv(J_robot) * Vd;
+    robot_->setJointVelocity(qd);
+  }else{
+    if(robot_->getMode() != ur10_::Mode::TORQUE_CONTROL){
+      robot_->setMode(ur10_::Mode::TORQUE_CONTROL);
     }
-    robot_->waitNextCycle();
+    arma::vec torque_for_rotation = arma::zeros<arma::vec>(7);
+      //  torque_for_rotation = - (J_robot.rows(3,5)).t() * 5.0* quatLog(quatProd(Q_robot, quatInv(trainData.Q_data.col(0))));
+    robot_->setJointTorque(torque_for_rotation);
+    //std::cout<<"torque_for_rotation: " << torque_for_rotation.t() <<std::endl;
+  }
+  robot_->waitNextCycle();
 
 }
 

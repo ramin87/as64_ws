@@ -2,26 +2,27 @@
  * Copyright (C) 2017 as64_
  */
 
- #include <ros/ros.h>
- #include <ros/package.h>
+#include <ros/ros.h>
+#include <ros/package.h>
 
- #include <memory>
- #include <vector>
- #include <string>
- #include <iostream>
- #include <fstream>
+#include <memory>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
 
- #include <DMP_lib/DMP_lib.h>
- #include <param_lib/param_lib.h>
- #include <io_lib/io_lib.h>
- #include <signalProcessing_lib/signalProcessing_lib.h>
- #include <plot_lib/plot_lib.h>
- #include <math_lib/math_lib.h>
+#include <dmp_lib/dmp_lib.h>
+#include <param_lib/param_lib.h>
+#include <io_lib/io_lib.h>
+#include <sigproc_lib/sigproc_lib.h>
+#include <plot_lib/plot_lib.h>
+#include <math_lib/math_lib.h>
 
- #include <utils.h>
- #include <cmd_args.h>
+#include <utils.h>
+#include <cmd_args.h>
 
- using namespace as64_;
+using namespace as64_;
+using namespace as64_::math_;
 
 class DMP_CartPos_orient_test
 {
@@ -120,7 +121,7 @@ void DMP_CartPos_orient_test::train()
   arma::vec g = Yd_data.col(n_data-1);
   // dmpCartPos->setTrainingParams(&trainParamList);
   timer.tic();
-  offline_train_p_mse= dmpCartPos->train(Time_demo, Yd_data, dYd_data, ddYd_data, y0, g, cmd_args.trainMethod);
+  offline_train_p_mse= dmpCartPos->train(Time_demo, Yd_data, dYd_data, ddYd_data, y0, g, cmd_args.trainMethod, true);
   std::cout << "Elapsed time is " << timer.toc() << "\n";
 
   std::cout << as64_::io_::bold << as64_::io_::green << "DMP orient training..." << as64_::io_::reset << "\n";
@@ -183,7 +184,7 @@ void DMP_CartPos_orient_test::log_online()
 {
   log_data.Time = join_horiz(log_data.Time, t);
 
-  log_data.y_data = join_horiz( log_data.y_data, arma::join_vert(Y, as64_::quat2qpos(Q)) );
+  log_data.y_data = join_horiz( log_data.y_data, arma::join_vert(Y, quat2qpos(Q)) );
 
   log_data.dy_data = join_horiz( log_data.dy_data, arma::join_vert(dY, v_rot) );
   log_data.z_data = join_horiz( log_data.z_data, arma::join_vert(Z, eta) );
@@ -191,12 +192,12 @@ void DMP_CartPos_orient_test::log_online()
 
   log_data.x_data = join_horiz(log_data.x_data, x);
 
-  log_data.y_robot_data = join_horiz( log_data.y_robot_data, arma::join_vert(Y_robot, as64_::quat2qpos(Q_robot)) );
+  log_data.y_robot_data = join_horiz( log_data.y_robot_data, arma::join_vert(Y_robot, quat2qpos(Q_robot)) );
   log_data.dy_robot_data = join_horiz( log_data.dy_robot_data, arma::join_vert(dY_robot, v_rot_robot) );
   log_data.ddy_robot_data = join_horiz( log_data.ddy_robot_data, arma::join_vert(ddY_robot, dv_rot_robot) );
 
   log_data.Fdist_data = join_horiz( log_data.Fdist_data, arma::join_vert(Fdist_p, Fdist_o) );
-  log_data.g_data = join_horiz( log_data.g_data, arma::join_vert(Yg, as64_::quat2qpos(Qg)) );
+  log_data.g_data = join_horiz( log_data.g_data, arma::join_vert(Yg, quat2qpos(Qg)) );
 }
 
 void DMP_CartPos_orient_test::log_offline()

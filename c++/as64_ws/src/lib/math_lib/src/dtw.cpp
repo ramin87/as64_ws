@@ -3,6 +3,9 @@
 namespace as64_
 {
 
+namespace math_
+{
+
 double dtw(const arma::mat &s, const arma::mat &t, arma::rowvec &ind_s, arma::rowvec &ind_t, int w, distance_function dist_fun_h)
 {
   if (w<0)
@@ -92,5 +95,7 @@ double dtw(const arma::mat &s, const arma::mat &t, arma::rowvec &ind_s, arma::ro
 
   return d;
 }
+
+} // namespace math_
 
 } // namespace as64_

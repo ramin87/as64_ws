@@ -12,7 +12,7 @@
 
 #include <ros/ros.h>
 
-#include <DMP_lib/DMP_lib.h>
+#include <dmp_lib/dmp_lib.h>
 #include <param_lib/param_lib.h>
 
 #include <cmd_args.h>

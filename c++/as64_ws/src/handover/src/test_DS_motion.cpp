@@ -20,7 +20,7 @@
 
 #include <math_lib/math.h>
 #include <math_lib/quaternions.h>
-#include <filter_lib/filter.h>
+#include <sigproc_lib/filter.h>
 #include <time_lib/time.h>
 
 

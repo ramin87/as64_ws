@@ -38,7 +38,7 @@
 #include <autharl_core/math/skew_symmetric.h>
 
 #include <math_lib/math.h>
-#include <filter_lib/filter.h>
+#include <sigproc_lib/filter.h>
 #include <robotics_lib/jlav.h>
 #include <time_lib/time.h>
 
@@ -115,7 +115,7 @@ public:
 	LogData logData;
 	CMD_ARGS cmd_args;
 
-	as64_::MovingWinMeanFilter obj_weight_filter;
+	as64_::spl_::MovingWinMeanFilter obj_weight_filter;
 
 	Eigen::Matrix<double, JOINT_SIZE, 1> q_prev;
 

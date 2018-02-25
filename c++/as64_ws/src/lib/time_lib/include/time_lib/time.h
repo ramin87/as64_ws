@@ -11,7 +11,7 @@
 namespace as64_
 {
 
-namespace time_
+namespace tm_
 {
 
 /** \brief Returns the current time stamp in the format ???
@@ -19,7 +19,7 @@ namespace time_
  */
 std::string getTimeStamp();
 
-} // namespace time_
+} // namespace tm_
 
 } // namespace as64_
 

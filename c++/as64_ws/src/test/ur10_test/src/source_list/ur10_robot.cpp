@@ -21,6 +21,7 @@ namespace ur10_
 
     this->tfListener.reset(new tf2_ros::TransformListener(this->tfBuffer));
 
+    ros::Duration(4.0).sleep(); // needed to let ur initialize
   }
 
   void Robot::freedrive_mode() const
@@ -218,8 +219,12 @@ namespace ur10_
              << this->transformStamped.transform.rotation.y
              << this->transformStamped.transform.rotation.z;
 
-       // rSt.pose.submat(0,0,2,2) = as64_::quat2rotm(rSt.Q);
+       rSt.pose.submat(0,0,2,2) = as64_::math_::quat2rotm(rSt.Q);
        rSt.pose.submat(0,3,2,3) = rSt.pos;
+
+       // double time = this->transformStamped.header.stamp.sec;
+       // std::cout << "*** time = "<< std::setprecision(10)  << time << "\n";
+
      }
      catch (tf2::TransformException &ex) {
        ROS_WARN("%s",ex.what());

@@ -3,6 +3,9 @@
 namespace as64_
 {
 
+namespace math_
+{
+
 Eigen::Vector4d quatInv(const Eigen::Vector4d &quat)
 {
   Eigen::Vector4d quatI;
@@ -194,5 +197,6 @@ arma::vec quat2qpos(const arma::vec &Q1)
   return quat2qpos(Q1,Q2);
 }
 
+} // namespace math_
 
 } // namespace as64_

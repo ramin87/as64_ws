@@ -41,11 +41,11 @@
 #include <autharl_core/math/orientation.h>
 #include <autharl_core/math/skew_symmetric.h>
 
-#include <DMP_lib/DMP_lib.h>
+#include <dmp_lib/dmp_lib.h>
 #include <param_lib/param_lib.h>
 #include <io_lib/io_lib.h>
-#include <signalProcessing_lib/signalProcessing_lib.h>
-#include <filter_lib/filter_lib.h>
+#include <sigproc_lib/sigproc_lib.h>
+#include <sigproc_lib/sigproc_lib.h>
 //#include <plot_lib/plot_lib.h>
 #include <math_lib/math_lib.h>
 // #include <robotics_lib/jlav.h>

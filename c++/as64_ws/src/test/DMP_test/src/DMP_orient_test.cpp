@@ -2,26 +2,27 @@
  * Copyright (C) 2017 as64_
  */
 
- #include <ros/ros.h>
- #include <ros/package.h>
+#include <ros/ros.h>
+#include <ros/package.h>
 
- #include <memory>
- #include <vector>
- #include <string>
- #include <iostream>
- #include <fstream>
+#include <memory>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
 
- #include <DMP_lib/DMP_lib.h>
- #include <param_lib/param_lib.h>
- #include <io_lib/io_lib.h>
- #include <signalProcessing_lib/signalProcessing_lib.h>
- #include <plot_lib/plot_lib.h>
- #include <math_lib/math_lib.h>
+#include <dmp_lib/dmp_lib.h>
+#include <param_lib/param_lib.h>
+#include <io_lib/io_lib.h>
+#include <sigproc_lib/sigproc_lib.h>
+#include <plot_lib/plot_lib.h>
+#include <math_lib/math_lib.h>
 
- #include <utils.h>
- #include <cmd_args.h>
+#include <utils.h>
+#include <cmd_args.h>
 
- using namespace as64_;
+using namespace as64_;
+using namespace as64_::math_;
 
 class DMP_orient_test
 {
@@ -99,7 +100,7 @@ void DMP_orient_test::train()
   arma::vec Qg = Qd_data.col(n_data-1);
   //dmpOrient->setTrainingParams(&trainParamList);
   timer.tic();
-  offline_train_o_mse = dmpOrient->train(Time_demo, Qd_data, v_rot_d_data, dv_rot_d_data, Q0, Qg, cmd_args.trainMethod);
+  offline_train_o_mse = dmpOrient->train(Time_demo, Qd_data, v_rot_d_data, dv_rot_d_data, Q0, Qg, cmd_args.trainMethod, true);
   std::cout << "Elapsed time is " << timer.toc() << "\n";
 }
 
@@ -139,7 +140,7 @@ void DMP_orient_test::log_online()
 {
   log_data.Time = join_horiz(log_data.Time, t);
 
-  log_data.y_data = join_horiz(log_data.y_data, as64_::quat2qpos(Q));
+  log_data.y_data = join_horiz(log_data.y_data, quat2qpos(Q));
 
   log_data.dy_data = join_horiz(log_data.dy_data, v_rot);
   log_data.z_data = join_horiz(log_data.z_data, eta);
@@ -147,12 +148,12 @@ void DMP_orient_test::log_online()
 
   log_data.x_data = join_horiz(log_data.x_data, x);
 
-  log_data.y_robot_data = join_horiz(log_data.y_robot_data, as64_::quat2qpos(Q_robot));
+  log_data.y_robot_data = join_horiz(log_data.y_robot_data, quat2qpos(Q_robot));
   log_data.dy_robot_data = join_horiz(log_data.dy_robot_data, v_rot_robot);
   log_data.ddy_robot_data = join_horiz(log_data.ddy_robot_data, dv_rot_robot);
 
   log_data.Fdist_data = join_horiz(log_data.Fdist_data, Fdist_o);
-  log_data.g_data = join_horiz(log_data.g_data, as64_::quat2qpos(Qg));
+  log_data.g_data = join_horiz(log_data.g_data, quat2qpos(Qg));
 }
 
 void DMP_orient_test::log_offline()

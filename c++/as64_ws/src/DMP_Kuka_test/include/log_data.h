@@ -7,7 +7,7 @@
 #include <fstream>
 #include <memory>
 
-// #include <DMP_lib/DMP_lib.h>
+// #include <dmp_lib/dmp_lib.h>
 #include <io_lib/io_lib.h>
 #include <cmd_args.h>
 

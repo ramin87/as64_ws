@@ -3,6 +3,9 @@
 namespace as64_
 {
 
+namespace tm_
+{
+
 std::string getTimeStamp()
 {
 	std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -17,5 +20,7 @@ std::string getTimeStamp()
 
 	return time_stamp;
 }
+
+} // namespace tm_
 
 } // namespace as64_

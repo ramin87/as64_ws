@@ -279,10 +279,10 @@ void RobotController::measure()
 	R = pose.submat(0, 0, 2, 2);
 
 	//update current orientation
-	Q = as64_::rotm2quat(R);
+	Q = as64_::math_::rotm2quat(R);
 	// update orientation error
 	arma::vec te=(Q.t()*Q_ref); if (te(0)<0.0) Q_ref=-Q_ref; //avoid discontinuity
-	Qdiff = as64_::quatDiff(Q, Q_ref);
+	Qdiff = as64_::math_::quatDiff(Q, Q_ref);
 	e_o = -2.0*Qdiff.rows(1, 3);
 }
 

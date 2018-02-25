@@ -3,6 +3,9 @@
 namespace as64_
 {
 
+namespace math_
+{
+
 Eigen::Matrix3d vec2ssMat(const Eigen::Vector3d &v)
 {
   Eigen::Matrix3d ssMat;
@@ -27,6 +30,7 @@ arma::mat vec2ssMat(const arma::vec &v)
   return ssMat;
 }
 
+
 Eigen::Vector4d rotm2quat(Eigen::Matrix3d rotm)
 {
     Eigen::Quaternion<double> temp_quat(rotm);
@@ -49,6 +53,7 @@ arma::vec rotm2quat(const arma::mat &rotm)
   return quat;
 }
 
+
 Eigen::Matrix3d quat2rotm(Eigen::Vector4d quat)
 {
   double qw=quat(0), qx=quat(1), qy=quat(2), qz=quat(3);
@@ -60,6 +65,19 @@ Eigen::Matrix3d quat2rotm(Eigen::Vector4d quat)
 
   return rotm;
 }
+
+arma::mat quat2rotm(const arma::vec &quat)
+{
+  double qw=quat(0), qx=quat(1), qy=quat(2), qz=quat(3);
+
+  arma::mat rotm;
+  rotm << 1 - 2*qy*qy - 2*qz*qz << 	2*qx*qy - 2*qz*qw     <<  	2*qx*qz + 2*qy*qw << arma::endr
+	     << 2*qx*qy + 2*qz*qw     <<  1 - 2*qx*qx - 2*qz*qz <<  	2*qy*qz - 2*qx*qw << arma::endr
+	     << 2*qx*qz - 2*qy*qw     <<    2*qy*qz + 2*qx*qw   << 	1 - 2*qx*qx - 2*qy*qy;
+
+  return rotm;
+}
+
 
 Eigen::Vector4d rotm2axang(Eigen::Matrix3d rotm)
 {
@@ -123,4 +141,6 @@ Eigen::MatrixXd inv(const Eigen::MatrixXd &M)
   return V*S*U.transpose();
 }
 
-}
+} // namespace math_
+
+} // namespace as64_

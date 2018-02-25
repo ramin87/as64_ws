@@ -8,11 +8,10 @@ find_package(catkin REQUIRED COMPONENTS
   #PCL REQUIRED
   roscpp
   roslib
-  DMP_lib
+  dmp_lib
   io_lib
   param_lib
-  signalProcessing_lib
-  filter_lib
+  sigproc_lib
   plot_lib
   math_lib
   #robotics_lib
@@ -75,11 +74,10 @@ target_link_libraries(DMP_Kuka_test
   ${OpenCV_LIBS}
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
-  DMP-lib
+  dmp-lib
   io-lib
   param-lib
-  signalProcessing-lib
-  filter-lib
+  sigproc-lib
   plot-lib
   math-lib
   #robotics-lib

@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <exception>
+#include <iomanip>
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -66,8 +67,8 @@ public:
   void movej(const arma::vec &q, double a=1.4, double v=1.05, double t=0, double r=0) const;
   void movel(const arma::vec &p, double a=1.2, double v=0.25, double t=0, double r=0) const;
 
-  void speedj(arma::vec dq, double a, double t=-1) const;
-  void speedl(arma::vec dp, double a, double t=-1) const;
+  void speedj(arma::vec dq, double a=1.4, double t=-1) const;
+  void speedl(arma::vec dp, double a=1.2, double t=-1) const;
 
   void stopj(double a) const;
   void stopl(double a) const;

@@ -11,10 +11,10 @@
 #include <iostream>
 #include <fstream>
 
-#include <DMP_lib/DMP_lib.h>
+#include <dmp_lib/dmp_lib.h>
 #include <param_lib/param_lib.h>
 #include <io_lib/io_lib.h>
-#include <signalProcessing_lib/signalProcessing_lib.h>
+#include <sigproc_lib/sigproc_lib.h>
 #include <plot_lib/plot_lib.h>
 
 #include <utils.h>
@@ -99,7 +99,7 @@ void DMP_test::train()
   for (int i=0;i<D;i++)
   {
     //dmp[i]->setTrainingParams(&trainParamList);
-    offline_train_mse(i) = dmp[i]->train(Time_demo, yd_data.row(i), dyd_data.row(i), ddyd_data.row(i), y0(i), g(i), cmd_args.trainMethod);
+    offline_train_mse(i) = dmp[i]->train(Time_demo, yd_data.row(i), dyd_data.row(i), ddyd_data.row(i), y0(i), g(i), cmd_args.trainMethod, true);
   }
   std::cout << "Elapsed time is " << timer.toc() << "\n";
 }

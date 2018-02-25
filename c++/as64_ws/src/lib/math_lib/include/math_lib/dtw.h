@@ -11,6 +11,9 @@
 namespace as64_
 {
 
+namespace math_
+{
+
 typedef double (*distance_function)(const arma::vec &x1, const arma::vec &x2);
 
 /** function Dynamic Time Warping
@@ -26,6 +29,8 @@ typedef double (*distance_function)(const arma::vec &x1, const arma::vec &x2);
  *  @param[out] ind_t: Indices of the first signal after the DTW.
  */
 double dtw(const arma::mat &s, const arma::mat &t, arma::rowvec &ind_s, arma::rowvec &ind_t, int w = -1, distance_function dist_fun_h=arma::norm);
+
+} // namespace math_
 
 } // namespace as64_
 

@@ -7,6 +7,9 @@
 namespace as64_
 {
 
+namespace math_
+{
+
 Eigen::Matrix3d vec2ssMat(const Eigen::Vector3d &v);
 arma::mat vec2ssMat(const arma::vec &v);
 
@@ -31,6 +34,8 @@ arma::vec quat2axang(const arma::vec &quat);
 Eigen::MatrixXd inv(const Eigen::MatrixXd &M);
 arma::mat inv(const arma::mat &M);
 
-}
+} // namespace math_
+
+} // namespace as64_
 
 #endif // MATH_LIB_MATH__64_H

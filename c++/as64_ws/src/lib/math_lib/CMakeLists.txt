@@ -35,6 +35,7 @@ add_library(math-lib
   src/math.cpp
   src/quaternions.cpp
   src/convertions.cpp
+  src/svf.cpp
   #src/dtw.cpp
 )
 

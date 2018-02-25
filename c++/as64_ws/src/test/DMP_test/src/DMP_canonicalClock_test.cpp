@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <DMP_lib/DMP_lib.h>
+#include <dmp_lib/dmp_lib.h>
 
 
 int main(int argc, char** argv)

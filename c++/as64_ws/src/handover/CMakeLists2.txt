@@ -27,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
   gmm_lib
   bhand_lib
   math_lib
-  filter_lib
+  sigproc_lib
   time_lib
   robotics_lib
 )
@@ -127,7 +127,7 @@ target_link_libraries(handover_node
   lwr-robot
   GMM-lib
   math-lib
-  filter-lib
+  sigproc-lib
   time-lib
   robotics-lib
   bhand-lib
@@ -158,7 +158,7 @@ target_link_libraries(bhand_node
   lwr-robot
   GMM-lib
   math-lib
-  filter-lib
+  sigproc-lib
   time-lib
   robotics-lib
   bhand-lib
@@ -186,7 +186,7 @@ target_link_libraries(bhand_stop
   lwr-robot
   GMM-lib
   math-lib
-  filter-lib
+  sigproc-lib
   time-lib
   robotics-lib
   bhand-lib
@@ -214,7 +214,7 @@ target_link_libraries(bhand_stop
 #   lwr-robot
 #   GMM-lib
 #   math-lib
-#   filter-lib
+#   sigproc-lib
 #   time-lib
 #   robotics-lib
 # )

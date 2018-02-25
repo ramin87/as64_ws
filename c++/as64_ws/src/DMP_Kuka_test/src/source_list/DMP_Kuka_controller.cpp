@@ -3,6 +3,9 @@
 #include <time_lib/time.h>
 #include <plot_lib/plot_lib.h>
 
+using namespace as64_::math_;
+using namespace as64_;
+
 DMP_Kuka_controller::DMP_Kuka_controller(std::shared_ptr<arl::robot::Robot> robot)
 {
     Dp = 3;
@@ -12,7 +15,7 @@ DMP_Kuka_controller::DMP_Kuka_controller(std::shared_ptr<arl::robot::Robot> robo
     robot_ = robot;
     Ts = robot_->cycle;
 
-    std::cout << as64_::io_::bold << as64_::io_::green << "Reading params from yaml file..." << as64_::io_::reset << "\n";
+    std::cout << io_::bold << io_::green << "Reading params from yaml file..." << io_::reset << "\n";
     cmd_args.parse_cmd_args();
     cmd_args.print();
 
@@ -52,7 +55,7 @@ void DMP_Kuka_controller::init_program_variables()
 
     robot_->getTaskPose(T_robot_ee, ROBOT_ARM_INDEX);
     Y_robot = T_robot_ee.submat(0, 3, 2, 3);
-    Q_robot = as64_::rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
+    Q_robot = math_::rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
 
     t = 0.0;
     x = 0.0;
@@ -117,14 +120,14 @@ void DMP_Kuka_controller::init_controller()
 
 void DMP_Kuka_controller::keyboard_ctrl_function()
 {
-  using namespace as64_::io_;
+  using namespace io_;
     // run_dmp = false;
     // train_dmp = false;
     // goto_start = false;
 
     int key = 0;
     while (!stop_robot) { // Enter
-        key = as64_::io_::getch();
+        key = io_::getch();
 
         //std::cout << "Pressed " << (char)key  << "\n";
 
@@ -181,7 +184,7 @@ void DMP_Kuka_controller::keyboard_ctrl_function()
 
 void DMP_Kuka_controller::save_execution_results()
 {
-  using namespace as64_::io_;
+  using namespace io_;
   if (log_on)
   {
     std::cout << red << bold << "Cannot save execution results!\n";
@@ -208,7 +211,7 @@ void DMP_Kuka_controller::record_demo()
 
     pause_robot = true;
 
-    using namespace as64_::io_;
+    using namespace io_;
     std::cout << blue << bold << "Robot paused ! Please press 'p' to continue ..." << std::endl << reset;
 
 
@@ -279,17 +282,17 @@ void DMP_Kuka_controller::save_demo_data()
 
   if (!out) throw std::ios_base::failure(std::string("Couldn't create file: \"") + train_data_save_file + "\"");
 
-  as64_::io_::write_mat(trainData0.Time, out, binary);
+  io_::write_mat(trainData0.Time, out, binary);
 
-  as64_::io_::write_mat(trainData0.Y_data, out, binary);
-  as64_::io_::write_mat(trainData0.dY_data, out, binary);
-  as64_::io_::write_mat(trainData0.ddY_data, out, binary);
+  io_::write_mat(trainData0.Y_data, out, binary);
+  io_::write_mat(trainData0.dY_data, out, binary);
+  io_::write_mat(trainData0.ddY_data, out, binary);
 
-  as64_::io_::write_mat(trainData0.Q_data, out, binary);
-  as64_::io_::write_mat(trainData0.v_rot_data, out, binary);
-  as64_::io_::write_mat(trainData0.dv_rot_data, out, binary);
+  io_::write_mat(trainData0.Q_data, out, binary);
+  io_::write_mat(trainData0.v_rot_data, out, binary);
+  io_::write_mat(trainData0.dv_rot_data, out, binary);
 
-  as64_::io_::write_mat(trainData0.q0, out, binary);
+  io_::write_mat(trainData0.q0, out, binary);
 
   out.close();
 }
@@ -305,17 +308,17 @@ void DMP_Kuka_controller::load_demo_data()
 
   if (!in) throw std::ios_base::failure(std::string("Couldn't open file: \"") + train_data_load_file + "\"");
 
-  as64_::io_::read_mat(trainData.Time, in, binary);
+  io_::read_mat(trainData.Time, in, binary);
 
-  as64_::io_::read_mat(trainData.Y_data, in, binary);
-  as64_::io_::read_mat(trainData.dY_data, in, binary);
-  as64_::io_::read_mat(trainData.ddY_data, in, binary);
+  io_::read_mat(trainData.Y_data, in, binary);
+  io_::read_mat(trainData.dY_data, in, binary);
+  io_::read_mat(trainData.ddY_data, in, binary);
 
-  as64_::io_::read_mat(trainData.Q_data, in, binary);
-  as64_::io_::read_mat(trainData.v_rot_data, in, binary);
-  as64_::io_::read_mat(trainData.dv_rot_data, in, binary);
+  io_::read_mat(trainData.Q_data, in, binary);
+  io_::read_mat(trainData.v_rot_data, in, binary);
+  io_::read_mat(trainData.dv_rot_data, in, binary);
 
-  as64_::io_::read_mat(trainData.q0, in, binary);
+  io_::read_mat(trainData.q0, in, binary);
 
   trainData.n_data = trainData.Time.size();
 
@@ -324,7 +327,7 @@ void DMP_Kuka_controller::load_demo_data()
 
 void DMP_Kuka_controller::goto_start_pose()
 {
-    using namespace as64_::io_;
+    using namespace io_;
 
     robot_->setMode(arl::robot::Mode::POSITION_CONTROL);
 
@@ -340,14 +343,14 @@ void DMP_Kuka_controller::goto_start_pose()
 
 void DMP_Kuka_controller::train_DMP()
 {
-    // as64_::param_::ParamList trainParamList;
+    // param_::ParamList trainParamList;
     // trainParamList.setParam("lambda", cmd_args.lambda);
     // trainParamList.setParam("P_cov", cmd_args.P_cov);
 
-    using namespace as64_::io_;
+    using namespace io_;
     std::cout << yellow << bold << "Training DMP...\n" << reset;
 
-    //std::cout << as64_::io_::bold << as64_::io_::green << "DMP CartPos training..." << as64_::io_::reset << "\n";
+    //std::cout << io_::bold << io_::green << "DMP CartPos training..." << io_::reset << "\n";
     trainData.n_data = trainData.Time.size();
     arma::vec y0 = trainData.Y_data.col(0);
     arma::vec g = trainData.Y_data.col(trainData.n_data - 1);
@@ -358,7 +361,7 @@ void DMP_Kuka_controller::train_DMP()
     offline_train_p_mse = dmpCartPos->train(trainData.Time, trainData.Y_data, trainData.dY_data, trainData.ddY_data, y0, g, cmd_args.trainMethod);
     std::cout << "CartPos: Elapsed time is " << timer.toc() << "\n";
 
-    //std::cout << as64_::io_::bold << as64_::io_::green << "DMP orient training..." << as64_::io_::reset << "\n";
+    //std::cout << io_::bold << io_::green << "DMP orient training..." << io_::reset << "\n";
     arma::vec Q0 = trainData.Q_data.col(0);
     arma::vec Qg = trainData.Q_data.col(trainData.n_data - 1);
     // dmpOrient->setTrainingParams(&trainParamList);
@@ -503,7 +506,7 @@ void DMP_Kuka_controller::log_online()
 
     log_data.Time = join_horiz(log_data.Time, t);
 
-    log_data.y_data = join_horiz(log_data.y_data, arma::join_vert(Y, as64_::quat2qpos(Q)));
+    log_data.y_data = join_horiz(log_data.y_data, arma::join_vert(Y, math_::quat2qpos(Q)));
 
     log_data.dy_data = join_horiz(log_data.dy_data, arma::join_vert(dY, v_rot));
     log_data.z_data = join_horiz(log_data.z_data, arma::join_vert(Z, eta));
@@ -511,12 +514,12 @@ void DMP_Kuka_controller::log_online()
 
     log_data.x_data = join_horiz(log_data.x_data, x);
 
-    log_data.y_robot_data = join_horiz(log_data.y_robot_data, arma::join_vert(Y_robot, as64_::quat2qpos(Q_robot)));
+    log_data.y_robot_data = join_horiz(log_data.y_robot_data, arma::join_vert(Y_robot, math_::quat2qpos(Q_robot)));
     log_data.dy_robot_data = join_horiz(log_data.dy_robot_data, arma::join_vert(dY_robot, v_rot_robot));
     log_data.ddy_robot_data = join_horiz(log_data.ddy_robot_data, arma::join_vert(ddY_robot, dv_rot_robot));
 
     log_data.Fdist_data = join_horiz(log_data.Fdist_data, arma::join_vert(Fdist_p, Fdist_o));
-    log_data.g_data = join_horiz(log_data.g_data, arma::join_vert(Yg, as64_::quat2qpos(Qg)));
+    log_data.g_data = join_horiz(log_data.g_data, arma::join_vert(Yg, math_::quat2qpos(Qg)));
 }
 
 void DMP_Kuka_controller::log_offline()
@@ -636,22 +639,6 @@ void DMP_Kuka_controller::clear_and_restart_demo()
     init_controller();
 }
 
-
-std::string getTimeStamp()
-{
-	std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-	std::ostringstream out_s;
-	out_s << std::ctime(&t);
-	std::string time_stamp = out_s.str();
-	for (int i=0;i<time_stamp.size();i++)
-	{
-		if (time_stamp[i]==' ') time_stamp[i] = '_';
-		else if (time_stamp[i]==':') time_stamp[i] = 'x';
-	}
-
-	return time_stamp;
-}
-
 void DMP_Kuka_controller::save_logged_data()
 {
     log_offline();
@@ -660,7 +647,7 @@ void DMP_Kuka_controller::save_logged_data()
     o_str << "";
     if (demo_save_counter > 0) o_str << demo_save_counter + 1;
 
-    std::string suffix = cmd_args.DMP_TYPE + "_" + getTimeStamp();
+    std::string suffix = cmd_args.DMP_TYPE + "_" + tm_::getTimeStamp();
 
     std::cout << "Saving results...";
     log_data.cmd_args = cmd_args;
@@ -680,7 +667,7 @@ void DMP_Kuka_controller::calc_simulation_mse()
     for (int i = 0; i < D; i++) {
         arma::rowvec y_robot_data2;
         arma::rowvec yd_data2;
-        as64_::spl_::makeSignalsEqualLength(log_data.Time, log_data.y_robot_data.row(i),
+        spl_::makeSignalsEqualLength(log_data.Time, log_data.y_robot_data.row(i),
                                             log_data.Time_demo, log_data.yd_data.row(i), log_data.Time,
                                             y_robot_data2, yd_data2);
         sim_mse(i) = arma::norm(y_robot_data2 - yd_data2);
@@ -698,14 +685,14 @@ void DMP_Kuka_controller::execute()
     // ======  Get DMP  =======
     get_canClock_gatingFuns_DMP(cmd_args, D, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
 
-    std::vector<std::shared_ptr<as64_::DMP_>> dmpVec1(Dp);
+    std::vector<std::shared_ptr<DMP_>> dmpVec1(Dp);
     for (int i = 0; i < Dp; i++) dmpVec1[i] = dmp[i];
-    dmpCartPos.reset(new as64_::DMP_CartPos());
+    dmpCartPos.reset(new DMP_CartPos());
     dmpCartPos->init(dmpVec1);
 
-    std::vector<std::shared_ptr<as64_::DMP_>> dmpVec2(Do);
+    std::vector<std::shared_ptr<DMP_>> dmpVec2(Do);
     for (int i = 0; i < Do; i++) dmpVec2[i] = dmp[Dp + i];
-    dmpOrient.reset(new as64_::DMP_orient());
+    dmpOrient.reset(new DMP_orient());
     dmpOrient->init(dmpVec2);
 
 restart_dmp_execution_label:
@@ -771,7 +758,7 @@ restart_dmp_execution_label:
             if (err_p <= cmd_args.tol_stop && err_o <= cmd_args.orient_tol_stop && t >= tau)
             {
               goto_start = true;
-              std::cout << as64_::io_::cyan << "Target reached. Moving to start pose...\n" << as64_::io_::reset;
+              std::cout << io_::cyan << "Target reached. Moving to start pose...\n" << io_::reset;
             }
         }
 
@@ -811,7 +798,7 @@ void DMP_Kuka_controller::update()
     dY_robot = V_robot.subvec(0, 2);
     ddY_robot = (dY_robot - dY_robot_prev) / Ts;
 
-    Q_robot = as64_::rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
+    Q_robot = math_::rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
     v_rot_robot = V_robot.subvec(3, 5);
     dv_rot_robot = (v_rot_robot - v_rot_robot_prev) / Ts;
 
@@ -822,62 +809,62 @@ void DMP_Kuka_controller::update()
 
 void DMP_Kuka_controller::command()
 {
-    double Kp = cmd_args.Kd_p;
-    double Ko = cmd_args.Kd_o;
-    double  factor_force = 0;
+  double Kp = cmd_args.Kd_p;
+  double Ko = cmd_args.Kd_o;
+  double  factor_force = 0;
 
-    // set the stiffness to a low value when the dmp is inactive so that the
-    // user can move the robot freely
-    if (!run_dmp) {
-        Kp = 0.0;
-        Ko = 0.0;
-        factor_force = 1.0;
+  // set the stiffness to a low value when the dmp is inactive so that the
+  // user can move the robot freely
+  if (!run_dmp) {
+      Kp = 0.0;
+      Ko = 0.0;
+      factor_force = 1.0;
+  }
+
+
+
+  //ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * (dY_robot - dY) - Kp * (Y_robot - Y) + factor_force*Fdist_p);
+  ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - Kp * Ep + factor_force*Fdist_p);
+
+
+
+
+  //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot - v_rot) - Ko * quatLog(quatProd(Q_robot, quatInv(Q))) + factor_force*Fdist_o);
+  //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot) + factor_force*Fdist_o);
+  ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo + factor_force*Fdist_o);
+
+
+
+  dEp = dEp + ddEp * Ts;
+  dEo = dEo + ddEo * Ts;
+  Ep = Ep + dEp * Ts;
+
+
+  arma::vec Vd(6);
+  Vd.subvec(0, 2) = (dEp + dY - 4.0*(Y_robot - (Y + Ep)));
+  Vd.subvec(3, 5) = (dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
+
+
+
+
+
+  if(run_dmp || goto_start){
+    if(robot_->mode != arl::robot::Mode::VELOCITY_CONTROL){
+      robot_->setMode(arl::robot::Mode::VELOCITY_CONTROL);
     }
-
-
-
-    //ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * (dY_robot - dY) - Kp * (Y_robot - Y) + factor_force*Fdist_p);
-    ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - Kp * Ep + factor_force*Fdist_p);
-
-
-
-
-    //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot - v_rot) - Ko * quatLog(quatProd(Q_robot, quatInv(Q))) + factor_force*Fdist_o);
-    //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot) + factor_force*Fdist_o);
-    ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo + factor_force*Fdist_o);
-
-
-
-    dEp = dEp + ddEp * Ts;
-    dEo = dEo + ddEo * Ts;
-    Ep = Ep + dEp * Ts;
-
-
-    arma::vec Vd(6);
-    Vd.subvec(0, 2) = (dEp + dY - 4.0*(Y_robot - (Y + Ep)));
-    Vd.subvec(3, 5) = (dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
-
-
-
-
-
-    if(run_dmp || goto_start){
-      if(robot_->mode != arl::robot::Mode::VELOCITY_CONTROL){
-        robot_->setMode(arl::robot::Mode::VELOCITY_CONTROL);
-      }
-      Vd.rows(3,5) = arma::zeros<arma::vec>(3);
-      arma::vec qd = arma::pinv(J_robot) * Vd;
-      robot_->setJointVelocity(qd, ROBOT_ARM_INDEX);
-    }else{
-      if(robot_->mode != arl::robot::Mode::TORQUE_CONTROL){
-        robot_->setMode(arl::robot::Mode::TORQUE_CONTROL);
-      }
-      arma::vec torque_for_rotation = arma::zeros<arma::vec>(7);
-        //  torque_for_rotation = - (J_robot.rows(3,5)).t() * 5.0* quatLog(quatProd(Q_robot, quatInv(trainData.Q_data.col(0))));
-      robot_->setJointTorque(torque_for_rotation, ROBOT_ARM_INDEX);
-      //std::cout<<"torque_for_rotation: " << torque_for_rotation.t() <<std::endl;
+    Vd.rows(3,5) = arma::zeros<arma::vec>(3);
+    arma::vec qd = arma::pinv(J_robot) * Vd;
+    robot_->setJointVelocity(qd, ROBOT_ARM_INDEX);
+  }else{
+    if(robot_->mode != arl::robot::Mode::TORQUE_CONTROL){
+      robot_->setMode(arl::robot::Mode::TORQUE_CONTROL);
     }
-    robot_->waitNextCycle();
+    arma::vec torque_for_rotation = arma::zeros<arma::vec>(7);
+      //  torque_for_rotation = - (J_robot.rows(3,5)).t() * 5.0* quatLog(quatProd(Q_robot, quatInv(trainData.Q_data.col(0))));
+    robot_->setJointTorque(torque_for_rotation, ROBOT_ARM_INDEX);
+    //std::cout<<"torque_for_rotation: " << torque_for_rotation.t() <<std::endl;
+  }
+  robot_->waitNextCycle();
 
 }
 

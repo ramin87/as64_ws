@@ -7,6 +7,9 @@
 namespace as64_
 {
 
+namespace tm_
+{
+
 /**
  * Implements a timer class.
  */
@@ -44,6 +47,8 @@ private:
 	bool pause_pressed; ///< flag indicating whether \a pause was called
 	bool resume_pressed; ///< flag indicating whether \a resume was called
 };
+
+} // namespace tm_
 
 } // namespace as64_
 
