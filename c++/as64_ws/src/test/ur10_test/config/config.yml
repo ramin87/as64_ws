@@ -1,6 +1,6 @@
 # ====  params  ====
 command_ur10_topic: "/ur_driver/URScript"
-pub_rate: 100
+pub_rate: 1
 
 init_joint_pos: [-56.18, -102.18, -103.04, -140.75, 89.42, 18.36]
 goal_joint_pos: [-20.29, -112.50, -84.80, -130.48, 79.39, 70.41]

@@ -79,18 +79,18 @@ int main(int argc, char** argv)
     // robot->sleep(1.0);
     // ros::Duration(1.0).sleep();
 
-    ddEp = (1.0 / cmd_args.Md) * (- cmd_args.Dd * dEp + Fdist_p);
-    ddEo = (1.0 / cmd_args.Md) * (- cmd_args.Dd * dEo + Fdist_o);
-
-    dEp = dEp + ddEp * Ts;
-    dEo = dEo + ddEo * Ts;
-    Ep = Ep + dEp * Ts;
-
-    arma::vec Vd(6);
-    Vd.subvec(0, 2) = dEp; //(dEp + dY - 4.0*(Y_robot - (Y + Ep)));
-    Vd.subvec(3, 5) = arma::vec().zeros(3); //(dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
-
-    robot->speedl(Vd, cmd_args.Cart_accel, Ts);
+    // ddEp = (1.0 / cmd_args.Md) * (- cmd_args.Dd * dEp + Fdist_p);
+    // ddEo = (1.0 / cmd_args.Md) * (- cmd_args.Dd * dEo + Fdist_o);
+    //
+    // dEp = dEp + ddEp * Ts;
+    // dEo = dEo + ddEo * Ts;
+    // Ep = Ep + dEp * Ts;
+    //
+    // arma::vec Vd(6);
+    // Vd.subvec(0, 2) = dEp; //(dEp + dY - 4.0*(Y_robot - (Y + Ep)));
+    // Vd.subvec(3, 5) = arma::vec().zeros(3); //(dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
+    //
+    // robot->speedl(Vd, cmd_args.Cart_accel, Ts);
 
     loop_rate.sleep();
     // ros::Duration(0.1).sleep();

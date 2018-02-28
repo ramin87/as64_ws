@@ -3,7 +3,7 @@
 
 namespace ur10_
 {
-  Robot::Robot()
+  Robot::Robot():spinner(3)
   {
     this->command_ur10_topic = "/ur_driver/URScript";
     this->read_wrench_topic = "/wrench";
@@ -26,22 +26,22 @@ namespace ur10_
 
   void Robot::freedrive_mode() const
   {
-    urScript_command("freedrive_mode()");
+    urScript_command("freedrive_mode()\n");
   }
 
   void Robot::end_freedrive_mode() const
   {
-    urScript_command("end_freedrive_mode()");
+    urScript_command("end_freedrive_mode()\n");
   }
 
   void Robot::teach_mode() const
   {
-    urScript_command("teach_mode()");
+    urScript_command("teach_mode()\n");
   }
 
   void Robot::end_teach_mode() const
   {
-    urScript_command("end_teach_mode()");
+    urScript_command("end_teach_mode()\n");
   }
 
   void Robot::force_mode(const arma::vec &task_frame, const arma::vec &selection_vector,
@@ -50,7 +50,7 @@ namespace ur10_
     if (type<1 || type>3) throw std::invalid_argument("[Error]: Robot::force_mode: type must be in {1,2,3}");
     std::ostringstream out;
     out << "force_mode(p" << print_vector(task_frame) << "," << print_vector(selection_vector) << ","
-        << print_vector(wrench) << "," << type << "," << print_vector(limits) << ")";
+        << print_vector(wrench) << "," << type << "," << print_vector(limits) << ")\n";
     urScript_command(out.str());
     //sleep(0.02);
     ros::Duration(0.02).sleep();
@@ -58,7 +58,7 @@ namespace ur10_
 
   void Robot::end_force_mode() const
   {
-    urScript_command("end_force_mode()");
+    urScript_command("end_force_mode()\n");
   }
 
   void Robot::force_mode_set_damping(double damping)  const
@@ -76,21 +76,21 @@ namespace ur10_
     }
 
     std::ostringstream out;
-    out << "force_mode_set_damping(" << damping << ")";
+    out << "force_mode_set_damping(" << damping << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::movej(const arma::vec &q, double a, double v, double t, double r) const
   {
     std::ostringstream out;
-    out << "movej(" << print_vector(q) << "," << a << "," << v << "," << t << "," << r << ")";
+    out << "movej(" << print_vector(q) << "," << a << "," << v << "," << t << "," << r << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::movel(const arma::vec &p, double a, double v, double t, double r) const
   {
     std::ostringstream out;
-    out << "movel(p" << print_vector(p) << "," << a << "," << v << "," << t << "," << r << ")";
+    out << "movel(p" << print_vector(p) << "," << a << "," << v << "," << t << "," << r << ")\n";
     urScript_command(out.str());
   }
 
@@ -99,7 +99,7 @@ namespace ur10_
     std::ostringstream out;
     out << "speedj(" << print_vector(dq) << "," << a;
     if (t > 0.0) out << "," << t;
-    out << ")";
+    out << ")\n";
     urScript_command(out.str());
   }
 
@@ -108,76 +108,82 @@ namespace ur10_
     std::ostringstream out;
     out << "speedl(" << print_vector(dp) << "," << a;
     if (t > 0.0) out << "," << t;
-    out << ")";
+    out << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::stopj(double a) const
   {
     std::ostringstream out;
-    out << "stopj(" << a << ")";
+    out << "stopj(" << a << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::stopl(double a) const
   {
     std::ostringstream out;
-    out << "stopl(" << a << ")";
+    out << "stopl(" << a << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::set_gravity(const arma::vec &g) const
   {
     std::ostringstream out;
-    out << "set_gravity(" << print_vector(g) << ")";
+    out << "set_gravity(" << print_vector(g) << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::set_payload(double m, const arma::vec &CoG) const
   {
     std::ostringstream out;
-    out << "set_payload(" << m << "," << print_vector(CoG) << ")";
+    out << "set_payload(" << m << "," << print_vector(CoG) << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::set_payload_cog(const arma::vec &CoG) const
   {
     std::ostringstream out;
-    out << "set_payload_cog(" << print_vector(CoG) << ")";
+    out << "set_payload_cog(" << print_vector(CoG) << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::set_payload_mass(double m) const
   {
     std::ostringstream out;
-    out << "set_payload_mass(" << m << ")";
+    out << "set_payload_mass(" << m << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::set_tcp(const arma::vec &pose) const
   {
     std::ostringstream out;
-    out << "set_tcp(p" << print_vector(pose) << ")";
+    out << "set_tcp(p" << print_vector(pose) << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::sleep(double t) const
   {
     std::ostringstream out;
-    out << "sleep(" << t << ")";
+    out << "sleep(" << t << ")\n";
     urScript_command(out.str());
   }
 
   void Robot::powerdown() const
   {
-    urScript_command("powerdown()");
+    urScript_command("powerdown()\n");
   }
 
   void Robot::waitNextCycle()
   {
+    // arma::wall_clock timer;
+    // timer.tic();
     ros::spinOnce();
+    // spinner.start();
     this->readTaskPoseCallback();
-  }
+    // spinner.stop();
+
+    // std::cout << "===> Robot::waitNextCycle(): elapsed time = " << timer.toc()*1e3 << " ms\n";
+}
 
   void Robot::readWrenchCallback(const geometry_msgs::WrenchStamped::ConstPtr& msg)
   {

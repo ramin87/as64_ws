@@ -113,6 +113,8 @@ private:
 
   ros::NodeHandle n;
 
+  ros::AsyncSpinner spinner;
+
   std::string command_ur10_topic;
   std::string read_wrench_topic;
   std::string read_toolVel_topic;
