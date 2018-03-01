@@ -14,7 +14,7 @@ namespace math_
 Eigen::Vector4d quatInv(const Eigen::Vector4d &quat);
 arma::vec quatInv(const arma::vec &quat);
 
-Eigen::Matrix4d quat2mat(const Eigen::Vector4d &quat);
+Eigen::Matrix4d quat2qmat(const Eigen::Vector4d &quat);
 
 Eigen::Vector4d quatProd(const Eigen::Vector4d &quat1, const Eigen::Vector4d &quat2);
 arma::vec quatProd(const arma::vec &quat1, const arma::vec &quat2);

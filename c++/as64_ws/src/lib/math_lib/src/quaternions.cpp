@@ -26,7 +26,7 @@ arma::vec quatInv(const arma::vec &quat)
   return quatI;
 }
 
-Eigen::Matrix4d quat2mat(const Eigen::Vector4d &quat)
+Eigen::Matrix4d quat2qmat(const Eigen::Vector4d &quat)
 {
   Eigen::Matrix4d mat;
   Eigen::Vector3d e = quat.segment(1,3);
@@ -41,7 +41,7 @@ Eigen::Vector4d quatProd(const Eigen::Vector4d &quat1, const Eigen::Vector4d &qu
 {
   Eigen::Vector4d quat12;
 
-  // quat12 = quat2mat(quat1) * quat2;
+  // quat12 = quat2qmat(quat1) * quat2;
   double n1 = quat1(0);
   Eigen::Vector3d e1 = quat1.segment(1,3);
 
@@ -163,7 +163,7 @@ arma::vec quatLog(const arma::vec &quat, double zero_tol)
 Eigen::Vector4d get_quat_dot(const Eigen::Vector3d &omega, Eigen::Vector4d &quat)
 {
   Eigen::Vector4d quat_dot;
-  Eigen::Matrix<double,4,3> J_Q = quat2mat(quat).block(0,1,4,3);
+  Eigen::Matrix<double,4,3> J_Q = quat2qmat(quat).block(0,1,4,3);
 
   quat_dot = 0.5 * J_Q * omega;
 

@@ -37,4 +37,7 @@
   <build_depend>io_lib</build_depend>
   <run_depend>io_lib</run_depend>
 
+  <build_depend>ur10_robot</build_depend>
+  <run_depend>ur10_robot</run_depend>
+
 </package>

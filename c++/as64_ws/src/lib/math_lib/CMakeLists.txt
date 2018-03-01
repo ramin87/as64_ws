@@ -20,12 +20,24 @@ catkin_package(
   #DEPENDS opencv pcl eigen
 )
 
+SET(CODEGEN_INCLUDES
+codegen/mat2quat/
+)
+
+file(GLOB CODEGEN_SOURCES
+    "codegen/mat2quat/*.cpp"
+)
+
 include_directories(
 include
+${CODEGEN_INCLUDES}
 /usr/include/eigen3
 ${catkin_INCLUDE_DIRS}
 # ${Eigen_INCLUDE_DIRS}
 )
+
+
+
 
 ##########################
 ######     MATH   ########
@@ -37,6 +49,7 @@ add_library(math-lib
   src/convertions.cpp
   src/svf.cpp
   #src/dtw.cpp
+  ${CODEGEN_SOURCES}
 )
 
 add_dependencies(math-lib

@@ -13,8 +13,10 @@ namespace math_
 Eigen::Matrix3d vec2ssMat(const Eigen::Vector3d &v);
 arma::mat vec2ssMat(const arma::vec &v);
 
-Eigen::Vector4d rotm2quat(Eigen::Matrix3d rotm);
-arma::vec rotm2quat(const arma::mat &rotm);
+Eigen::Vector4d rotm2quat(Eigen::Matrix3d rotm, bool is_rotm_orthonormal=true);
+arma::vec rotm2quat(const arma::mat &rotm, bool is_rotm_orthonormal=true);
+Eigen::Vector4d mat2quat_matlab(Eigen::Matrix3d rotm);
+Eigen::Vector4d mat2quat(Eigen::Matrix3d rotm);
 
 Eigen::Matrix3d quat2rotm(Eigen::Vector4d quat);
 arma::mat quat2rotm(const arma::vec &quat);
@@ -33,6 +35,7 @@ arma::vec quat2axang(const arma::vec &quat);
 
 Eigen::MatrixXd inv(const Eigen::MatrixXd &M);
 arma::mat inv(const arma::mat &M);
+
 
 } // namespace math_
 

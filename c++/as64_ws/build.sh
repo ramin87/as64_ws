@@ -16,7 +16,7 @@ if [ ! -f $file_name ]; then
 fi
 
 cd ../
-catkin_make ${CATKIN_MAKE_OPTIONS}
+catkin_make -DCMAKE_BUILD_TYPE=Release
 source devel/setup.bash
 
 
