@@ -7,9 +7,13 @@
 #include <vector>
 #include <sstream>
 #include <exception>
+#include <algorithm>
 #include <map>
 
 #include <armadillo>
+
+namespace as64_
+{
 
 namespace param_
 {
@@ -80,6 +84,17 @@ namespace param_
             bool getParam(const std::string key, std::string &value)
             {
               return getString(key, value);
+            }
+
+            template <typename T>
+            bool getParam(const std::string key, std::vector<T> &value)
+            {
+              arma::Row<T> v;
+              bool ret = getRow(key, v);
+              value.resize(v.size());
+              std::copy(v.begin(), v.end(), value.begin());
+
+              return ret;
             }
 
             template <typename T>
@@ -241,5 +256,8 @@ namespace param_
     }; // end Class
     /// @}
 
-} // end namespace
+} // namespace param_
+
+} // namespace as64_
+
 #endif

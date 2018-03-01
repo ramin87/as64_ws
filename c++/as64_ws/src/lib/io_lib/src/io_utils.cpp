@@ -164,6 +164,37 @@ void write_vec_mat(std::vector<arma::mat> &m, std::ostream &out, bool binary, in
   for (int k=0;k<n_mat;k++) write_mat(m[k], out, binary, precision);
 }
 
+
+void readFile(const std::string &filename, std::string &contents)
+{
+  std::ifstream in(filename, std::ios::in | std::ios::binary);
+  if (!in) throw (errno);
+
+  in.seekg(0, std::ios::end);
+  contents.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&contents[0], contents.size());
+  in.close();
+
+  // std::ifstream in(filename, std::ios::in | std::ios::binary);
+  // if (in)
+  // {
+  //   return(std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()));
+  // }
+  // throw(errno);
+
+  // std::ifstream in(filename, std::ios::in | std::ios::binary);
+  // if (in)
+  // {
+  //   std::ostringstream contents;
+  //   contents << in.rdbuf();
+  //   in.close();
+  //   return(contents.str());
+  // }
+  // throw(errno);
+}
+
+
 } // namespace io_
 
 } // namespace as64_

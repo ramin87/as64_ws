@@ -9,17 +9,49 @@
 #include <fstream>
 #include <memory>
 #include <iomanip>
+#include <cerrno>
+#include <streambuf>
 
 #include <unistd.h> //used for custon getch()
 #include <termios.h> //used for custon getch()
 
 #include <armadillo>
 
+// #ifdef USE_STD_VECTOR_STREAM_OVERLOADS
+
+// overload output stream operator to print std::vector
+template <typename T>
+std::ostream& operator<< (std::ostream& out, const std::vector<T> &v)
+{
+  for (int i=0;i<v.size()-1;i++) out << v[i] << " ";
+  out << v.back();
+  return out;
+}
+
+template <typename T>
+std::vector<T>& operator<< (std::vector<T> &v, T val)
+{
+    v.push_back(val);
+    return v;
+}
+
+// #endif
+
+
+
 namespace as64_
 {
 
 namespace io_
 {
+
+template <typename T>
+void print_vector(const std::vector<T> &v, std::ostream& out=std::cout, char delim=' ')
+{
+  for (int i=0;i<v.size()-1;i++) out << v[i] << delim;
+  out << v.back();
+}
+
 
 /** \brief Pauses until a key is pressed.
  */
@@ -170,6 +202,15 @@ void write_scalar(T scalar, std::ostream &out = std::cout, bool binary = false, 
   if (binary) out.write((const char *)(&scalar), sizeof(scalar));
   else out << std::setprecision(precision) << scalar;
 }
+
+
+/** \brief Reads all contents of a file and returns them as a string;
+ *  @param[in] filename The path+name of the file to read.
+ *  @param[in] str The contents of the file as a string.
+ *
+ *  \throws Throws an std::ios_base::failure if it fails to read the file.
+ */
+void readFile(const std::string &filename, std::string &contents);
 
 } // namespace io_
 

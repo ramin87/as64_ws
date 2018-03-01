@@ -1,17 +1,26 @@
-#include <ur10_robot.h>
+#include <ur10_robot/ur10_robot.h>
+
+#include <exception>
+#include <iomanip>
+
+#include <ros/package.h>
+
 #include <math_lib/math_lib.h>
+#include <param_lib/param_lib.h>
+#include <io_lib/io_lib.h>
+
+#include <ur_kinematics/ur_kin.h>
+#include <ur_kinematics/ikfast.h>
+
+namespace as64_
+{
 
 namespace ur10_
 {
+
   Robot::Robot():spinner(3)
   {
-    this->command_ur10_topic = "/ur_driver/URScript";
-    this->read_wrench_topic = "/wrench";
-    this->read_toolVel_topic = "/tool_velocity";
-    this->read_jointState_topic = "/joint_states";
-    this->base_frame = "base";
-    this->tool_frame = "tool0_controller";
-    this->pub_rate = 60;
+    parseConfigFile();
 
     this->pub2ur10 = n.advertise<std_msgs::String>(this->command_ur10_topic, 1);
 
@@ -21,7 +30,118 @@ namespace ur10_
 
     this->tfListener.reset(new tf2_ros::TransformListener(this->tfBuffer));
 
+    stop_printRobotStateThread_flag = false;
+
     ros::Duration(4.0).sleep(); // needed to let ur initialize
+
+    waitNextCycle();
+    time_offset = rSt.timestamp;
+
+    set_BaseLink0_and_Link6Ee_transforms();
+  }
+
+  void Robot::set_BaseLink0_and_Link6Ee_transforms()
+  {
+    // // Transform from base link to 0th link
+    // T_link0_base << -1 <<  0 <<  0 <<  0 << arma::endr
+    //              <<  0 << -1 <<  0 <<  0 << arma::endr
+    //              <<  0 <<  0 <<  1 <<  0 << arma::endr
+    //              <<  0 <<  0 <<  0 <<  1 << arma::endr;
+    // T_base_link0 = T_link0_base.i();
+    //
+    // // Transform from 6th link to end effector
+    // T_ee_link6 <<  0 << -1 <<  0 <<  0 << arma::endr
+    //            <<  0 <<  0 << -1 <<  0 << arma::endr
+    //            <<  1 <<  0 <<  0 <<  0 << arma::endr
+    //            <<  0 <<  0 <<  0 <<  1 << arma::endr;
+    // T_link6_ee = T_ee_link6.i();
+
+    try{
+       this->transformStamped = tfBuffer.lookupTransform("base", "base_link", ros::Time(0));
+       arma::vec pos(3);
+       pos << this->transformStamped.transform.translation.x
+           << this->transformStamped.transform.translation.y
+           << this->transformStamped.transform.translation.z;
+
+       arma::vec Q(4);
+       Q << this->transformStamped.transform.rotation.w
+         << this->transformStamped.transform.rotation.x
+         << this->transformStamped.transform.rotation.y
+         << this->transformStamped.transform.rotation.z;
+
+       arma::mat pose(4,4);
+       pose.submat(0,0,2,2) = as64_::math_::quat2rotm(Q);
+       pose.submat(0,3,2,3) = pos;
+       pose.row(3) = arma::rowvec({0, 0, 0, 1});
+
+       // std::cout << "T_base_link0 = \n" << T_base_link0 << "\n";
+       // std::cout << "T_base_link0 = \n" << pose << "\n";
+       T_base_link0 = pose;
+       T_link0_base = T_base_link0.i();
+
+     }
+     catch (tf2::TransformException &ex) {
+       ROS_WARN("%s",ex.what());
+       // ros::Duration(1.0).sleep();
+     }
+
+     try{
+        this->transformStamped = tfBuffer.lookupTransform("ee_link", "tool0_controller", ros::Time(0));
+        arma::vec pos(3);
+        pos << this->transformStamped.transform.translation.x
+            << this->transformStamped.transform.translation.y
+            << this->transformStamped.transform.translation.z;
+
+        arma::vec Q(4);
+        Q << this->transformStamped.transform.rotation.w
+          << this->transformStamped.transform.rotation.x
+          << this->transformStamped.transform.rotation.y
+          << this->transformStamped.transform.rotation.z;
+
+        arma::mat pose(4,4);
+        pose.submat(0,0,2,2) = as64_::math_::quat2rotm(Q);
+        pose.submat(0,3,2,3) = pos;
+        pose.row(3) = arma::rowvec({0, 0, 0, 1});
+
+        // std::cout << "T_link6_ee = \n" << T_link6_ee << "\n";
+        // std::cout << "T_link6_ee = \n" << pose << "\n";
+        T_link6_ee = pose;
+        T_ee_link6 = T_link6_ee.i();
+      }
+      catch (tf2::TransformException &ex) {
+        ROS_WARN("%s",ex.what());
+        // ros::Duration(1.0).sleep();
+      }
+  }
+
+  void Robot::parseConfigFile()
+  {
+    std::string params_path = ros::package::getPath("ur10_robot") + "/config/config.yml";
+    as64_::param_::Parser parser(params_path);
+
+    if (!parser.getParam("command_ur10_topic", command_ur10_topic))
+      throw std::ios_base::failure("ur10_::Robot::getParam(command_ur10_topic) could not be retrieved.\n");
+
+    if (!parser.getParam("read_wrench_topic", read_wrench_topic))
+      throw std::ios_base::failure("ur10_::Robot::getParam(read_wrench_topic) could not be retrieved.\n");
+
+    if (!parser.getParam("read_toolVel_topic", read_toolVel_topic))
+      throw std::ios_base::failure("ur10_::Robot::getParam(read_toolVel_topic) could not be retrieved.\n");
+
+    if (!parser.getParam("read_jointState_topic", read_jointState_topic))
+      throw std::ios_base::failure("ur10_::Robot::getParam(read_jointState_topic) could not be retrieved.\n");
+
+    if (!parser.getParam("base_frame", base_frame))
+      throw std::ios_base::failure("ur10_::Robot::getParam(base_frame) could not be retrieved.\n");
+
+    if (!parser.getParam("tool_frame", tool_frame))
+      throw std::ios_base::failure("ur10_::Robot::getParam(tool_frame) could not be retrieved.\n");
+  }
+
+
+  Robot::~Robot()
+  {
+    printRobotState_thread.join();
   }
 
   void Robot::freedrive_mode() const
@@ -175,6 +295,8 @@ namespace ur10_
 
   void Robot::waitNextCycle()
   {
+    std::unique_lock<std::mutex> robotState_lck(this->robotState_mtx);
+
     // arma::wall_clock timer;
     // timer.tic();
     ros::spinOnce();
@@ -183,7 +305,7 @@ namespace ur10_
     // spinner.stop();
 
     // std::cout << "===> Robot::waitNextCycle(): elapsed time = " << timer.toc()*1e3 << " ms\n";
-}
+  }
 
   void Robot::readWrenchCallback(const geometry_msgs::WrenchStamped::ConstPtr& msg)
   {
@@ -227,22 +349,24 @@ namespace ur10_
 
        rSt.pose.submat(0,0,2,2) = as64_::math_::quat2rotm(rSt.Q);
        rSt.pose.submat(0,3,2,3) = rSt.pos;
+       rSt.pose.row(3) = arma::rowvec({0, 0, 0, 1});
 
-       // double time = this->transformStamped.header.stamp.sec;
-       // std::cout << "*** time = "<< std::setprecision(10)  << time << "\n";
+       rSt.timestamp = this->transformStamped.header.stamp.sec;
 
      }
      catch (tf2::TransformException &ex) {
        ROS_WARN("%s",ex.what());
        // ros::Duration(1.0).sleep();
      }
+
   }
 
-  void Robot::print_robot_state(std::ostream &out) const
+  void Robot::printRobotState(std::ostream &out) const
   {
     out << "===============================\n";
     out << "=======   Robot state  ========\n";
     out << "===============================\n";
+    out << "time: " << getTime() << " sec\n";
     out << "joint pos: " << getJointPosition().t()*180/arma::datum::pi << "\n";
     out << "joint vel: " << getJointVelocity().t() << "\n";
     out << "joint Torques: " << getJointTorque().t() << "\n";
@@ -256,4 +380,85 @@ namespace ur10_
     out << "===============================\n";
   }
 
+  void Robot::printRobotStateThreadFun(double freq, std::ostream &out)
+  {
+    ros::Rate loop_rate(freq);
+    std::unique_lock<std::mutex> robotState_lck(this->robotState_mtx, std::defer_lock);
+
+    while (!stop_printRobotStateThread_flag)
+    {
+      robotState_lck.lock();
+      this->printRobotState(out);
+      robotState_lck.unlock();
+      loop_rate.sleep();
+    }
+  }
+
+  void Robot::launch_printRobotStateThread(double freq, std::ostream &out)
+  {
+    printRobotState_thread =  std::thread(&Robot::printRobotStateThreadFun, this, freq, std::ref(out));
+  }
+
+  void Robot::stop_printRobotStateThread()
+  {
+    stop_printRobotStateThread_flag = true;
+    printRobotState_thread.join();
+  }
+
+
+  void Robot::load_URScript(const std::string &path_to_URScript)
+  {
+    try{ as64_::io_::readFile(path_to_URScript, ur_script); }
+    catch(std::exception &e) { throw std::ios_base::failure(std::string("ur10_::Robot::load_URScript: failed to read \""+path_to_URScript+"\"...\n")); }
+  }
+
+  void Robot::execute_URScript() const
+  {
+    urScript_command(this->ur_script);
+  }
+
+  void Robot::getRobotState(RobotState &robotState) const
+  {
+    robotState = this->rSt;
+  }
+
+  arma::mat Robot::forwardKinematic(const arma::vec &q) const
+  {
+    const double *q_ptr = q.memptr();
+    double T[4*4];
+    ur_kinematics::forward(q_ptr, T);
+
+    arma::mat T2(4,4);
+    double *T_temp = T;
+    for (int i=0;i<4;i++)
+    {
+      for (int j=0;j<4;j++) T2(i,j) = *T_temp++;
+    }
+
+    return T_base_link0*T2*T_link6_ee;
+  }
+
+  arma::vec Robot::inverseKinematic(const arma::mat &T2) const
+  {
+    arma::mat T = T_link0_base*T2*T_ee_link6;
+    double T_ptr[4*4];
+    double *T_temp = T_ptr;
+    for (int i=0;i<4;i++)
+    {
+      for (int j=0;j<4;j++) *T_temp++ = T(i,j);
+    }
+
+    double q_sols[8*6];
+    int n_sols = ur_kinematics::inverse(T_ptr, q_sols);
+
+    std::cout << "n_sols = " << n_sols << "\n";
+
+    arma::vec q(6);
+    for (int i=0;i<6;i++) q(i) = q_sols[i];
+
+    return q;
+  }
+
 } // namespace ur10_
+
+} // namespace as64_

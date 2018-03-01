@@ -1,17 +1,18 @@
 #ifndef UR10_ROBOT_H
 #define UR10_ROBOT_H
 
-#include <memory>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <exception>
-#include <iomanip>
+#include <chrono>
+#include <functional>
+#include <thread>
+#include <mutex>
+#include <memory>
 
 #include <ros/ros.h>
-#include <ros/package.h>
 #include <std_msgs/String.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/TwistStamped.h>
@@ -21,6 +22,9 @@
 
 #include <armadillo>
 
+namespace as64_
+{
+
 namespace ur10_
 {
 
@@ -28,6 +32,8 @@ class Robot
 {
   struct RobotState
   {
+    uint64_t timestamp;
+
     arma::vec q, dq;
     arma::mat pose;
     arma::mat Jrobot;
@@ -40,7 +46,7 @@ class Robot
     {
       q.resize(6);
       dq.resize(6);
-      pose.resize(3,4);
+      pose.resize(4,4);
       pos.resize(3);
       Q.resize(4);
       v_lin.resize(3);
@@ -52,6 +58,7 @@ class Robot
 
 public:
   Robot();
+  ~Robot();
 
   void freedrive_mode() const;
   void end_freedrive_mode() const;
@@ -86,16 +93,21 @@ public:
 
   void waitNextCycle();
 
+  double getTime() const { return (rSt.timestamp-time_offset)*1e-9; }
   arma::vec getJointPosition() const { return rSt.q; }
   arma::vec getJointVelocity() const { return rSt.dq; }
   arma::mat getTaskPose() const { return rSt.pose; }
-  arma::mat getTaskPosition() const { return rSt.pos; }
-  arma::mat getTaskOrientation() const { return rSt.Q; }
+  arma::vec getTaskPosition() const { return rSt.pos; }
+  arma::vec getTaskOrientation() const { return rSt.Q; }
 
   arma::vec getTwist() const { return arma::join_vert(rSt.v_lin, rSt.v_rot); }
   arma::vec getExternalWrench() const { return rSt.wrench; }
   arma::vec getJointTorque() const { return rSt.jTorques; }
   arma::mat getJacobian() const { return rSt.Jrobot; }
+
+
+  arma::mat forwardKinematic(const arma::vec &q) const;
+  arma::vec inverseKinematic(const arma::mat &T) const;
 
 
   // void setJointVelocity(const arma::vec &input);
@@ -105,9 +117,23 @@ public:
 
   bool isOk() const;
 
-  void print_robot_state(std::ostream &out=std::cout) const;
+  void printRobotState(std::ostream &out=std::cout) const;
+  void launch_printRobotStateThread(double freq=50, std::ostream &out=std::cout);
+  void stop_printRobotStateThread();
+
+  void load_URScript(const std::string &path_to_URScript);
+  void execute_URScript() const;
+
+  void getRobotState(RobotState &robotState) const;
 
 private:
+
+  uint64_t time_offset;
+  std::string ur_script;
+
+  std::mutex robotState_mtx;
+  std::thread printRobotState_thread;
+  bool stop_printRobotStateThread_flag;
 
   RobotState rSt;
 
@@ -121,8 +147,6 @@ private:
   std::string read_jointState_topic;
   std::string base_frame;
   std::string tool_frame;
-
-  double pub_rate;
 
   ros::Publisher pub2ur10;
   ros::Subscriber wrench_sub;
@@ -156,8 +180,18 @@ private:
   void readJointStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
   void readTaskPoseCallback();
 
+  void printRobotStateThreadFun(double freq=50, std::ostream &out=std::cout);
+
+  void parseConfigFile();
+
+  void set_BaseLink0_and_Link6Ee_transforms();
+
+  arma::mat T_base_link0, T_link0_base;
+  arma::mat T_link6_ee, T_ee_link6;
 };
 
 } // namespace ur10_
+
+} // namespace as64_
 
 #endif

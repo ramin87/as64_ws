@@ -1,5 +1,8 @@
 #include <param_lib/parser.h>
 
+namespace as64_
+{
+
 namespace param_
 {
 
@@ -7,7 +10,7 @@ bool Parser::valid_key(const std::string& key)
 {
     if(par_map.find(key) == par_map.end() )
     {
-        std::cout << "SigPack: Parameter "+ key + " not found!" <<std::endl;
+        std::cout << "Param_lib::Parser::valid_key: Parameter "+ key + " not found!" <<std::endl;
         return false;
     }
     return true;
@@ -34,7 +37,7 @@ std::complex<double> Parser::parse_cx(std::string str)
     if(iss >> re) return std::complex<double>(re,0.0);
 
     // ... otherwise
-    throw std::invalid_argument("Could not parse complex number!");
+    throw std::invalid_argument("Param_lib::Parser::parse_cx: Could not parse complex number!");
 }
 
 
@@ -51,7 +54,7 @@ Parser::Parser(const std::string& fname)
     fh.open(fname.c_str());
     if (!fh)
     {
-        throw std::ios_base::failure("Could not find " + fname);
+        throw std::ios_base::failure("Param_lib::Parser::Parser: Could not find " + fname);
     }
     else
     {
@@ -70,12 +73,13 @@ Parser::Parser(const std::string& fname)
                 continue;
 
             // Remove comment
-            mark = line.find("%");
+            mark = line.find("#");
             if(mark!=std::string::npos)
                 line.erase(mark,line.length());
 
-            // Do we have a '='
+            // Do we have a '=' or a ':'
             mark = line.find("=");
+            if(mark==std::string::npos) mark = line.find(":");
             if(mark!=std::string::npos)
             {
                 // Find key
@@ -93,6 +97,15 @@ Parser::Parser(const std::string& fname)
                     dataS = dataS.substr(mark+1,dataS.length());
                     dataS = dataS.substr(0,dataS.find_last_of("\""));
                 }
+                else
+                {
+                  std::istringstream in_temp(dataS);
+                  std::string temp;
+                  in_temp >> temp;
+                  if (!temp.compare("true")) dataS="1";
+                  else if (!temp.compare("false")) dataS="0";
+                }
+
                 // Do we have a vector/matrix
                 mark = dataS.find("[");
                 if(mark!=std::string::npos)
@@ -191,4 +204,6 @@ bool Parser::getCxMat(const std::string key, arma::cx_mat &value)
     return true;
 }
 
-} // end namespace
+} // namespace param_
+
+} // namespace as64_
