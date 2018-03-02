@@ -30,10 +30,12 @@ namespace ur10_
 
     this->tfListener.reset(new tf2_ros::TransformListener(this->tfBuffer));
 
+    mode = Robot::POSITION_CONTROL;
+
     stop_printRobotStateThread_flag = false;
     logging_on = false;
 
-    ros::Duration(4.0).sleep(); // needed to let ur initialize
+    ros::Duration(4.0).sleep(); // needed to let UR initialize
 
     waitNextCycle();
     time_offset = rSt.timestamp_sec;
@@ -145,42 +147,48 @@ namespace ur10_
     if (printRobotState_thread.joinable()) printRobotState_thread.join();
   }
 
-  void Robot::freedrive_mode() const
+  void Robot::freedrive_mode()
   {
     command_mode("freedrive_mode()\n");
+    this->mode = Robot::FREEDRIVE_MODE;
   }
 
-  void Robot::end_freedrive_mode() const
+  void Robot::end_freedrive_mode()
   {
     urScript_command("end_freedrive_mode()\n");
+    this->mode = Robot::POSITION_CONTROL;
   }
 
-  void Robot::teach_mode() const
+  void Robot::teach_mode()
   {
     command_mode("teach_mode()\n");
+    this->mode = Robot::FREEDRIVE_MODE;
   }
 
-  void Robot::end_teach_mode() const
+  void Robot::end_teach_mode()
   {
     urScript_command("end_teach_mode()\n");
+    this->mode = Robot::POSITION_CONTROL;
   }
 
   void Robot::force_mode(const arma::vec &task_frame, const arma::vec &selection_vector,
-                  const arma::vec &wrench, int type, const arma::vec &limits)  const
+                  const arma::vec &wrench, int type, const arma::vec &limits)
   {
     if (type<1 || type>3) throw std::invalid_argument("[Error]: Robot::force_mode: type must be in {1,2,3}");
     std::ostringstream out;
     out << "force_mode(p" << print_vector(task_frame) << "," << print_vector(selection_vector) << ","
         << print_vector(wrench) << "," << type << "," << print_vector(limits) << ")\n";
     command_mode("sleep(0.02)\n\t" + out.str());
+    this->mode = Robot::FORCE_MODE;
   }
 
-  void Robot::end_force_mode() const
+  void Robot::end_force_mode()
   {
     urScript_command("end_force_mode()\n");
+    this->mode = Robot::POSITION_CONTROL;
   }
 
-  void Robot::force_mode_set_damping(double damping)  const
+  void Robot::force_mode_set_damping(double damping)
   {
     if (damping<0)
     {

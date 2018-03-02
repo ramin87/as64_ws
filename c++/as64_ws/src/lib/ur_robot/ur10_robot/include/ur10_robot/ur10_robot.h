@@ -30,6 +30,15 @@ namespace ur10_
 
 class Robot
 {
+  enum Mode
+  {
+    STOPPED = -1,          /**< When the robot is stopped and does not accept commands */
+    POSITION_CONTROL  = 0, /**< For sending position commands */
+    VELOCITY_CONTROL  = 1, /**< For sending velocity commands */
+    FORCE_MODE = 2,        /**< When the robot is in force mode */
+    FREEDRIVE_MODE = 3,    /**< When the robot is in freedrive mode */
+  };
+
   struct RobotState
   {
     uint64_t timestamp_sec;
@@ -71,16 +80,16 @@ public:
   Robot();
   ~Robot();
 
-  void freedrive_mode() const;
-  void end_freedrive_mode() const;
+  void freedrive_mode();
+  void end_freedrive_mode();
 
-  void teach_mode() const;
-  void end_teach_mode() const;
+  void teach_mode();
+  void end_teach_mode();
 
   void force_mode(const arma::vec &task_frame, const arma::vec &selection_vector,
-                  const arma::vec &wrench, int type, const arma::vec &limits)  const;
-  void end_force_mode() const;
-  void force_mode_set_damping(double damping)  const;
+                  const arma::vec &wrench, int type, const arma::vec &limits);
+  void end_force_mode();
+  void force_mode_set_damping(double damping);
 
   void movej(const arma::vec &q, double a=1.4, double v=1.05, double t=0, double r=0) const;
   void movel(const arma::vec &p, double a=1.2, double v=0.25, double t=0, double r=0) const;
@@ -116,6 +125,9 @@ public:
   arma::vec getJointTorque() const { return rSt.jTorques; }
   arma::mat getJacobian() const { return rSt.Jrobot; }
 
+  void setMode(const Robot::Mode &mode);
+  Robot::Mode getMode() const { return mode; }
+
 
   arma::mat forwardKinematic(const arma::vec &q) const;
   arma::vec inverseKinematic(const arma::mat &T) const;
@@ -144,6 +156,8 @@ public:
   std::string ur_script;
 
 private:
+
+  Mode mode;
 
   bool logging_on;
 

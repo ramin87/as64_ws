@@ -38,9 +38,6 @@ int main(int argc, char** argv)
   // ===========  Launch thread for printing  ==================
   robot->launch_printRobotStateThread(1);
 
-  std::cout << "Start data logging...\n";
-  robot->startLogging();
-
   while (ros::ok())
   {
     robot->waitNextCycle();

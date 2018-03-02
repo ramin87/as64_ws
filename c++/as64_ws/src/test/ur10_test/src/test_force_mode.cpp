@@ -5,13 +5,15 @@
 #include <string>
 #include <vector>
 #include <exception>
+#include <thread>
+#include <mutex>
 
 #include <armadillo>
 
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <std_msgs/String.h>
-  
+
 #include <io_lib/io_lib.h>
 #include <param_lib/param_lib.h>
 #include <ur10_robot/ur10_robot.h>
@@ -22,7 +24,6 @@ int main(int argc, char** argv)
   // ===========  Initialize the ROS node  ==================
   ros::init(argc, argv, "test_force_mode_node");
   ros::NodeHandle nh_("~");
-
 
   // ===========  Read params from yml file  ==================
   double print_robotState_rate;
@@ -37,7 +38,6 @@ int main(int argc, char** argv)
   if (!parser.getParam("limits", limits)) limits = arma::vec().zeros(6);
   if (!parser.getParam("type", type)) type = 2;
 
-
   // ===========  Create robot  ==================
   std::shared_ptr<as64_::ur10_::Robot> robot;
   robot.reset(new as64_::ur10_::Robot());
@@ -51,6 +51,7 @@ int main(int argc, char** argv)
   std::cout << "Entering force_mode...\n";
   //robot->force_mode({0,0,0,0,0,0},{1,1,1,1,1,1},{2,2,2,0,0,0},2,{0.5,0.5,0.5,0.25,0.25,0.25});
   robot->force_mode(task_frame, selection_vector, wrench, type, limits);
+  // robot->freedrive_mode();
 
   while (ros::ok())
   {
@@ -58,9 +59,8 @@ int main(int argc, char** argv)
     loop_rate.sleep();
   }
 
-  std::cout << "Stopping force_mode...\n";
   robot->end_force_mode();
-
+  // robot->end_freedrive_mode();
 
   robot->stop_printRobotStateThread();
 
