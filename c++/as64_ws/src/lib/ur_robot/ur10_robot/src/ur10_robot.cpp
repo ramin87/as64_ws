@@ -31,11 +31,12 @@ namespace ur10_
     this->tfListener.reset(new tf2_ros::TransformListener(this->tfBuffer));
 
     stop_printRobotStateThread_flag = false;
+    logging_on = false;
 
     ros::Duration(4.0).sleep(); // needed to let ur initialize
 
     waitNextCycle();
-    time_offset = rSt.timestamp;
+    time_offset = rSt.timestamp_sec;
 
     set_BaseLink0_and_Link6Ee_transforms();
   }
@@ -141,12 +142,12 @@ namespace ur10_
 
   Robot::~Robot()
   {
-    printRobotState_thread.join();
+    if (printRobotState_thread.joinable()) printRobotState_thread.join();
   }
 
   void Robot::freedrive_mode() const
   {
-    urScript_command("freedrive_mode()\n");
+    command_mode("freedrive_mode()\n");
   }
 
   void Robot::end_freedrive_mode() const
@@ -156,7 +157,7 @@ namespace ur10_
 
   void Robot::teach_mode() const
   {
-    urScript_command("teach_mode()\n");
+    command_mode("teach_mode()\n");
   }
 
   void Robot::end_teach_mode() const
@@ -171,9 +172,7 @@ namespace ur10_
     std::ostringstream out;
     out << "force_mode(p" << print_vector(task_frame) << "," << print_vector(selection_vector) << ","
         << print_vector(wrench) << "," << type << "," << print_vector(limits) << ")\n";
-    urScript_command(out.str());
-    //sleep(0.02);
-    ros::Duration(0.02).sleep();
+    command_mode("sleep(0.02)\n\t" + out.str());
   }
 
   void Robot::end_force_mode() const
@@ -305,6 +304,8 @@ namespace ur10_
     // spinner.stop();
 
     // std::cout << "===> Robot::waitNextCycle(): elapsed time = " << timer.toc()*1e3 << " ms\n";
+
+    if (logging_on) logDataStep();
   }
 
   void Robot::readWrenchCallback(const geometry_msgs::WrenchStamped::ConstPtr& msg)
@@ -351,7 +352,8 @@ namespace ur10_
        rSt.pose.submat(0,3,2,3) = rSt.pos;
        rSt.pose.row(3) = arma::rowvec({0, 0, 0, 1});
 
-       rSt.timestamp = this->transformStamped.header.stamp.sec;
+       rSt.timestamp_sec = this->transformStamped.header.stamp.sec;
+       rSt.timestamp_nsec = this->transformStamped.header.stamp.nsec;
 
      }
      catch (tf2::TransformException &ex) {
@@ -402,7 +404,7 @@ namespace ur10_
   void Robot::stop_printRobotStateThread()
   {
     stop_printRobotStateThread_flag = true;
-    printRobotState_thread.join();
+    if (printRobotState_thread.joinable()) printRobotState_thread.join();
   }
 
 
@@ -457,6 +459,53 @@ namespace ur10_
     for (int i=0;i<6;i++) q(i) = q_sols[i];
 
     return q;
+  }
+
+  void Robot::command_mode(const std::string &mode) const
+  {
+    std::string cmd;
+    cmd = "def command_mode():\n\n\t" + mode + "\n\twhile (True):\n\t\tsync()\n\tend\nend\n";
+    std::cout << "cmd=\n" << cmd << "\n";
+    urScript_command(cmd);
+  }
+
+  void Robot::startLogging()
+  {
+    logging_on = true;
+  }
+
+  void Robot::stopLogging()
+  {
+    logging_on = false;
+  }
+
+  void Robot::saveLoggedData(const std::string filename, bool binary, int precision)
+  {
+    std::ofstream out(filename, std::ios::out);
+    if (!out) throw std::ios_base::failure("Couldn't create file \"" + filename + "\"...\n");
+
+    as64_::io_::write_mat(log_data.Time, out, binary, precision);
+    as64_::io_::write_mat(log_data.q_data, out, binary, precision);
+    as64_::io_::write_mat(log_data.dq_data, out, binary, precision);
+    as64_::io_::write_mat(log_data.pos_data, out, binary, precision);
+    as64_::io_::write_mat(log_data.Q_data, out, binary, precision);
+    as64_::io_::write_mat(log_data.V_data, out, binary, precision);
+    as64_::io_::write_mat(log_data.wrench_data, out, binary, precision);
+    as64_::io_::write_mat(log_data.jTorques_data, out, binary, precision);
+
+    out.close();
+  }
+
+  void Robot::logDataStep()
+  {
+    log_data.Time = arma::join_horiz(log_data.Time, arma::mat({getTime()}));
+    log_data.q_data = arma::join_horiz(log_data.q_data, getJointPosition());
+    log_data.dq_data = arma::join_horiz(log_data.dq_data, getJointVelocity());
+    log_data.pos_data = arma::join_horiz(log_data.pos_data, getTaskPosition());
+    log_data.Q_data = arma::join_horiz(log_data.Q_data, getTaskOrientation());
+    log_data.V_data = arma::join_horiz(log_data.V_data, getTwist());
+    log_data.wrench_data = arma::join_horiz(log_data.wrench_data, getExternalWrench());
+    log_data.jTorques_data = arma::join_horiz(log_data.jTorques_data, getJointTorque());
   }
 
 } // namespace ur10_

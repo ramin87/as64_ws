@@ -43,18 +43,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-# *************************************************
-# *************************************************
-
-add_executable(ur10_test
-  src/ur10_test.cpp ${INCLUDE_LIST} ${SRC_LIST}
-)
-
-add_dependencies(ur10_test
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(ur10_test
+SET(BUILD_LIBS
   ${catkin_LIBRARIES}
   armadillo
   math-lib
@@ -63,6 +52,34 @@ target_link_libraries(ur10_test
   ur10-robot
 )
 
+# *************************************************
+# *************************************************
+
+add_executable(ur10_test src/ur10_test.cpp ${INCLUDE_LIST} ${SRC_LIST})
+add_dependencies(ur10_test ${${PROJECT_NAME}_EXPORTED_TARGETS}M${catkin_EXPORTED_TARGETS})
+target_link_libraries(ur10_test ${BUILD_LIBS})
+
+# *************************************************
+# *************************************************
+
+add_executable(run_urscript src/run_urscript.cpp ${INCLUDE_LIST} ${SRC_LIST} )
+add_dependencies(run_urscript ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(run_urscript ${BUILD_LIBS} )
+
+
+# *************************************************
+# *************************************************
+
+add_executable(test_force_mode src/test_force_mode.cpp ${INCLUDE_LIST} ${SRC_LIST} )
+add_dependencies(test_force_mode ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(test_force_mode ${BUILD_LIBS})
+
+# *************************************************
+# *************************************************
+
+add_executable(test_logging src/test_logging.cpp ${INCLUDE_LIST} ${SRC_LIST} )
+add_dependencies(test_logging ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(test_logging ${BUILD_LIBS})
 
 # *************************************************
 # *************************************************

@@ -32,7 +32,8 @@ class Robot
 {
   struct RobotState
   {
-    uint64_t timestamp;
+    uint64_t timestamp_sec;
+    uint64_t timestamp_nsec;
 
     arma::vec q, dq;
     arma::mat pose;
@@ -54,6 +55,16 @@ class Robot
       wrench.resize(6);
       jTorques.resize(6);
     }
+  };
+
+  struct LoggedData
+  {
+    arma::rowvec Time;
+    arma::mat q_data, dq_data;
+    arma::mat pos_data, Q_data;
+    arma::mat V_data;
+    arma::mat wrench_data;
+    arma::mat jTorques_data;
   };
 
 public:
@@ -93,7 +104,7 @@ public:
 
   void waitNextCycle();
 
-  double getTime() const { return (rSt.timestamp-time_offset)*1e-9; }
+  double getTime() const { return (rSt.timestamp_sec-time_offset + rSt.timestamp_nsec*1e-9); }
   arma::vec getJointPosition() const { return rSt.q; }
   arma::vec getJointVelocity() const { return rSt.dq; }
   arma::mat getTaskPose() const { return rSt.pose; }
@@ -126,16 +137,25 @@ public:
 
   void getRobotState(RobotState &robotState) const;
 
+  void startLogging();
+  void stopLogging();
+  void saveLoggedData(const std::string filename, bool binary=true, int precision=7);
+
+  std::string ur_script;
+
 private:
 
+  bool logging_on;
+
   uint64_t time_offset;
-  std::string ur_script;
+
 
   std::mutex robotState_mtx;
   std::thread printRobotState_thread;
   bool stop_printRobotStateThread_flag;
 
   RobotState rSt;
+  LoggedData log_data;
 
   ros::NodeHandle n;
 
@@ -185,6 +205,10 @@ private:
   void parseConfigFile();
 
   void set_BaseLink0_and_Link6Ee_transforms();
+
+  void command_mode(const std::string &mode) const;
+
+  void logDataStep();
 
   arma::mat T_base_link0, T_link0_base;
   arma::mat T_link6_ee, T_ee_link6;

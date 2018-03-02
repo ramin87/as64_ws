@@ -14,6 +14,7 @@
 
 #include <unistd.h> //used for custon getch()
 #include <termios.h> //used for custon getch()
+#include <fcntl.h>
 
 #include <armadillo>
 
@@ -71,6 +72,11 @@ inline void wait_for_key()
   #endif
       return;
 }
+
+/** \brief Returns 1 if a key on the keyboard is pressed, 0 otherwise.
+ *  @return 1 if a key on the keyboard is pressed, 0 otherwise.
+ */
+int kbhit(void);
 
 /** \brief Reads a character from the keyboard (no need to press 'enter' afterwards is required)
  *  @return the character pressed in the keyboard.

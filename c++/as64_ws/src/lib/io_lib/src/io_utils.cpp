@@ -6,6 +6,33 @@ namespace as64_
 namespace io_
 {
 
+int kbhit(void)
+{
+  struct termios oldt, newt;
+  int ch;
+  int oldf;
+
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+  newt.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+  oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+  ch = getchar();
+
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+  if(ch != EOF)
+  {
+    ungetc(ch, stdin);
+    return 1;
+  }
+
+  return 0;
+}
+
 char getch()
 {
     char buf = 0;
@@ -168,7 +195,9 @@ void write_vec_mat(std::vector<arma::mat> &m, std::ostream &out, bool binary, in
 void readFile(const std::string &filename, std::string &contents)
 {
   std::ifstream in(filename, std::ios::in | std::ios::binary);
-  if (!in) throw (errno);
+  if (!in){
+    throw std::ios_base::failure("Failed to open: \"" + filename + "\n");
+  }
 
   in.seekg(0, std::ios::end);
   contents.resize(in.tellg());
