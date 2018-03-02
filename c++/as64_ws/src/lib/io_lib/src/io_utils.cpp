@@ -195,9 +195,7 @@ void write_vec_mat(std::vector<arma::mat> &m, std::ostream &out, bool binary, in
 void readFile(const std::string &filename, std::string &contents)
 {
   std::ifstream in(filename, std::ios::in | std::ios::binary);
-  if (!in){
-    throw std::ios_base::failure("Failed to open: \"" + filename + "\n");
-  }
+  if (!in) throw std::ios_base::failure("Failed to open: \"" + filename + "\n");
 
   in.seekg(0, std::ios::end);
   contents.resize(in.tellg());
