@@ -1,0 +1,39 @@
+#============================================
+#======    Robot controller params   ========
+#============================================
+Ts: 0.001 # 1 ms
+Md_p: 5.0 # translational inertia
+Kd_p: 1000.0 # translational stiffness
+Dd_p: 14.2  # translational damping
+Md_o: 1.0 # rotational inertia
+Kd_o: 1000.0 # rotational stiffness
+Dd_o: 4.5  # rotational damping
+
+USE_ADMITTANCE: true
+F_dead_zone: [0.5; 0.5; 0.5; 0.4; 0.4; 0.4]
+F_norm_retrain_thres: 5
+
+SAVE_LAST_PATH_EXECUTION
+
+#============================================
+#=====   Stopping movement criteria    ======
+#============================================
+pos_tol_stop: 0.01 # position error tolerance to stop the simulation
+orient_tol_stop: 0.005 # orientation error tolerance to stop the simulation
+
+
+#===========================================
+#=====   Path to input-output data    ======
+#===========================================
+binary: true
+data_input_path: "/home/user/as64_ws/as64_ws/matlab/test/DMP_test/DMP/data/"
+data_output_path: "/home/user/as64_ws/as64_ws/matlab/test/DMP_test/DMP/data/"
+
+in_data_filename: "data.bin"
+out_data_filename: "data_out"
+
+in_CartPos_data_filename: "CartPos_data.bin"
+out_CartPos_data_filename: "data_out"
+
+in_orient_data_filename: "orient_data.bin"
+out_orient_data_filename: "data_out"

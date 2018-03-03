@@ -1,0 +1,9 @@
+<launch>
+    <arg name="node_name" default="DMP_UR10_test_node" />
+
+    <node pkg="dmp_ur10_test"
+          type="DMP_UR10_test"
+          name="$(arg node_name)"
+          output="screen">
+    </node>
+</launch>

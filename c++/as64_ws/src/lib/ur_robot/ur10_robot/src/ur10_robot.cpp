@@ -30,10 +30,11 @@ namespace ur10_
 
     this->tfListener.reset(new tf2_ros::TransformListener(this->tfBuffer));
 
-    mode = Robot::POSITION_CONTROL;
+    mode = ur10_::Mode::POSITION_CONTROL;
 
     stop_printRobotStateThread_flag = false;
     logging_on = false;
+    cycle = 0.008; // control cycle of 8 ms
 
     ros::Duration(4.0).sleep(); // needed to let UR initialize
 
@@ -149,26 +150,30 @@ namespace ur10_
 
   void Robot::freedrive_mode()
   {
-    command_mode("freedrive_mode()\n");
-    this->mode = Robot::FREEDRIVE_MODE;
+    if (this->getMode() != ur10_::Mode::FREEDRIVE_MODE)
+    {
+      command_mode("freedrive_mode()\n");
+
+      this->setMode(ur10_::Mode::FREEDRIVE_MODE);
+    }
   }
 
   void Robot::end_freedrive_mode()
   {
     urScript_command("end_freedrive_mode()\n");
-    this->mode = Robot::POSITION_CONTROL;
+    this->setMode(ur10_::Mode::POSITION_CONTROL);
   }
 
   void Robot::teach_mode()
   {
     command_mode("teach_mode()\n");
-    this->mode = Robot::FREEDRIVE_MODE;
+    this->setMode(ur10_::Mode::FREEDRIVE_MODE);
   }
 
   void Robot::end_teach_mode()
   {
     urScript_command("end_teach_mode()\n");
-    this->mode = Robot::POSITION_CONTROL;
+    this->setMode(ur10_::Mode::POSITION_CONTROL);
   }
 
   void Robot::force_mode(const arma::vec &task_frame, const arma::vec &selection_vector,
@@ -179,13 +184,13 @@ namespace ur10_
     out << "force_mode(p" << print_vector(task_frame) << "," << print_vector(selection_vector) << ","
         << print_vector(wrench) << "," << type << "," << print_vector(limits) << ")\n";
     command_mode("sleep(0.02)\n\t" + out.str());
-    this->mode = Robot::FORCE_MODE;
+    this->setMode(ur10_::Mode::FORCE_MODE);
   }
 
   void Robot::end_force_mode()
   {
     urScript_command("end_force_mode()\n");
-    this->mode = Robot::POSITION_CONTROL;
+    this->setMode(ur10_::Mode::POSITION_CONTROL);
   }
 
   void Robot::force_mode_set_damping(double damping)
@@ -304,8 +309,8 @@ namespace ur10_
   {
     std::unique_lock<std::mutex> robotState_lck(this->robotState_mtx);
 
-    // arma::wall_clock timer;
-    // timer.tic();
+    arma::wall_clock timer;
+    timer.tic();
     ros::spinOnce();
     // spinner.start();
     this->readTaskPoseCallback();
@@ -314,6 +319,9 @@ namespace ur10_
     // std::cout << "===> Robot::waitNextCycle(): elapsed time = " << timer.toc()*1e3 << " ms\n";
 
     if (logging_on) logDataStep();
+
+    int elapsed_time = timer.toc()*1000000;
+    if (elapsed_time<8000) std::this_thread::sleep_for(std::chrono::microseconds(8000-elapsed_time));
   }
 
   void Robot::readWrenchCallback(const geometry_msgs::WrenchStamped::ConstPtr& msg)
@@ -383,8 +391,8 @@ namespace ur10_
 
     out << "Cart pos: " << getTaskPosition().t() << "\n";
     out << "Cart orient: " << getTaskOrientation().t() << "\n";
-    out << "Twist: " << getTwist().t() << "\n";
-    out << "Wrench: " << getExternalWrench().t() << "\n";
+    out << "Task velocity: " << getTaskVelocity().t() << "\n";
+    out << "Wrench: " << getTaskWrench().t() << "\n";
 
     out << "===============================\n";
     out << "===============================\n";
@@ -473,7 +481,7 @@ namespace ur10_
   {
     std::string cmd;
     cmd = "def command_mode():\n\n\t" + mode + "\n\twhile (True):\n\t\tsync()\n\tend\nend\n";
-    std::cout << "cmd=\n" << cmd << "\n";
+    //std::cout << "cmd=\n" << cmd << "\n";
     urScript_command(cmd);
   }
 
@@ -511,9 +519,40 @@ namespace ur10_
     log_data.dq_data = arma::join_horiz(log_data.dq_data, getJointVelocity());
     log_data.pos_data = arma::join_horiz(log_data.pos_data, getTaskPosition());
     log_data.Q_data = arma::join_horiz(log_data.Q_data, getTaskOrientation());
-    log_data.V_data = arma::join_horiz(log_data.V_data, getTwist());
-    log_data.wrench_data = arma::join_horiz(log_data.wrench_data, getExternalWrench());
+    log_data.V_data = arma::join_horiz(log_data.V_data, getTaskVelocity());
+    log_data.wrench_data = arma::join_horiz(log_data.wrench_data, getTaskWrench());
     log_data.jTorques_data = arma::join_horiz(log_data.jTorques_data, getJointTorque());
+  }
+
+  void Robot::setJointTrajectory(const arma::vec &qT, double duration)
+  {
+    // we specify the duration so the acceleration and velocity are ignored
+    this->movej(qT, 4.0, 4.0, duration);
+
+    std::cout << "Duration = " << duration << "\n";
+    ros::Duration(duration).sleep();
+  }
+
+  void Robot::setJointPosition(const arma::vec &qd)
+  {
+    this->movej(qd, 1.4, 1.0, this->cycle);
+  }
+
+  void Robot::setJointVelocity(const arma::vec &dqd)
+  {
+    this->speedj(dqd, 6.0, this->cycle);
+  }
+
+  void Robot::setTaskPose(const arma::mat &pose)
+  {
+    const arma::vec p;
+    //convertPose2PosAngles(pose, p);
+    this->movel(p, 1.2, 1.0, this->cycle);
+  }
+
+  void Robot::setTaskVelocity(const arma::vec &Twist)
+  {
+    this->speedl(Twist, 3.0, this->cycle);
   }
 
 } // namespace ur10_

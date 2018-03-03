@@ -28,16 +28,17 @@ namespace as64_
 namespace ur10_
 {
 
+enum Mode
+{
+  STOPPED = -1,          /**< When the robot is stopped and does not accept commands */
+  POSITION_CONTROL  = 0, /**< For sending position commands */
+  VELOCITY_CONTROL  = 1, /**< For sending velocity commands */
+  FORCE_MODE = 2,        /**< When the robot is in force mode */
+  FREEDRIVE_MODE = 3,    /**< When the robot is in freedrive mode */
+};
+
 class Robot
 {
-  enum Mode
-  {
-    STOPPED = -1,          /**< When the robot is stopped and does not accept commands */
-    POSITION_CONTROL  = 0, /**< For sending position commands */
-    VELOCITY_CONTROL  = 1, /**< For sending velocity commands */
-    FORCE_MODE = 2,        /**< When the robot is in force mode */
-    FREEDRIVE_MODE = 3,    /**< When the robot is in freedrive mode */
-  };
 
   struct RobotState
   {
@@ -115,18 +116,27 @@ public:
 
   double getTime() const { return (rSt.timestamp_sec-time_offset + rSt.timestamp_nsec*1e-9); }
   arma::vec getJointPosition() const { return rSt.q; }
-  arma::vec getJointVelocity() const { return rSt.dq; }
   arma::mat getTaskPose() const { return rSt.pose; }
   arma::vec getTaskPosition() const { return rSt.pos; }
   arma::vec getTaskOrientation() const { return rSt.Q; }
 
-  arma::vec getTwist() const { return arma::join_vert(rSt.v_lin, rSt.v_rot); }
-  arma::vec getExternalWrench() const { return rSt.wrench; }
+  arma::vec getJointVelocity() const { return rSt.dq; }
+  arma::vec getTaskVelocity() const { return arma::join_vert(rSt.v_lin, rSt.v_rot); }
+
+  arma::vec getTaskWrench() const { return rSt.wrench; }
   arma::vec getJointTorque() const { return rSt.jTorques; }
   arma::mat getJacobian() const { return rSt.Jrobot; }
 
-  void setMode(const Robot::Mode &mode);
-  Robot::Mode getMode() const { return mode; }
+  void setMode(const ur10_::Mode &mode) { this->mode = mode; }
+  ur10_::Mode getMode() const { return this->mode; }
+
+  void setJointTrajectory(const arma::vec &qT, double duration);
+  void setJointPosition(const arma::vec &qd);
+  void setJointVelocity(const arma::vec &dqd);
+  void setTaskPose(const arma::mat &pose);
+  void setTaskVelocity(const arma::vec &Twist);
+
+  void stop() {}
 
 
   arma::mat forwardKinematic(const arma::vec &q) const;
@@ -138,7 +148,7 @@ public:
   // setWrench
   // setTaskPose
 
-  bool isOk() const;
+  bool isOk() const { return true; }
 
   void printRobotState(std::ostream &out=std::cout) const;
   void launch_printRobotStateThread(double freq=50, std::ostream &out=std::cout);
@@ -154,6 +164,8 @@ public:
   void saveLoggedData(const std::string filename, bool binary=true, int precision=7);
 
   std::string ur_script;
+
+  double cycle;
 
 private:
 
