@@ -25,12 +25,12 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
 
   demo_save_counter = 0;
 
-  init_controller();
+  initController();
 
-  keyboard_ctrl_thread.reset(new std::thread(&DMP_UR10_controller::keyboard_ctrl_function, this));
+  keyboard_ctrl_thread.reset(new std::thread(&DMP_UR10_controller::keyboardCtrlThreadFun, this));
 }
 
-void DMP_UR10_controller::init_control_flags()
+void DMP_UR10_controller::initControlFlags()
 {
   pause_robot = false;
   train_from_file = false;
@@ -46,7 +46,7 @@ void DMP_UR10_controller::init_control_flags()
   save_restart_demo = false;
 }
 
-void DMP_UR10_controller::init_program_variables()
+void DMP_UR10_controller::initProgramVariables()
 {
   q_robot = robot_->getJointPosition();
   q_prev_robot = q_robot;
@@ -63,7 +63,7 @@ void DMP_UR10_controller::init_program_variables()
   x = 0.0;
   dx = 0.0;
 
-  Yg = cmd_args.goal_scale * Yg0; // Yg0 is initialized only after "record_demo"
+  Yg = cmd_args.goal_scale * Yg0; // Yg0 is initialized only after "recordDemo"
   Yg2 = Yg;
   dg_p = arma::vec().zeros(Dp);
   Y = Y_robot; // Y0
@@ -75,7 +75,7 @@ void DMP_UR10_controller::init_program_variables()
   dY_robot = arma::vec().zeros(Dp);
   Fdist_p = arma::vec().zeros(Dp);
 
-  // Qg = cmd_args.goal_scale * Qg0; // Qg0 is initialized only after "record_demo"
+  // Qg = cmd_args.goal_scale * Qg0; // Qg0 is initialized only after "recordDemo"
   Qg = Qg0;
   Qg2 = Qg;
   dg_o = arma::vec().zeros(Do);
@@ -112,13 +112,13 @@ void DMP_UR10_controller::init_program_variables()
 
 }
 
-void DMP_UR10_controller::init_controller()
+void DMP_UR10_controller::initController()
 {
-  init_control_flags();
-  init_program_variables();
+  initControlFlags();
+  initProgramVariables();
 }
 
-void DMP_UR10_controller::keyboard_ctrl_function()
+void DMP_UR10_controller::keyboardCtrlThreadFun()
 {
   using namespace io_;
   // run_dmp = false;
@@ -167,7 +167,7 @@ void DMP_UR10_controller::keyboard_ctrl_function()
         break;
       case 'v':
         std::cout << "Saving execution results\n";
-        save_exec_results_thread.reset(new std::thread(&DMP_UR10_controller::save_execution_results, this));
+        save_exec_results_thread.reset(new std::thread(&DMP_UR10_controller::saveExecutionResults, this));
         save_exec_results_thread->detach();
         break;
       case 'f':
@@ -179,7 +179,7 @@ void DMP_UR10_controller::keyboard_ctrl_function()
   }
 }
 
-void DMP_UR10_controller::save_execution_results()
+void DMP_UR10_controller::saveExecutionResults()
 {
   using namespace io_;
   if (log_on)
@@ -193,31 +193,31 @@ void DMP_UR10_controller::save_execution_results()
   save_exec_results = false;
 }
 
-void DMP_UR10_controller::robot_wait()
+void DMP_UR10_controller::robotWait()
 {
   update();
   command();
 }
 
-void DMP_UR10_controller::record_demo()
+void DMP_UR10_controller::recordDemo()
 {
   run_dmp = false; // stop running the DMP
   train_dmp = false;
-  init_program_variables(); // to zero all velocities and accelerations and set all poses/joints to the current ones
-  clear_train_data();
+  initProgramVariables(); // to zero all velocities and accelerations and set all poses/joints to the current ones
+  clearTrainData();
 
   pause_robot = true;
 
   using namespace io_;
   std::cout << blue << bold << "Robot paused ! Please press 'p' to continue ..." << std::endl << reset;
 
-  while (pause_robot) robot_wait();
+  while (pause_robot) robotWait();
 
   if(!train_from_file)
   {
     while (!start_demo)
     {
-      robot_wait();
+      robotWait();
     }
 
     t = 0.0;
@@ -227,7 +227,7 @@ void DMP_UR10_controller::record_demo()
     q0_robot = q_robot; // save intial joint positions
     while (!end_demo)
     {
-      log_demo_step();
+      logDemoStep();
       command();
       update();
     }
@@ -236,7 +236,7 @@ void DMP_UR10_controller::record_demo()
   }
   else
   {
-  load_demo_data();
+  loadDemoData();
   }
 
   start_demo = false;
@@ -260,7 +260,7 @@ void DMP_UR10_controller::record_demo()
 
   trainData0 = trainData;
 
-  save_demo_data();
+  saveDemoData();
 
   std::cout << "trainData.n_data = " << trainData.n_data << "\n";
   std::cout << "trainData.Time: " << trainData.Time.size() << "\n";
@@ -270,7 +270,7 @@ void DMP_UR10_controller::record_demo()
 }
 
 
-void DMP_UR10_controller::save_demo_data()
+void DMP_UR10_controller::saveDemoData()
 {
   std::string train_data_save_file = cmd_args.data_output_path + "/kuka_demo_data.bin";
   bool binary = true;
@@ -296,7 +296,7 @@ void DMP_UR10_controller::save_demo_data()
 }
 
 
-void DMP_UR10_controller::load_demo_data()
+void DMP_UR10_controller::loadDemoData()
 {
   std::string train_data_load_file = cmd_args.data_output_path + "/kuka_demo_data.bin";
   bool binary = true;
@@ -323,7 +323,7 @@ void DMP_UR10_controller::load_demo_data()
   in.close();
 }
 
-void DMP_UR10_controller::goto_start_pose()
+void DMP_UR10_controller::gotoStartPose()
 {
   using namespace io_;
 
@@ -332,14 +332,14 @@ void DMP_UR10_controller::goto_start_pose()
   std::cout << bold << cyan << "Moving to start pose...\n" << reset;
 
   robot_->setJointTrajectory(trainData0.q0, tau + 1.5);
-  init_program_variables();
+  initProgramVariables();
   goto_start = false;
 
   std::cout << bold << cyan << "Reached start pose!\n" << reset;
 }
 
 
-void DMP_UR10_controller::train_DMP()
+void DMP_UR10_controller::trainDMP()
 {
   // param_::ParamList trainParamList;
   // trainParamList.setParam("lambda", cmd_args.lambda);
@@ -384,7 +384,7 @@ void DMP_UR10_controller::train_DMP()
   std::cout << "y0 = " << y0.t() << "\n";
 }
 
-void DMP_UR10_controller::execute_DMP()
+void DMP_UR10_controller::executeDMP()
 {
   // DMP CartPos simulation
   arma::vec Y_c = cmd_args.a_py * (Y_robot - Y);
@@ -489,7 +489,7 @@ void DMP_UR10_controller::execute_DMP()
   Qg = quatProd(quatExp(dg_o * Ts), Qg);
 }
 
-void DMP_UR10_controller::log_demo_step()
+void DMP_UR10_controller::logDemoStep()
 {
   //  std::cout << "Log Demo step\n";
   trainData.Time = join_horiz(trainData.Time, t);
@@ -501,10 +501,10 @@ void DMP_UR10_controller::log_demo_step()
   trainData.dv_rot_data = join_horiz(trainData.dv_rot_data, dv_rot_robot);
 }
 
-void DMP_UR10_controller::log_online()
+void DMP_UR10_controller::logOnline()
 {
   //  std::cout << "Log online";
-  // log_demo_step();
+  // logDemoStep();
 
   log_data.Time = join_horiz(log_data.Time, t);
 
@@ -524,7 +524,7 @@ void DMP_UR10_controller::log_online()
   log_data.g_data = join_horiz(log_data.g_data, arma::join_vert(Yg, math_::quat2qpos(Qg)));
 }
 
-void DMP_UR10_controller::log_offline()
+void DMP_UR10_controller::logOffline()
 {
   arma::rowvec Time_offline_train;
   arma::mat F_p_offline_train_data;
@@ -611,7 +611,7 @@ void DMP_UR10_controller::log_offline()
   }
 }
 
-void DMP_UR10_controller::clear_train_data()
+void DMP_UR10_controller::clearTrainData()
 {
   trainData.n_data = 0;
   trainData.Time.clear();
@@ -623,27 +623,27 @@ void DMP_UR10_controller::clear_train_data()
   trainData.dv_rot_data.clear();
 }
 
-void DMP_UR10_controller::clear_logged_data()
+void DMP_UR10_controller::clearLoggedData()
 {
   log_data.clear();
 }
 
-void DMP_UR10_controller::save_and_restart_demo()
+void DMP_UR10_controller::saveAndRestartDemo()
 {
   save_logged_data();
-  clear_and_restart_demo();
+  clearAndRestartDemo();
 }
 
-void DMP_UR10_controller::clear_and_restart_demo()
+void DMP_UR10_controller::clearAndRestartDemo()
 {
-  clear_train_data();
-  clear_logged_data();
-  init_controller();
+  clearTrainData();
+  clearLoggedData();
+  initController();
 }
 
 void DMP_UR10_controller::save_logged_data()
 {
-  log_offline();
+  logOffline();
 
   std::ostringstream o_str;
   o_str << "";
@@ -669,7 +669,7 @@ void DMP_UR10_controller::execute()
   restart_demo_label:
 
   // ======  Read training data  =======
-  record_demo();
+  recordDemo();
 
   // ======  Get DMP  =======
   get_canClock_gatingFuns_DMP(cmd_args, D, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
@@ -689,25 +689,25 @@ void DMP_UR10_controller::execute()
   run_dmp = false;
   log_on = false;
 
-  goto_start_pose();
+  gotoStartPose();
 
   if (train_dmp)
   {
-    train_DMP_thread.reset(new std::thread(&DMP_UR10_controller::train_DMP, this));
+    train_DMP_thread.reset(new std::thread(&DMP_UR10_controller::trainDMP, this));
     train_DMP_thread->detach();
   }
 
-  while (train_dmp) robot_wait();
+  while (train_dmp) robotWait();
 
 
-  while (!run_dmp) robot_wait();
+  while (!run_dmp) robotWait();
 
-  while (save_exec_results) robot_wait();
+  while (save_exec_results) robotWait();
 
-  clear_logged_data();
-  //clear_train_data();
+  clearLoggedData();
+  //clearTrainData();
 
-  init_program_variables();
+  initProgramVariables();
 
   // Start simulation
   while (ros::ok() && robot_->isOk() && !stop_robot)
@@ -715,23 +715,23 @@ void DMP_UR10_controller::execute()
     //ros::spinOnce();
 
     // ========= data logging =============
-    if (log_on) log_online();
+    if (log_on) logOnline();
 
     if (clear_restart_demo)
     {
-      clear_and_restart_demo();
+      clearAndRestartDemo();
       goto restart_demo_label;
     }
 
     if (save_restart_demo)
     {
-      save_and_restart_demo();
+      saveAndRestartDemo();
       goto restart_demo_label;
     }
 
     if (run_dmp)
     {
-      execute_DMP();
+      executeDMP();
       // std::cout << "------Execute DMP ------ " << std::endl ;
     }
 

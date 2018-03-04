@@ -58,15 +58,15 @@ public:
 
   // Initializes the control flags and some other variables that must be reset at each
   // repetition of the task in the same program run.
-  void init_controller();
+  void initController();
 
   // Initializes the values of the program's control flags
-  void init_control_flags();
+  void initControlFlags();
 
   // Initializes the program's variables.
-  void init_program_variables();
+  void initProgramVariables();
 
-  void robot_wait();
+  void robotWait();
 
   // Executes the main control loop.
   void execute();
@@ -83,51 +83,51 @@ public:
   // Records a demo that starts and ends by the user control signals from the keyboard.
   // Blocking.
   // Robot moves in admittance.
-  void record_demo();
+  void recordDemo();
 
-  // Moves the robot to its starting position as recorded by the last call to "record_demo".
+  // Moves the robot to its starting position as recorded by the last call to "recordDemo".
   // Blocking.
   // Uses position control (no admittance here).
-  void goto_start_pose();
+  void gotoStartPose();
 
   // Trains the DMP using the data in the struct 'trainData'.
-  void train_DMP();
+  void trainDMP();
 
   // Gets the derivatives of the DMP states and numerically integrates them.
-  void execute_DMP();
+  void executeDMP();
 
   // Saves in the struct 'trainData' the current robot pose, velocities and accelerations.
-  void log_demo_step();
+  void logDemoStep();
 
   // Logs the DMP and robot's poses, velocities and accelerations.
-  void log_online();
+  void logOnline();
 
   // Logs some data calculated after the execution of the DMP such as the forcing term,
   //  goal/shape attractor values, kernel functions activations, dmp weights, centers, stds etc.
-  void log_offline();
+  void logOffline();
 
   // Clears all data in struct 'trainData'
-  void clear_train_data();
+  void clearTrainData();
 
   // Clears all data in struct 'log_data'
-  void clear_logged_data();
+  void clearLoggedData();
 
   // Clears all data in struct 'log_data' and restarts the whole demo and execution process.
-  void clear_and_restart_demo();
+  void clearAndRestartDemo();
 
   // Saves all data from struct 'log_data' in an output file, clears them and restarts the whole demo and execution process.
-  void save_and_restart_demo();
+  void saveAndRestartDemo();
 
   // Saves all data from struct 'log_data' in an output file.
   void save_logged_data();
 
-  void save_demo_data();
-  void load_demo_data();
+  void saveDemoData();
+  void loadDemoData();
 
   // Uses the keyboard as interface between the user and the program.
   // Runs on the different thread from the main program.
-  void keyboard_ctrl_function();
-  void save_execution_results();
+  void keyboardCtrlThreadFun();
+  void saveExecutionResults();
 private:
 
   // Program control flags
@@ -146,9 +146,9 @@ private:
 
   int demo_save_counter; // add a number to the data output file to avoid overriding the previous one
 
-  std::shared_ptr<std::thread> keyboard_ctrl_thread; // thread for the "keyboard_ctrl_function()"
-  std::shared_ptr<std::thread> save_exec_results_thread; // thread for the "keyboard_ctrl_function()"
-  std::shared_ptr<std::thread> train_DMP_thread; // thread for the "keyboard_ctrl_function()"
+  std::shared_ptr<std::thread> keyboard_ctrl_thread; // thread for the "keyboardCtrlThreadFun()"
+  std::shared_ptr<std::thread> save_exec_results_thread; // thread for the "keyboardCtrlThreadFun()"
+  std::shared_ptr<std::thread> train_DMP_thread; // thread for the "keyboardCtrlThreadFun()"
 
   arma::wall_clock timer; // timer to measure elapsed time
 

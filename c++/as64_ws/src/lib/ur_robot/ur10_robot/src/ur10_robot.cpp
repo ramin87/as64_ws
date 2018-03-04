@@ -320,8 +320,8 @@ namespace ur10_
 
     if (logging_on) logDataStep();
 
-    int elapsed_time = timer.toc()*1000000;
-    if (elapsed_time<8000) std::this_thread::sleep_for(std::chrono::microseconds(8000-elapsed_time));
+    int elapsed_time = timer.toc()*1000000000;
+    if (elapsed_time<8000000) std::this_thread::sleep_for(std::chrono::nanoseconds(8000000-elapsed_time));
   }
 
   void Robot::readWrenchCallback(const geometry_msgs::WrenchStamped::ConstPtr& msg)
