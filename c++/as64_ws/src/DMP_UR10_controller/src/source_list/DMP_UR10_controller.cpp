@@ -8,6 +8,15 @@ using namespace as64_;
 
 DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
 {
+  using namespace as64_;
+
+  modeName.resize(5);
+  modeName[0] = "STOP";
+  modeName[1] = "IDLE";
+  modeName[2] = "FREEDRIVE";
+  modeName[3] = "MODEL_RUN";
+  modeName[4] = "POSITION_CONTROL";
+
   Dp = 3;
   Do = 3;
   D = Dp + Do;
@@ -27,34 +36,31 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
 
   initController();
 
+  model_trained = false;
+
   keyboard_ctrl_thread.reset(new std::thread(&DMP_UR10_controller::keyboardCtrlThreadFun, this));
 }
 
 void DMP_UR10_controller::initControlFlags()
 {
-  pause_robot = false;
-  train_from_file = false;
+  // pause_robot = false;
+  // stop_robot = false;
+  // run_dmp = false;
+  this->setMode(DMP_UR10_controller::Mode::IDLE);
+
   save_exec_results = false;
   log_on = false;
-  run_dmp = false;
-  train_dmp = false;
+
+  train_model = false;
   goto_start = false;
-  stop_robot = false;
-  start_demo = false;
-  end_demo = false;
-  clear_restart_demo = false;
-  save_restart_demo = false;
+  record_demo_on = false;
+  clear_rerecord_demo_on = false;
+  save_rerecord_demo_on = false;
+  start_pose_set = false;
 }
 
-void DMP_UR10_controller::initProgramVariables()
+void DMP_UR10_controller::initModelexecution()
 {
-  q_robot = robot_->getJointPosition();
-  q_prev_robot = q_robot;
-
-  dq_robot = robot_->getJointVelocity();
-  // dq_robot
-  // dq_robot = (q_robot - q_prev_robot) / Ts;
-
   T_robot_ee = robot_->getTaskPose();
   Y_robot = T_robot_ee.submat(0, 3, 2, 3);
   Q_robot = math_::rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
@@ -66,7 +72,16 @@ void DMP_UR10_controller::initProgramVariables()
   Yg = cmd_args.goal_scale * Yg0; // Yg0 is initialized only after "recordDemo"
   Yg2 = Yg;
   dg_p = arma::vec().zeros(Dp);
+  // Y = Y0;
   Y = Y_robot; // Y0
+  // Y0 = Y_robot;
+
+  // std::cout << "Y0 = " << Y.t() << "\n";
+  // std::cout << "Y0 = " << Y0.t() << "\n";
+  //
+  // std::cout << "q0 = " << trainData.q0.t() << "\n";
+  // std::cout << "q0 = " << robot_->getJointPosition().t() << "\n";
+
   dY = arma::vec().zeros(Dp);
   ddY = arma::vec().zeros(Dp);
   dZ = arma::vec().zeros(Dp);
@@ -97,250 +112,35 @@ void DMP_UR10_controller::initProgramVariables()
   v_rot_robot_prev = arma::vec().zeros(Do);
 
   J_robot = arma::zeros<arma::mat>(D,7);
- // robot_->getJacobian(J_robot);
 
-  //ddEp = ddY_robot - ddY;
   ddEp = arma::zeros<arma::vec>(3);
-  //dEp = dY_robot - dY;
   dEp = arma::zeros<arma::vec>(3);
-  //ddEo = dv_rot_robot - dv_rot;
+  Ep =  arma::zeros<arma::vec>(3);
   ddEo =  arma::zeros<arma::vec>(3);
-  //dEo = v_rot_robot - v_rot;
   dEo =  arma::zeros<arma::vec>(3);
 
-  Ep =  arma::zeros<arma::vec>(3);
 
 }
 
-void DMP_UR10_controller::initController()
+void DMP_UR10_controller::trainModel()
 {
-  initControlFlags();
-  initProgramVariables();
-}
+  model_trained = false;
 
-void DMP_UR10_controller::keyboardCtrlThreadFun()
-{
-  using namespace io_;
-  // run_dmp = false;
-  // train_dmp = false;
-  // goto_start = false;
-
-  int key = 0;
-  while (!stop_robot) { // Enter
-    key = io_::getch();
-
-    //std::cout << "Pressed " << (char)key  << "\n";
-    std::cout << green << bold  << "[KEY PRESSED]: ";
-
-    switch (key) {
-      case 32: //Spacebar to toggle DMP execution (run/stop)
-        run_dmp = !run_dmp;
-        std::cout << (run_dmp?"Run DMP\n":"Stop DMP\n");
-        break;
-      case 'c':
-        clear_restart_demo = true;
-        std::cout << "Clear and restart demo\n";
-        break;
-      case 'r':
-        save_restart_demo = true;
-        std::cout << "Save and restart demo\n";
-        break;
-      case 'l':
-        log_on = true;
-        std::cout << "Log on enabled\n";
-        break;
-      case 's':
-        stop_robot = true;
-        std::cout << "Stop robot\n";
-        break;
-      case 'p':
-        pause_robot = !pause_robot;
-        std::cout << (pause_robot?"Pause":"Start") << " robot\n";
-        break;
-      case 'n':
-        start_demo = true;
-        std::cout << "Start demo\n";
-        break;
-      case 'm':
-        end_demo = true;
-        std::cout << "End demo\n";
-        break;
-      case 'v':
-        std::cout << "Saving execution results\n";
-        save_exec_results_thread.reset(new std::thread(&DMP_UR10_controller::saveExecutionResults, this));
-        save_exec_results_thread->detach();
-        break;
-      case 'f':
-        train_from_file = !train_from_file;
-        std::cout << "Training: use training data from " << (train_from_file?"file":"demo recording") << "\n";
-        break;
-    }
-    std::cout << reset;
-  }
-}
-
-void DMP_UR10_controller::saveExecutionResults()
-{
-  using namespace io_;
-  if (log_on)
-  {
-    std::cout << red << bold << "Cannot save execution results!\n";
-    std::cout << "Reason: \"log on\" is enabled...\n" << reset;
-    return;
-  }
-  save_exec_results = true;
-  save_logged_data();
-  save_exec_results = false;
-}
-
-void DMP_UR10_controller::robotWait()
-{
-  update();
-  command();
-}
-
-void DMP_UR10_controller::recordDemo()
-{
-  run_dmp = false; // stop running the DMP
-  train_dmp = false;
-  initProgramVariables(); // to zero all velocities and accelerations and set all poses/joints to the current ones
-  clearTrainData();
-
-  pause_robot = true;
-
-  using namespace io_;
-  std::cout << blue << bold << "Robot paused ! Please press 'p' to continue ..." << std::endl << reset;
-
-  while (pause_robot) robotWait();
-
-  if(!train_from_file)
-  {
-    while (!start_demo)
-    {
-      robotWait();
-    }
-
-    t = 0.0;
-
-    //update();
-
-    q0_robot = q_robot; // save intial joint positions
-    while (!end_demo)
-    {
-      logDemoStep();
-      command();
-      update();
-    }
-    trainData.q0 = q0_robot;
-    trainData.n_data = trainData.Time.size();
-  }
-  else
-  {
-  loadDemoData();
-  }
-
-  start_demo = false;
-  end_demo = false;
-  train_dmp = true; // the DMP must be trained now with the demo data
-
-  Dp = trainData.dY_data.n_rows;
-  Do = trainData.v_rot_data.n_rows;
-  D = Dp + Do;
-
-  // get the time duration
   tau = trainData.Time(trainData.n_data - 1);
 
-  // save initial pose
-  Y0 = trainData.Y_data.col(0);
-  Q0 = trainData.Q_data.col(0);
+  // ======  Get DMP  =======
+  get_canClock_gatingFuns_DMP(cmd_args, D, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
 
-  // save goal-target pose
-  Yg0 = trainData.Y_data.col(trainData.n_data - 1);
-  Qg0 = trainData.Q_data.col(trainData.n_data - 1);
+  std::vector<std::shared_ptr<DMP_>> dmpVec1(Dp);
+  for (int i = 0; i < Dp; i++) dmpVec1[i] = dmp[i];
+  dmpCartPos.reset(new DMP_CartPos());
+  dmpCartPos->init(dmpVec1);
 
-  trainData0 = trainData;
+  std::vector<std::shared_ptr<DMP_>> dmpVec2(Do);
+  for (int i = 0; i < Do; i++) dmpVec2[i] = dmp[Dp + i];
+  dmpOrient.reset(new DMP_orient());
+  dmpOrient->init(dmpVec2);
 
-  saveDemoData();
-
-  std::cout << "trainData.n_data = " << trainData.n_data << "\n";
-  std::cout << "trainData.Time: " << trainData.Time.size() << "\n";
-  std::cout << "trainData.Y_data: " << trainData.Y_data.n_rows << " x " << trainData.Y_data.n_cols << "\n";
-  std::cout << "trainData.dY_data: " << trainData.dY_data.n_rows << " x " << trainData.dY_data.n_cols << "\n";
-  std::cout << "trainData.ddY_data: " << trainData.ddY_data.n_rows << " x " << trainData.ddY_data.n_cols << "\n";
-}
-
-
-void DMP_UR10_controller::saveDemoData()
-{
-  std::string train_data_save_file = cmd_args.data_output_path + "/kuka_demo_data.bin";
-  bool binary = true;
-
-  std::ofstream out;
-  out.open(train_data_save_file, std::ios::binary);
-
-  if (!out) throw std::ios_base::failure(std::string("Couldn't create file: \"") + train_data_save_file + "\"");
-
-  io_::write_mat(trainData0.Time, out, binary);
-
-  io_::write_mat(trainData0.Y_data, out, binary);
-  io_::write_mat(trainData0.dY_data, out, binary);
-  io_::write_mat(trainData0.ddY_data, out, binary);
-
-  io_::write_mat(trainData0.Q_data, out, binary);
-  io_::write_mat(trainData0.v_rot_data, out, binary);
-  io_::write_mat(trainData0.dv_rot_data, out, binary);
-
-  io_::write_mat(trainData0.q0, out, binary);
-
-  out.close();
-}
-
-
-void DMP_UR10_controller::loadDemoData()
-{
-  std::string train_data_load_file = cmd_args.data_output_path + "/kuka_demo_data.bin";
-  bool binary = true;
-
-  std::ifstream in;
-  in.open(train_data_load_file, std::ios::binary);
-
-  if (!in) throw std::ios_base::failure(std::string("Couldn't open file: \"") + train_data_load_file + "\"");
-
-  io_::read_mat(trainData.Time, in, binary);
-
-  io_::read_mat(trainData.Y_data, in, binary);
-  io_::read_mat(trainData.dY_data, in, binary);
-  io_::read_mat(trainData.ddY_data, in, binary);
-
-  io_::read_mat(trainData.Q_data, in, binary);
-  io_::read_mat(trainData.v_rot_data, in, binary);
-  io_::read_mat(trainData.dv_rot_data, in, binary);
-
-  io_::read_mat(trainData.q0, in, binary);
-
-  trainData.n_data = trainData.Time.size();
-
-  in.close();
-}
-
-void DMP_UR10_controller::gotoStartPose()
-{
-  using namespace io_;
-
-  //robot_->setMode(ur10_::Mode::POSITION_CONTROL);
-
-  std::cout << bold << cyan << "Moving to start pose...\n" << reset;
-
-  robot_->setJointTrajectory(trainData0.q0, tau + 1.5);
-  initProgramVariables();
-  goto_start = false;
-
-  std::cout << bold << cyan << "Reached start pose!\n" << reset;
-}
-
-
-void DMP_UR10_controller::trainDMP()
-{
   // param_::ParamList trainParamList;
   // trainParamList.setParam("lambda", cmd_args.lambda);
   // trainParamList.setParam("P_cov", cmd_args.P_cov);
@@ -352,7 +152,6 @@ void DMP_UR10_controller::trainDMP()
   trainData.n_data = trainData.Time.size();
   arma::vec y0 = trainData.Y_data.col(0);
   arma::vec g = trainData.Y_data.col(trainData.n_data - 1);
-  tau = trainData.Time(trainData.n_data - 1);
   canClockPtr->setTau(tau);
   // dmpCartPos->setTrainingParams(&trainParamList);
   timer.tic();
@@ -370,21 +169,15 @@ void DMP_UR10_controller::trainDMP()
   for (int i=0; i<Dp; i++) std::cout << "CartPos " << i+1 << " kernels = " << dmpCartPos->dmp[i]->N_kernels << "\n";
   for (int i=0; i<Do; i++) std::cout << "Orient " << i+1 << " kernels = " << dmpOrient->dmp[i]->N_kernels << "\n";
 
-  train_dmp = false;
-  //run_dmp = true; // now the DMP can run again
+  train_model = false;
 
-  // std::cout << "trainData.n_data = " << trainData.n_data << "\n";
-  // std::cout << "trainData.Time: " << trainData.Time.size() << "\n";
-  // std::cout << "trainData.Y_data: " << trainData.Y_data.n_rows << " x " << trainData.Y_data.n_cols << "\n";
-  // std::cout << "trainData.dY_data: " << trainData.dY_data.n_rows << " x " << trainData.dY_data.n_cols << "\n";
-  // std::cout << "trainData.ddY_data: " << trainData.ddY_data.n_rows << " x " << trainData.ddY_data.n_cols << "\n";
   std::cout << "offline_train_p_mse: " << offline_train_p_mse.t() <<  "\n";
   std::cout << "offline_train_o_mse: " <<  offline_train_o_mse.t() <<  "\n";
 
-  std::cout << "y0 = " << y0.t() << "\n";
+  model_trained = true;
 }
 
-void DMP_UR10_controller::executeDMP()
+void DMP_UR10_controller::runModel()
 {
   // DMP CartPos simulation
   arma::vec Y_c = cmd_args.a_py * (Y_robot - Y);
@@ -399,32 +192,7 @@ void DMP_UR10_controller::executeDMP()
   dY = statesDot.col(1);
   // dX = statesDot.col(2);
 
- // arma::vec dZ_dmp = dZ;
-
- // statesDot.resize(Dp,3);
-  //for (int i=0; i<Dp; i++){
-  //  statesDot.row(i) = dmp[i]->getStatesDot(X(i), Y(i), Z(i), Y0(i), Yg(i), Y_c(i), Z_c(i)).t();
-  //}
-
-
-  //dZ = statesDot.col(0);
-  //dY = statesDot.col(1);
-
-
-
-  /*
-
-  double gAttrGating = dmp[0]->goalAttrGating(x);
-  dZ = dmp[0]->goalAttrGating(x)*dmp[0]->a_z*(dmp[0]->b_z*(Yg-Y)-Z)/ ( dmp[0]->get_v_scale() );
-  */
-
-
-  //std::cout << "Z_err " << arma::norm(dZ_dmp - dZ) << std::endl;
-
   ddY = dZ / dmpCartPos->get_v_scale();
-
-  // std::cout << " dmpCartPos->get_v_scale(): "<<  dmpCartPos->get_v_scale() << std::endl;
-  // ddY_robot = ddY + (1/cmd_args.Md_p) * ( - cmd_args.Dd_p*(dY_robot - dY) - cmd_args.Kd_p*(Y_robot-Y) + Fdist_p );
 
   // DMP orient simulation
   arma::vec Q_c = cmd_args.a_py * quatLog(quatProd(Q_robot, quatInv(Q)));
@@ -479,26 +247,379 @@ void DMP_UR10_controller::executeDMP()
   Z = Z + dZ * Ts;
   Yg = Yg + dg_p * Ts;
 
-  // std::cout << "------------------------" <<   std::endl ;
-  // std::cout << "Y: " << Y.t() <<  std::endl ;
-  // std::cout << "dY: " << dY.t() <<  std::endl ;
-
   Q = quatProd(quatExp(v_rot * Ts), Q);
 
   eta = eta + deta * Ts;
   Qg = quatProd(quatExp(dg_o * Ts), Qg);
 }
 
+void DMP_UR10_controller::initController()
+{
+  initControlFlags();
+  initModelexecution();
+}
+
+
+void DMP_UR10_controller::printHelpMenu() const
+{
+  using namespace as64_::io_;
+  std::cout << blue << bold;
+  std::cout << "********************************\n";
+  std::cout << "*********  Help Menu  **********\n";
+  std::cout << "********************************\n";
+  std::cout << cyan << bold;
+  std::cout << "\"spacebar\": run model\n";
+  std::cout << "\"a\": run model in loop\n";
+  std::cout << "\"q\": Go to start pose\n";
+  std::cout << "\"l\": Enable/Disable data logging during model execution\n";
+  std::cout << "\"v\": Save model execution results\n";
+  std::cout << "\"i\": Enter IDLE mode\n";
+  std::cout << "\"f\": Enter FREEDRIVE mode\n";
+  std::cout << "\"r\": Start/Stop demo\n";
+  std::cout << "\"b\": Load training data from file\n";
+  std::cout << "\"y\": Print keys\n";
+  std::cout << reset;
+}
+
+void DMP_UR10_controller::keyboardCtrlThreadFun()
+{
+  using namespace as64_::io_;
+
+  int key = 0;
+  while (this->getMode() != DMP_UR10_controller::Mode::STOP)
+  {
+    key = as64_::io_::getch();
+
+    //std::cout << "Pressed " << (char)key  << "\n";
+    std::cout << green << bold  << "[KEY PRESSED]: " << (char)key << "\n";
+
+    switch (key)
+    {
+      case 32:
+        if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
+        {
+          std::cout << yellow << bold << "[WARNING]: Cannot set mode to \"MODEL_RUN\"\n";
+          std::cout << "Current mode is \"" << getModeName() << "\"\n";
+          std::cout << "Wait or set mode to \"IDLE\" by pressing \"i\".";
+        }
+        else
+        {
+          if (model_trained)
+          {
+            this->setMode(DMP_UR10_controller::Mode::MODEL_RUN);
+            std::cout << "Run model\n";
+          }
+          else
+          {
+            std::cout << yellow << green << "[WARNING]: Cannot run model. The model has not been trained.\n";
+          }
+        }
+        break;
+      case 'q':
+        if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
+        {
+          std::cout << yellow << bold << "[WARNING]: Cannot go to start pose (change mode to \"POSITION_CONTROL\")\n";
+          std::cout << "Current mode is \"" << getModeName() << "\"\n";
+          std::cout << "Wait or set mode to \"IDLE\" by pressing \"i\".\n";
+        }
+        else
+        {
+          this->setMode(DMP_UR10_controller::Mode::POSITION_CONTROL);
+          goto_start = true;
+        }
+        break;
+      case 'l':
+        if (save_exec_results && !log_on)
+        {
+          std::cout << yellow << bold << "[WARNING]: Cannot enable \"log on\"!\n";
+          std::cout << "Reason: save execution results is active...\n";
+        }
+        else
+        {
+          log_on = !log_on;
+          std::cout << "Log on " << (log_on?"enabled":"disabled") << "\n";
+        }
+        break;
+      case 's':
+        // stop_robot = true;
+        this->setMode(DMP_UR10_controller::Mode::STOP);
+        std::cout << "Stop robot\n";
+        break;
+      case 'r':
+        if (this->getMode() != DMP_UR10_controller::Mode::FREEDRIVE)
+        {
+          std::cout << yellow << bold << "WARNING: Cannot start demo.\n";
+          std::cout << "Set the mode first to \"FREEDRIVE\" by pressing \"f\".\n";
+        }
+        else{
+          record_demo_on = !record_demo_on;
+          std::cout << (record_demo_on?"Start":"Stop")<< " demo recording\n";
+        }
+        break;
+      case 'v':
+        std::cout << "Saving execution results\n";
+        if (log_on)
+        {
+          std::cout << yellow << bold << "[WARNING]: Cannot save execution results!\n";
+          std::cout << "You have to disable \"log on\" first...\n";
+        }
+        else
+        {
+          save_exec_results = true;
+          save_exec_results_thread.reset(new std::thread(&DMP_UR10_controller::saveExecutionResults, this));
+          save_exec_results_thread->detach();
+        }
+        break;
+      case 'f':
+        this->setMode(DMP_UR10_controller::Mode::FREEDRIVE);
+        break;
+      case 'b':
+        if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
+        {
+          std::cout << yellow << bold << "[WARNING]: Change mode to IDLE and then press \"b\" to load the train data.\n";
+        }
+        else
+        {
+          std::cout << "Using training data from file\n";
+          loadDataAndTrainModel();
+        }
+        break;
+      case 'h':
+        this->printHelpMenu();
+        break;
+      case 'y':
+        this->printKeys();
+        break;
+      case 'i':
+        // pause_robot = !pause_robot;
+        this->setMode(DMP_UR10_controller::Mode::IDLE);
+        //std::cout << "Setting mode to \"IDLE\"\n";
+        break;
+      default:
+        std::cout << bold << yellow << "[WARNING]: Unrecognized key...\n";
+    }
+    std::cout << reset;
+  }
+}
+
+void DMP_UR10_controller::printKeys() const
+{
+  using namespace as64_::io_;
+
+  std::cout << bold << blue;
+  std::cout << "==============================\n";
+  std::cout << "====== Flags/keys status =====\n";
+  std::cout << "==============================\n";
+  std::cout << bold << cyan;
+  std::cout << "==> Mode: " << getModeName() << "\n";
+  std::cout << "==> record_demo_on: " << (record_demo_on?"true":"false") << "\n";
+  std::cout << "==> log_on: " << (log_on?"true":"false") << "\n";
+  std::cout << "==> save_exec_results: " << (save_exec_results?"true":"false") << "\n";
+  std::cout << "==> train_model: " << (train_model?"true":"false") << "\n";
+  std::cout << "==> model_trained: " << (model_trained?"true":"false") << "\n";
+  std::cout << "==> goto_start: " << (goto_start?"true":"false") << "\n";
+  std::cout << reset;
+}
+
+void DMP_UR10_controller::saveExecutionResults()
+{
+  using namespace io_;
+
+  saveLoggedData();
+  save_exec_results = false;
+}
+
+void DMP_UR10_controller::robotWait()
+{
+  switch (this->getMode())
+  {
+    case IDLE:
+      //robot_->stopj(3.14);
+      robot_->sleep(robot_->cycle);
+      break;
+    case FREEDRIVE:
+      // do nothing
+      break;
+    case MODEL_RUN:
+      robot_->setJointPosition(robot_->getJointPosition());
+      break;
+    case POSITION_CONTROL:
+      robot_->setJointPosition(robot_->getJointPosition());
+      break;
+  }
+}
+
+void DMP_UR10_controller::recordDemo()
+{
+  train_model = false;
+  initModelexecution(); // to zero all velocities and accelerations and set all poses/joints to the current ones
+  clearTrainData();
+
+  update();
+
+  t = 0.0;
+  q0_robot = q_robot; // save intial joint positions
+  while (record_demo_on)
+  {
+    logDemoStep();
+    update();
+  }
+  trainData.q0 = q0_robot;
+  trainData.n_data = trainData.Time.size();
+
+  start_pose_set = true;
+
+  record_demo_on = false;
+  train_model = true; // the DMP must be trained now with the demo data
+
+  Dp = trainData.dY_data.n_rows;
+  Do = trainData.v_rot_data.n_rows;
+  D = Dp + Do;
+
+  // save initial pose
+  Y0 = trainData.Y_data.col(0);
+  Q0 = trainData.Q_data.col(0);
+
+  // save goal-target pose
+  Yg0 = trainData.Y_data.col(trainData.n_data - 1);
+  Qg0 = trainData.Q_data.col(trainData.n_data - 1);
+
+  saveDemoData();
+
+  train_model_thread.reset(new std::thread(&DMP_UR10_controller::trainModel, this));
+  train_model_thread->detach();
+}
+
+void DMP_UR10_controller::loadDataAndTrainModel()
+{
+  train_data_loaded = false;
+
+  std::thread thr(&DMP_UR10_controller::loadDemoData, this);
+  thr.detach();
+
+  while (!train_data_loaded)
+  {
+    update();
+    robotWait();
+  }
+
+  Dp = trainData.dY_data.n_rows;
+  Do = trainData.v_rot_data.n_rows;
+  D = Dp + Do;
+
+  // save initial pose
+  Y0 = trainData.Y_data.col(0);
+  Q0 = trainData.Q_data.col(0);
+
+  // save goal-target pose
+  Yg0 = trainData.Y_data.col(trainData.n_data - 1);
+  Qg0 = trainData.Q_data.col(trainData.n_data - 1);
+
+  model_trained = false;
+  thr = std::thread(&DMP_UR10_controller::trainModel, this);
+  thr.detach();
+
+  while (!model_trained)
+  {
+    update();
+    robotWait();
+  }
+}
+
+void DMP_UR10_controller::saveDemoData()
+{
+  using namespace as64_;
+  std::string train_data_save_file = cmd_args.data_output_path + "/" + cmd_args.demo_data_filename;
+  bool binary = true;
+
+  std::ofstream out;
+  out.open(train_data_save_file, std::ios::binary);
+
+  if (!out) throw std::ios_base::failure(std::string("Couldn't create file: \"") + train_data_save_file + "\"");
+
+  io_::write_mat(trainData.Time, out, binary);
+
+  io_::write_mat(trainData.Y_data, out, binary);
+  io_::write_mat(trainData.dY_data, out, binary);
+  io_::write_mat(trainData.ddY_data, out, binary);
+
+  io_::write_mat(trainData.Q_data, out, binary);
+  io_::write_mat(trainData.v_rot_data, out, binary);
+  io_::write_mat(trainData.dv_rot_data, out, binary);
+
+  io_::write_mat(trainData.q0, out, binary);
+
+  out.close();
+}
+
+
+void DMP_UR10_controller::loadDemoData()
+{
+  train_data_loaded = false;
+
+  using namespace as64_;
+  std::string train_data_load_file = cmd_args.data_output_path + "/" + cmd_args.demo_data_filename;
+  bool binary = true;
+
+  std::ifstream in;
+  in.open(train_data_load_file, std::ios::binary);
+
+  if (!in) throw std::ios_base::failure(std::string("Couldn't open file: \"") + train_data_load_file + "\"");
+
+  io_::read_mat(trainData.Time, in, binary);
+
+  io_::read_mat(trainData.Y_data, in, binary);
+  io_::read_mat(trainData.dY_data, in, binary);
+  io_::read_mat(trainData.ddY_data, in, binary);
+
+  io_::read_mat(trainData.Q_data, in, binary);
+  io_::read_mat(trainData.v_rot_data, in, binary);
+  io_::read_mat(trainData.dv_rot_data, in, binary);
+
+  io_::read_mat(trainData.q0, in, binary);
+
+  trainData.n_data = trainData.Time.size();
+
+  in.close();
+
+  train_data_loaded = true;
+  start_pose_set = true;
+}
+
+void DMP_UR10_controller::gotoStartPose()
+{
+  using namespace as64_::io_;
+
+  goto_start = false;
+
+  if (!start_pose_set)
+  {
+      std::cout << yellow << bold << "[WARNING]: No starting pose has been set...\n";
+      std::cout << "Record a demo to register a starting pose.\n" << reset;
+  }
+  else
+  {
+    std::cout << bold << cyan << "Moving to start pose...\n" << reset;
+
+    double duration = std::max(arma::max(arma::abs(trainData.q0-q_robot))*6.5/arma::datum::pi,2.0);
+    robot_->setJointTrajectory(trainData.q0, duration);
+
+    std::cout << bold << cyan << "Reached start pose!\n" << reset;
+  }
+
+}
+
+
 void DMP_UR10_controller::logDemoStep()
 {
   //  std::cout << "Log Demo step\n";
-  trainData.Time = join_horiz(trainData.Time, t);
-  trainData.Y_data = join_horiz(trainData.Y_data, Y_robot);
-  trainData.dY_data = join_horiz(trainData.dY_data, dY_robot);
-  trainData.ddY_data = join_horiz(trainData.ddY_data, ddY_robot);
-  trainData.Q_data = join_horiz(trainData.Q_data, Q_robot);
-  trainData.v_rot_data = join_horiz(trainData.v_rot_data, v_rot_robot);
-  trainData.dv_rot_data = join_horiz(trainData.dv_rot_data, dv_rot_robot);
+  trainData.Time = arma::join_horiz(trainData.Time, arma::mat{t});
+  trainData.Y_data = arma::join_horiz(trainData.Y_data, Y_robot);
+  trainData.dY_data = arma::join_horiz(trainData.dY_data, dY_robot);
+  trainData.ddY_data = arma::join_horiz(trainData.ddY_data, ddY_robot);
+  trainData.Q_data = arma::join_horiz(trainData.Q_data, Q_robot);
+  trainData.v_rot_data = arma::join_horiz(trainData.v_rot_data, v_rot_robot);
+  trainData.dv_rot_data = arma::join_horiz(trainData.dv_rot_data, dv_rot_robot);
 }
 
 void DMP_UR10_controller::logOnline()
@@ -506,22 +627,22 @@ void DMP_UR10_controller::logOnline()
   //  std::cout << "Log online";
   // logDemoStep();
 
-  log_data.Time = join_horiz(log_data.Time, t);
+  log_data.Time = arma::join_horiz(log_data.Time, arma::mat({t}));
 
-  log_data.y_data = join_horiz(log_data.y_data, arma::join_vert(Y, math_::quat2qpos(Q)));
+  log_data.y_data = arma::join_horiz(log_data.y_data, arma::join_vert(Y, math_::quat2qpos(Q)));
 
-  log_data.dy_data = join_horiz(log_data.dy_data, arma::join_vert(dY, v_rot));
-  log_data.z_data = join_horiz(log_data.z_data, arma::join_vert(Z, eta));
-  log_data.dz_data = join_horiz(log_data.dz_data, arma::join_vert(dZ, deta));
+  log_data.dy_data = arma::join_horiz(log_data.dy_data, arma::join_vert(dY, v_rot));
+  log_data.z_data = arma::join_horiz(log_data.z_data, arma::join_vert(Z, eta));
+  log_data.dz_data = arma::join_horiz(log_data.dz_data, arma::join_vert(dZ, deta));
 
-  log_data.x_data = join_horiz(log_data.x_data, x);
+  log_data.x_data = arma::join_horiz(log_data.x_data, arma::mat({x}));
 
-  log_data.y_robot_data = join_horiz(log_data.y_robot_data, arma::join_vert(Y_robot, math_::quat2qpos(Q_robot)));
-  log_data.dy_robot_data = join_horiz(log_data.dy_robot_data, arma::join_vert(dY_robot, v_rot_robot));
-  log_data.ddy_robot_data = join_horiz(log_data.ddy_robot_data, arma::join_vert(ddY_robot, dv_rot_robot));
+  log_data.y_robot_data = arma::join_horiz(log_data.y_robot_data, arma::join_vert(Y_robot, math_::quat2qpos(Q_robot)));
+  log_data.dy_robot_data = arma::join_horiz(log_data.dy_robot_data, arma::join_vert(dY_robot, v_rot_robot));
+  log_data.ddy_robot_data = arma::join_horiz(log_data.ddy_robot_data, arma::join_vert(ddY_robot, dv_rot_robot));
 
-  log_data.Fdist_data = join_horiz(log_data.Fdist_data, arma::join_vert(Fdist_p, Fdist_o));
-  log_data.g_data = join_horiz(log_data.g_data, arma::join_vert(Yg, math_::quat2qpos(Qg)));
+  log_data.Fdist_data = arma::join_horiz(log_data.Fdist_data, arma::join_vert(Fdist_p, Fdist_o));
+  log_data.g_data = arma::join_horiz(log_data.g_data, arma::join_vert(Yg, math_::quat2qpos(Qg)));
 }
 
 void DMP_UR10_controller::logOffline()
@@ -628,20 +749,7 @@ void DMP_UR10_controller::clearLoggedData()
   log_data.clear();
 }
 
-void DMP_UR10_controller::saveAndRestartDemo()
-{
-  save_logged_data();
-  clearAndRestartDemo();
-}
-
-void DMP_UR10_controller::clearAndRestartDemo()
-{
-  clearTrainData();
-  clearLoggedData();
-  initController();
-}
-
-void DMP_UR10_controller::save_logged_data()
+void DMP_UR10_controller::saveLoggedData()
 {
   logOffline();
 
@@ -651,10 +759,9 @@ void DMP_UR10_controller::save_logged_data()
 
   std::string suffix = cmd_args.DMP_TYPE + "_" + tm_::getTimeStamp();
 
-  std::cout << "Saving results...";
   log_data.cmd_args = cmd_args;
-  std::cout << "Saving to \"" << cmd_args.out_data_filename + o_str.str() <<"\" ...\n";
-  log_data.save(cmd_args.out_data_filename + o_str.str(), true);
+  // std::cout << "Saving to \"" << cmd_args.out_data_filename + o_str.str() <<"\" ...\n";
+  // log_data.save(cmd_args.out_data_filename + o_str.str(), true);
   std::cout << "Saving to \"" << cmd_args.out_data_filename + suffix <<"\" ...\n";
   log_data.save(cmd_args.out_data_filename + suffix, true);
   //log_data.save(cmd_args.out_data_filename + o_str.str(), false, 10);
@@ -666,101 +773,67 @@ void DMP_UR10_controller::save_logged_data()
 
 void DMP_UR10_controller::execute()
 {
-  restart_demo_label:
-
-  // ======  Read training data  =======
-  recordDemo();
-
-  // ======  Get DMP  =======
-  get_canClock_gatingFuns_DMP(cmd_args, D, tau, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, dmp);
-
-  std::vector<std::shared_ptr<DMP_>> dmpVec1(Dp);
-  for (int i = 0; i < Dp; i++) dmpVec1[i] = dmp[i];
-  dmpCartPos.reset(new DMP_CartPos());
-  dmpCartPos->init(dmpVec1);
-
-  std::vector<std::shared_ptr<DMP_>> dmpVec2(Do);
-  for (int i = 0; i < Do; i++) dmpVec2[i] = dmp[Dp + i];
-  dmpOrient.reset(new DMP_orient());
-  dmpOrient->init(dmpVec2);
-
-  restart_dmp_execution_label:
-
-  run_dmp = false;
-  log_on = false;
-
-  gotoStartPose();
-
-  if (train_dmp)
-  {
-    train_DMP_thread.reset(new std::thread(&DMP_UR10_controller::trainDMP, this));
-    train_DMP_thread->detach();
-  }
-
-  while (train_dmp) robotWait();
-
-
-  while (!run_dmp) robotWait();
-
-  while (save_exec_results) robotWait();
-
-  clearLoggedData();
-  //clearTrainData();
-
-  initProgramVariables();
-
+  bool model_exec_init = false;
+  bool  exit_ctrl_loop = false;
+  bool freedrive_mode_set = false;
   // Start simulation
-  while (ros::ok() && robot_->isOk() && !stop_robot)
+  while (ros::ok() && robot_->isOk() && !exit_ctrl_loop)
   {
     //ros::spinOnce();
-
-    // ========= data logging =============
-    if (log_on) logOnline();
-
-    if (clear_restart_demo)
-    {
-      clearAndRestartDemo();
-      goto restart_demo_label;
-    }
-
-    if (save_restart_demo)
-    {
-      saveAndRestartDemo();
-      goto restart_demo_label;
-    }
-
-    if (run_dmp)
-    {
-      executeDMP();
-      // std::cout << "------Execute DMP ------ " << std::endl ;
-    }
-
-    if (goto_start) goto restart_dmp_execution_label;
-
-    if (arma::norm(Fee) > cmd_args.F_norm_retrain_thres) train_dmp = true;
-
     update();
-    command();
 
-    if (run_dmp)
+    switch (this->getMode())
     {
-      // Stopping criteria
-      double err_p = arma::max(arma::abs(Yg2 - Y_robot));
-      double err_o = 0*arma::norm(quatLog(quatProd(Qg, quatInv(Q_robot))));
-      //std::cout << "err_p !!:  " << err_p <<std::endl;
-      //std::cout << "err_o !!:  " << err_o <<std::endl;
-      if (err_p <= cmd_args.tol_stop && err_o <= cmd_args.orient_tol_stop && t >= tau)
-      {
-        goto_start = true;
-        std::cout << io_::cyan << "Target reached. Moving to start pose...\n" << io_::reset;
-      }
+      case STOP:
+        exit_ctrl_loop = true;
+        break;
+      case IDLE:
+        model_exec_init = false;
+        freedrive_mode_set = false;
+        robotWait();
+        break;
+      case FREEDRIVE:
+        if (!freedrive_mode_set)
+        {
+          robot_->freedrive_mode();
+          freedrive_mode_set = true;
+        }
+        if (record_demo_on) recordDemo();
+        robotWait();
+        break;
+      case MODEL_RUN:
+        while (train_model) robotWait();
+        if (!model_exec_init){
+          while (save_exec_results) robotWait();
+          initModelexecution();
+          if (log_on) clearLoggedData();
+          model_exec_init = true;
+        }
+        if (log_on) logOnline();
+        runModel();
+        command();
+        if (targetReached())
+        {
+          this->setMode(IDLE);
+          model_exec_init = false;
+        }
+        break;
+      case POSITION_CONTROL:
+        if (goto_start)
+        {
+          gotoStartPose();
+          this->setMode(IDLE);
+        }
+        break;
     }
-
   }
+  this->setMode(STOP);
 }
 
 void DMP_UR10_controller::update()
 {
+  robot_->waitNextCycle();
+
   t = t + Ts;
 
   q_robot = robot_->getJointPosition();
@@ -777,12 +850,13 @@ void DMP_UR10_controller::update()
   //  std::cout<<"Fee in update() 1: "<< Fee.t();
   //  std::cout<<"Fee_sign in update(): "<< Fee_sign.t();
   //  std::cout<<"F_dead_zone in update(): "<< F_dead_zone.t();
-  for(int i=0;i<6;i++){
+  for(int i=0;i<6;i++)
+  {
     Fee(i) = (Fee_sign(i)) * fmax(0.0,fabs(Fee(i)) - F_dead_zone(i));
   }
-       // std::cout<<"Fee in update() 2: "<< Fee.t();
-//        Fee = Fee - Fee_sign % F_dead_zone;
-//        Fee = 0.5 * (arma::sign(Fee) + Fee_sign) % Fee;
+  // std::cout<<"Fee in update() 2: "<< Fee.t();
+  // Fee = Fee - Fee_sign % F_dead_zone;
+  // Fee = 0.5 * (arma::sign(Fee) + Fee_sign) % Fee;
 
   Fdist_p =  Fee.rows(0,2);
   Fdist_o =  Fee.rows(3,5);
@@ -811,65 +885,67 @@ void DMP_UR10_controller::command()
 
   // set the stiffness to a low value when the dmp is inactive so that the
   // user can move the robot freely
-  if (!run_dmp) {
-      Kp = 0.0;
-      Ko = 0.0;
-      factor_force = 1.0;
-  }
-
-
+  // if (!run_dmp) {
+  //     Kp = 0.0;
+  //     Ko = 0.0;
+  //     factor_force = 1.0;
+  // }
 
   //ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * (dY_robot - dY) - Kp * (Y_robot - Y) + factor_force*Fdist_p);
   ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - Kp * Ep + factor_force*Fdist_p);
-
-
-
 
   //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot - v_rot) - Ko * quatLog(quatProd(Q_robot, quatInv(Q))) + factor_force*Fdist_o);
   //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot) + factor_force*Fdist_o);
   ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo + factor_force*Fdist_o);
 
-
-
   dEp = dEp + ddEp * Ts;
   dEo = dEo + ddEo * Ts;
   Ep = Ep + dEp * Ts;
-
 
   arma::vec Vd(6);
   Vd.subvec(0, 2) = (dEp + dY - 4.0*(Y_robot - (Y + Ep)));
   Vd.subvec(3, 5) = (dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
 
 
-  if(run_dmp || goto_start){
-    // if(robot_->mode != ur10_::Mode::VELOCITY_CONTROL){
-    //   robot_->setMode(ur10_::Mode::VELOCITY_CONTROL);
-    // }
-    Vd.rows(3,5) = arma::zeros<arma::vec>(3);
-    // arma::vec qd = arma::pinv(J_robot) * Vd;
-    robot_->setTaskVelocity(Vd);
-  }else{
-    // if(robot_->mode != ur10_::Mode::TORQUE_CONTROL){
-    //   robot_->setMode(ur10_::Mode::TORQUE_CONTROL);
-    // }
-
-    robot_->freedrive_mode();
-    // arma::vec torque_for_rotation = arma::zeros<arma::vec>(7);
-      //  torque_for_rotation = - (J_robot.rows(3,5)).t() * 5.0* quatLog(quatProd(Q_robot, quatInv(trainData.Q_data.col(0))));
-    // robot_->setJointTorque(torque_for_rotation);
-    //std::cout<<"torque_for_rotation: " << torque_for_rotation.t() <<std::endl;
-  }
-  robot_->waitNextCycle();
+  Vd.rows(3,5) = arma::zeros<arma::vec>(3);
+  // arma::vec qd = arma::pinv(J_robot) * Vd;
+  robot_->setTaskVelocity(Vd);
 
 }
 
 void DMP_UR10_controller::finalize()
 {
-    //save_logged_data();
-    keyboard_ctrl_thread->join();
+    if (keyboard_ctrl_thread->joinable()) keyboard_ctrl_thread->join();
+}
 
-    // calc_simulation_mse();
-    // std::cout << "offline_train_p_mse = \n" << offline_train_p_mse << "\n";
-    // std::cout << "offline_train_o_mse = \n" << offline_train_o_mse << "\n";
-    // std::cout << "sim_mse = \n" << sim_mse << "\n";
+DMP_UR10_controller::Mode DMP_UR10_controller::getMode() const
+{
+  return this->mode;
+}
+
+void DMP_UR10_controller::setMode(const DMP_UR10_controller::Mode &mode)
+{
+  this->mode = mode;
+  std::cout << as64_::io_::green << as64_::io_::bold;
+  std::cout << "Mode changed to \"" << getModeName() << "\"\n";
+  std::cout << as64_::io_::reset;
+}
+
+std::string DMP_UR10_controller::getModeName() const
+{
+  return modeName[this->getMode()];
+}
+
+bool DMP_UR10_controller::targetReached() const
+{
+  double err_p = arma::max(arma::abs(Yg2 - Y_robot));
+  double err_o = 0*arma::norm(quatLog(quatProd(Qg, quatInv(Q_robot))));
+  //std::cout << "err_p !!:  " << err_p <<std::endl;
+  //std::cout << "err_o !!:  " << err_o <<std::endl;
+  if (err_p <= cmd_args.pos_tol_stop && err_o <= cmd_args.orient_tol_stop && t >= tau)
+  {
+    std::cout << as64_::io_::cyan << "Target reached!\n" << as64_::io_::reset;
+    return true;
+  }
+  return false;
 }

@@ -526,10 +526,7 @@ namespace ur10_
 
   void Robot::setJointTrajectory(const arma::vec &qT, double duration)
   {
-    // we specify the duration so the acceleration and velocity are ignored
-    this->movej(qT, 4.0, 4.0, duration);
-
-    std::cout << "Duration = " << duration << "\n";
+    this->movej(qT, 4.0, 3.5, duration);
     ros::Duration(duration).sleep();
   }
 
@@ -552,7 +549,8 @@ namespace ur10_
 
   void Robot::setTaskVelocity(const arma::vec &Twist)
   {
-    this->speedl(Twist, 3.0, this->cycle);
+    this->speedl(Twist, arma::max(arma::abs((Twist-getTaskVelocity()))/this->cycle), this->cycle);
+    // this->speedl(Twist, 1.5, this->cycle);
   }
 
 } // namespace ur10_

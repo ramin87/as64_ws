@@ -23,10 +23,6 @@ struct CMD_ARGS
   double GOAL_ATTR_GATTING_u0; // starting value of the goal attractor gating
   double GOAL_ATTR_GATTING_u_end; // ending value of the goal attractor gating
   double sigmoid_a_u; // steepness of the sigmoid gating function (optional)
-  bool OFFLINE_DMP_TRAINING_enable;
-  bool ONLINE_DMP_UPDATE_enable;
-  double lambda; // forgetting factor for recursive training methods
-  double P_cov; // initial value of covariance matrix for recursive training methods
   bool USE_GOAL_FILT;
   double a_g;
   bool USE_PHASE_STOP;
@@ -47,16 +43,11 @@ struct CMD_ARGS
   double Fo_dead_zone;
   double F_norm_retrain_thres;
   double dt; // simulation time_step
-  double tol_stop; // position error tolerance to stop the simulation
+  double pos_tol_stop; // position error tolerance to stop the simulation
   double orient_tol_stop; // orientation error tolerance to stop the simulation
-  int max_iters; // maximum iteration steps
   double tau_sim_scale; // scaling factor for the time of the DMP simulation
   double goal_scale; // scaling factor for the goal in the DMP simulation
-  bool APPLY_DISTURBANCE; // Flag enabling/disabling the introduction of a disturbance in the robot system
-  double Fdist_min; // Minimum disturbance value
-  double Fdist_max; // Maximum disturbance value
-  double t1_fdist; // Start of Fdist_max
-  double t2_fdist; // End of Fdist_max
+  
   bool binary;
 
   std::string data_input_path;
@@ -64,6 +55,7 @@ struct CMD_ARGS
 
   std::string in_data_filename;
   std::string out_data_filename;
+  std::string demo_data_filename;
 
   std::string  in_CartPos_data_filename;
   std::string  out_CartPos_data_filename;

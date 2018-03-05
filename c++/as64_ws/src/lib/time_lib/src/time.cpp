@@ -12,6 +12,7 @@ std::string getTimeStamp()
 	std::ostringstream out_s;
 	out_s << std::ctime(&t);
 	std::string time_stamp = out_s.str();
+	time_stamp.pop_back();
 	for (int i=0;i<time_stamp.size();i++)
 	{
 		if (time_stamp[i]==' ') time_stamp[i] = '_';

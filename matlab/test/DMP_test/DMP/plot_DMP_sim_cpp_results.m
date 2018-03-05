@@ -3,7 +3,7 @@
 set_matlab_utils_path();
 
 
-filename = 'data/data_out_2018.bin';
+filename = 'data/data_outDMP_Mon_Mar__5_23-27-20_2018.bin';
 fid = fopen(filename,'r');
 if (fid < 0), error(['Failed to open file ' filename]); end
 
@@ -111,37 +111,37 @@ DMP_h = log_data.DMP_h;
 disp('Ploting results...')
 tic
 
-% if (log_data.poseDataFlag)
-%     
-%    Time_d = Time_demo;
-%    Pos_d = yd_data(1:3,:);
-%    Quat_d = qpos2quat(yd_data(4:6,:));
-%    
-%    Time = Time;
-%    Pos = y_robot_data(1:3,:);
-%    Quat = qpos2quat(y_robot_data(4:6,:));
-%    
-%    figure;
-%    ax = axes();
-%    
-%    plot_3Dpath_with_orientFrames(Pos_d, Quat_d, ax, ...
-%     'numberOfFrames',12, 'frameScale',0.08, 'frameLineWidth',1.8, ...
-%     'frameXAxisColor', [0.64 0.08 0.18], 'frameYAxisColor', [0.75 0.75 0], 'frameZAxisColor', [0.3 0.75 0.93], ...
-%     'LineWidth',1.4, 'LineColor',[0.5 0.5 0.5], 'LineStyle','--', 'LineLegend', 'Demo path', ...
-%     'title','3D path with frames', 'xlabel','x-axis[$m$]', 'ylabel','y-axis[$m$]', 'zlabel','z-axis[$m$]', ...
-%     'Interpreter', 'latex', 'fontSize', 14);
-% 
-%    
-%    plot_3Dpath_with_orientFrames(Pos, Quat, ax, ...
-%     'numberOfFrames',12, 'frameScale',0.2, 'frameLineWidth',1.8, ...
-%     'frameXAxisColor', [1 0 0], 'frameYAxisColor', [0 1 0], 'frameZAxisColor', [0 0 1], ...
-%     'frameXAxisLegend', 'Robot x-axis', 'frameYAxisLegend', 'Robot y-axis', 'frameZAxisLegend', 'Robot z-axis', ...
-%     'LineWidth',1.4, 'LineColor',[0.6 0.2 0.0], 'LineLegend', 'Robot path', ...
-%     'title','3D path with frames', 'xlabel','x-axis[$m$]', 'ylabel','y-axis[$m$]', 'zlabel','z-axis[$m$]', ...
-%     'Interpreter', 'latex', 'fontSize', 14, ...
-%     'animated',false, 'Time',0.001*Time, 'VideoCapture',false, 'ScreenScale', [0.7 0.6]);
-%     
-% end
+if (log_data.poseDataFlag)
+    
+   Time_d = Time_demo;
+   Pos_d = yd_data(1:3,:);
+   Quat_d = qpos2quat(yd_data(4:6,:));
+   
+   Time = Time;
+   Pos = y_robot_data(1:3,:);
+   Quat = qpos2quat(y_robot_data(4:6,:));
+   
+   figure;
+   ax = axes();
+   
+   plot_3Dpath_with_orientFrames(Pos_d, Quat_d, ax, ...
+    'numberOfFrames',12, 'frameScale',0.08, 'frameLineWidth',1.8, ...
+    'frameXAxisColor', [0.64 0.08 0.18], 'frameYAxisColor', [0.75 0.75 0], 'frameZAxisColor', [0.3 0.75 0.93], ...
+    'LineWidth',1.4, 'LineColor',[0.5 0.5 0.5], 'LineStyle','--', 'LineLegend', 'Demo path', ...
+    'title','3D path with frames', 'xlabel','x-axis[$m$]', 'ylabel','y-axis[$m$]', 'zlabel','z-axis[$m$]', ...
+    'Interpreter', 'latex', 'fontSize', 14);
+
+   
+   plot_3Dpath_with_orientFrames(Pos, Quat, ax, ...
+    'numberOfFrames',12, 'frameScale',0.2, 'frameLineWidth',1.8, ...
+    'frameXAxisColor', [1 0 0], 'frameYAxisColor', [0 1 0], 'frameZAxisColor', [0 0 1], ...
+    'frameXAxisLegend', 'Robot x-axis', 'frameYAxisLegend', 'Robot y-axis', 'frameZAxisLegend', 'Robot z-axis', ...
+    'LineWidth',1.4, 'LineColor',[0.6 0.2 0.0], 'LineLegend', 'Robot path', ...
+    'title','3D path with frames', 'xlabel','x-axis[$m$]', 'ylabel','y-axis[$m$]', 'zlabel','z-axis[$m$]', ...
+    'Interpreter', 'latex', 'fontSize', 14, ...
+    'animated',false, 'Time',0.001*Time, 'VideoCapture',false, 'ScreenScale', [0.7 0.6]);
+    
+end
 
 
 %% Plot the training data
@@ -178,20 +178,15 @@ lineWidth = 1.2;
 % plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dy_data, 'robot', 'DMP', 'Velocity', lineWidth);
 % plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddy_data, 'robot', 'DMP', 'Acceleration', lineWidth);
 
-size(Time)
-size(y_robot_data)
-size(Time_demo)
-size(yd_data)
-
 plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,yd_data, 'robot', 'demo', 'Position', lineWidth);
 plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dyd_data, 'robot', 'demo', 'Velocity', lineWidth);
 plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddyd_data, 'robot', 'demo', 'Acceleration', lineWidth);
 
 plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'dmp', 'demo', 'Position', lineWidth);
 
-% plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
-% plot_signals_and_errorSignal(Time,dy_data, Time_demo,dyd_data, 'DMP', 'demo', 'Velocity', lineWidth);
-% plot_signals_and_errorSignal(Time,ddy_data, Time_demo,ddyd_data, 'DMP', 'demo', 'Acceleration', lineWidth);
+plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
+plot_signals_and_errorSignal(Time,dy_data, Time_demo,dyd_data, 'DMP', 'demo', 'Velocity', lineWidth);
+plot_signals_and_errorSignal(Time,ddy_data, Time_demo,ddyd_data, 'DMP', 'demo', 'Acceleration', lineWidth);
 
 
 

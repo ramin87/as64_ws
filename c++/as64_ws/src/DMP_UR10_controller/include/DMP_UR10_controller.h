@@ -43,6 +43,14 @@ using namespace as64_;
 
 class DMP_UR10_controller
 {
+  enum Mode{
+    STOP = 0,
+    IDLE = 1,
+    FREEDRIVE = 2,
+    MODEL_RUN = 3,
+    POSITION_CONTROL = 4
+  };
+
   struct TrainData
   {
     int n_data;
@@ -64,7 +72,7 @@ public:
   void initControlFlags();
 
   // Initializes the program's variables.
-  void initProgramVariables();
+  void initModelexecution();
 
   void robotWait();
 
@@ -91,10 +99,10 @@ public:
   void gotoStartPose();
 
   // Trains the DMP using the data in the struct 'trainData'.
-  void trainDMP();
+  void trainModel();
 
   // Gets the derivatives of the DMP states and numerically integrates them.
-  void executeDMP();
+  void runModel();
 
   // Saves in the struct 'trainData' the current robot pose, velocities and accelerations.
   void logDemoStep();
@@ -112,14 +120,8 @@ public:
   // Clears all data in struct 'log_data'
   void clearLoggedData();
 
-  // Clears all data in struct 'log_data' and restarts the whole demo and execution process.
-  void clearAndRestartDemo();
-
-  // Saves all data from struct 'log_data' in an output file, clears them and restarts the whole demo and execution process.
-  void saveAndRestartDemo();
-
   // Saves all data from struct 'log_data' in an output file.
-  void save_logged_data();
+  void saveLoggedData();
 
   void saveDemoData();
   void loadDemoData();
@@ -128,34 +130,48 @@ public:
   // Runs on the different thread from the main program.
   void keyboardCtrlThreadFun();
   void saveExecutionResults();
+
+  DMP_UR10_controller::Mode getMode() const;
+  void setMode(const DMP_UR10_controller::Mode &mode);
+  std::string getModeName() const;
+
+  bool targetReached() const;
+
+  void printHelpMenu() const;
+  void printKeys() const;
+
+  void loadDataAndTrainModel();
 private:
 
+  Mode mode;
+  std::vector<std::string> modeName;
+
   // Program control flags
-  bool train_from_file;
   bool save_exec_results;
   bool log_on; // if true, at each step of the execution, intermediate data are logged.
-  bool run_dmp; // if true the dmp is executed
-  bool train_dmp; // if true the DMP is (re)trained
+  //bool run_dmp; // if true the dmp is executed
+  bool train_model; // if true the DMP is (re)trained
+  bool model_trained; // true if the model has been trained
   bool goto_start; // if true the robot goes to its starting pose
-  bool stop_robot; // if true the program terminates
-  bool pause_robot;
-  bool start_demo; // if true the program starts logging data in the "trainData" struct
-  bool end_demo; // if true the program stops logging data in the "trainData" struct
-  bool save_restart_demo; // if true saves all loged data and restarts the demo process
-  bool clear_restart_demo; // if true clears all loged data (without saving them) and restarts the demo process
+  //bool stop_robot; // if true the program terminates
+  //bool pause_robot;
+  bool record_demo_on; // if true the program starts logging data in the "trainData" struct
+  bool save_rerecord_demo_on; // if true saves all loged data and restarts the demo process
+  bool clear_rerecord_demo_on; // if true clears all loged data (without saving them) and restarts the demo process
+  bool start_pose_set; // true if a start pose has been registered using recordDemo
+  bool train_data_loaded;
 
   int demo_save_counter; // add a number to the data output file to avoid overriding the previous one
 
   std::shared_ptr<std::thread> keyboard_ctrl_thread; // thread for the "keyboardCtrlThreadFun()"
   std::shared_ptr<std::thread> save_exec_results_thread; // thread for the "keyboardCtrlThreadFun()"
-  std::shared_ptr<std::thread> train_DMP_thread; // thread for the "keyboardCtrlThreadFun()"
+  std::shared_ptr<std::thread> train_model_thread; // thread for the "keyboardCtrlThreadFun()"
 
   arma::wall_clock timer; // timer to measure elapsed time
 
   CMD_ARGS cmd_args; // used to parse and store the arguments from the yaml file
   LogData log_data; // struct used for logging data on/off-line
   TrainData trainData; // Data used for (re)training the DMP
-  TrainData trainData0; // Data used for (re)training the DMP
 
   // for the DMP
   std::shared_ptr<as64_::CanonicalClock> canClockPtr; // pointer to the canonical clock

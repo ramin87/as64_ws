@@ -63,11 +63,6 @@ void LogData::save(std::string filename, bool binary, int precision)
 
   if (!out) throw std::ios_base::failure(std::string("Couldn't create file: \"") + file_ext + "\"");
 
-  for (int i=0;i<filename.size();i++)
-  {
-    if (filename[i]=='-') filename[i]='_';
-  }
-
   as64_::io_::write_mat(Time_demo, out, binary, precision);
   as64_::io_::write_mat(yd_data, out, binary, precision);
   as64_::io_::write_mat(dyd_data, out, binary, precision);
@@ -110,10 +105,6 @@ void LogData::save(std::string filename, bool binary, int precision)
   as64_::io_::write_vec_mat(DMP_h, out, binary, precision);
 
   as64_::io_::write_scalar(poseDataFlag, out, binary, precision);
-
-  std::cout << "Time.size() = " << Time.size() << "\n";
-  std::cout << "y_robot_data.size() = " << y_robot_data.n_cols << "\n";
-  std::cout << "goalAttr_data.size() = " << goalAttr_data.size() << "\n";
 
   out.close();
 }
