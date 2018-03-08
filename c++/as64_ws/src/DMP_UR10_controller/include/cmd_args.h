@@ -7,12 +7,14 @@
 #include <fstream>
 #include <ros/ros.h>
 
+#include <armadillo>
+
 struct CMD_ARGS
 {
   double a_z;
   double b_z;
   std::string DMP_TYPE; // "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
-  std::vector<int> N_kernels;
+  arma::vec N_kernels;
   double kernelStdScaling; // scaling factor for the kernels std
   std::string trainMethod; // "LWR", "LS", "RLS" , "RLWR"
   std::string CAN_CLOCK_TYPE;
@@ -39,15 +41,14 @@ struct CMD_ARGS
   double Md_o; // rotational inertia
   double Kd_o; // rotational stiffness
   double Dd_o; // rotational damping
-  double Fp_dead_zone;
-  double Fo_dead_zone;
+  arma::vec Fee_dead_zone;
   double F_norm_retrain_thres;
   double dt; // simulation time_step
   double pos_tol_stop; // position error tolerance to stop the simulation
   double orient_tol_stop; // orientation error tolerance to stop the simulation
   double tau_sim_scale; // scaling factor for the time of the DMP simulation
   double goal_scale; // scaling factor for the goal in the DMP simulation
-  
+
   bool binary;
 
   std::string data_input_path;

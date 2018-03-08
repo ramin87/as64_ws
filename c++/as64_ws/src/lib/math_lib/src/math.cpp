@@ -277,6 +277,20 @@ arma::mat inv(const arma::mat &M)
   return invM;
 }
 
+// =========================================================
+// =========================================================
+
+Eigen::Vector4d getClosestQuat(const Eigen::Vector4d &quat1, const Eigen::Vector4d &quat2)
+{
+  if (quat1.dot(quat2)<0) return -quat1;
+  else return quat1;
+}
+
+arma::vec getClosestQuat(const arma::vec &quat1, const arma::vec &quat2)
+{
+  if (arma::dot(quat1,quat2)<0) return -quat1;
+  else return quat1;
+}
 
 } // namespace math_
 

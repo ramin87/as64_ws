@@ -36,6 +36,12 @@ arma::vec quat2axang(const arma::vec &quat);
 Eigen::MatrixXd inv(const Eigen::MatrixXd &M);
 arma::mat inv(const arma::mat &M);
 
+/**
+ * \brief Returns a quaternion that represents the same rotation as "quat1" and as
+ *  a 4D vector creates the smaller angle with "quat2"
+ */
+Eigen::Vector4d getClosestQuat(const Eigen::Vector4d &quat1, const Eigen::Vector4d &quat2);
+arma::vec getClosestQuat(const arma::vec &quat1, const arma::vec &quat2);
 
 } // namespace math_
 

@@ -6,8 +6,7 @@ a_z: 15.0
 
 DMP_TYPE: "DMP" # "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
 
-#N_kernels: [218, 186, 44, 3, 3, 3] # number of kernels used in the DMP
-N_kernels: [100, 100, 100, 3, 3, 3] # number of kernels used in the DMP
+N_kernels: [80; 80; 80; 80; 80; 80] # number of kernels used in the DMP
 
 kernelStdScaling: 1.0 # scaling factor for the kernels std
 
@@ -20,7 +19,7 @@ SHAPE_ATTR_GATTING_u0: 1.0 # starting value of the shape attractor gating
 SHAPE_ATTR_GATTING_u_end: 0.99 # ending value of the shape attractor gating
 
 GOAL_ATTR_GATTING_TYPE: "lin" # "lin", "exp", "spring-damper", "sigmoid", "constant"
-GOAL_ATTR_GATTING_u0: 0.0 # starting value of the goal attractor gating
+GOAL_ATTR_GATTING_u0: 1.0 # starting value of the goal attractor gating
 GOAL_ATTR_GATTING_u_end: 1.0 # ending value of the goal attractor gating
 
 USE_GOAL_FILT: false
@@ -46,8 +45,7 @@ Md_o: 1.0 # rotational inertia
 Kd_o: 1000.0 # rotational stiffness
 Dd_o: 4.5  # rotational damping
 
-Fp_dead_zone: 0.0
-Fo_dead_zone: 200.5
+Fee_dead_zone: [0.5; 0.5; 0.5; 1.1; 1.1; 1.1]
 F_norm_retrain_thres: 5
 
 ## Simulation params

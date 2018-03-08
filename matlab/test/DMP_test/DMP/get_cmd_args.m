@@ -10,7 +10,7 @@ cmd_args.b_z = cmd_args.a_z/4;
 
 cmd_args.DMP_TYPE = 'DMP'; % 'DMP', 'DMP-bio', 'DMP-plus', 'DMP-Shannon'
 
-cmd_args.N_kernels = 170; % number of kernels used in the DMP
+cmd_args.N_kernels = 50; % number of kernels used in the DMP
 
 cmd_args.kernelStdScaling = 1.0; % scaling factor for the kernels std
 
@@ -33,9 +33,9 @@ cmd_args.ONLINE_DMP_UPDATE_enable = false;
 cmd_args.lambda = 0.99; % forgetting factor for recursive training methods
 cmd_args.P_cov = 1000000.0; % initial value of covariance matrix for recursive training methods
 
-cmd_args.USE_GOAL_FILT = true;
+cmd_args.USE_GOAL_FILT = false;
 cmd_args.a_g = 20.0;
-cmd_args.USE_PHASE_STOP = true;
+cmd_args.USE_PHASE_STOP = false;
 cmd_args.a_px = 50.0; 
 cmd_args.a_py = 40.0; %2*cmd_args.a_z;
 

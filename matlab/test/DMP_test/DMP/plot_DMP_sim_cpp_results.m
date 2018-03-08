@@ -3,7 +3,7 @@
 set_matlab_utils_path();
 
 
-filename = 'data/data_outDMP_Mon_Mar__5_23-27-20_2018.bin';
+filename = 'data/data_outDMP_Thu_Mar__8_18-13-26_2018.bin';
 fid = fopen(filename,'r');
 if (fid < 0), error(['Failed to open file ' filename]); end
 
@@ -182,11 +182,9 @@ plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,yd_data, 'robot', 'dem
 plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dyd_data, 'robot', 'demo', 'Velocity', lineWidth);
 plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddyd_data, 'robot', 'demo', 'Acceleration', lineWidth);
 
-plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'dmp', 'demo', 'Position', lineWidth);
-
 plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
 plot_signals_and_errorSignal(Time,dy_data, Time_demo,dyd_data, 'DMP', 'demo', 'Velocity', lineWidth);
-plot_signals_and_errorSignal(Time,ddy_data, Time_demo,ddyd_data, 'DMP', 'demo', 'Acceleration', lineWidth);
+% plot_signals_and_errorSignal(Time,ddy_data, Time_demo,ddyd_data, 'DMP', 'demo', 'Acceleration', lineWidth);
 
 
 

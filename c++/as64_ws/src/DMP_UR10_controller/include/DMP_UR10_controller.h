@@ -19,6 +19,7 @@
 #include <chrono>
 #include <cmath>
 #include <algorithm>
+#include <cctype>
 #include <string>
 #include <thread>
 #include <mutex>
@@ -72,7 +73,7 @@ public:
   void initControlFlags();
 
   // Initializes the program's variables.
-  void initModelexecution();
+  void initModelExecution();
 
   void robotWait();
 
@@ -160,6 +161,7 @@ private:
   bool clear_rerecord_demo_on; // if true clears all loged data (without saving them) and restarts the demo process
   bool start_pose_set; // true if a start pose has been registered using recordDemo
   bool train_data_loaded;
+  bool run_model_in_loop;
 
   int demo_save_counter; // add a number to the data output file to avoid overriding the previous one
 
@@ -211,15 +213,16 @@ private:
   arma::vec Fdist_o; // Torques exerted to the robot by the environment (human, objects etc.)
 
   arma::vec Fee;
-  arma::vec F_dead_zone; // 6x1 vector with the force and torque dead zone values.
+  arma::vec Fee_dead_zone; // 6x1 vector with the force and torque dead zone values.
 
   // Used to implement the position and orientation error in the admittance controller.
   arma::vec ddEp;
 	arma::vec dEp;
+  arma::vec Ep;
+
 	arma::vec ddEo;
 	arma::vec dEo;
-
-	arma::vec Ep;
+  arma::vec Eo;
 
   arma::vec sim_mse;
 

@@ -28,9 +28,7 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
   cmd_args.parse_cmd_args();
   cmd_args.print();
 
-  F_dead_zone.resize(6);
-  F_dead_zone.subvec(0, 2).fill(cmd_args.Fp_dead_zone);
-  F_dead_zone.subvec(3, 5).fill(cmd_args.Fo_dead_zone);
+  Q_robot << 1 << 0 << 0 << 0; // initialize it for use in getClosestQuat
 
   demo_save_counter = 0;
 
@@ -57,9 +55,10 @@ void DMP_UR10_controller::initControlFlags()
   clear_rerecord_demo_on = false;
   save_rerecord_demo_on = false;
   start_pose_set = false;
+  run_model_in_loop = false;
 }
 
-void DMP_UR10_controller::initModelexecution()
+void DMP_UR10_controller::initModelExecution()
 {
   T_robot_ee = robot_->getTaskPose();
   Y_robot = T_robot_ee.submat(0, 3, 2, 3);
@@ -97,7 +96,6 @@ void DMP_UR10_controller::initModelexecution()
   Q = Q_robot; // Q0
   v_rot = arma::vec().zeros(Do);
   dv_rot = arma::vec().zeros(Do);
-
   v_rot_robot = arma::vec().zeros(Do);
   dv_rot_robot = arma::vec().zeros(Do);
 
@@ -118,7 +116,7 @@ void DMP_UR10_controller::initModelexecution()
   Ep =  arma::zeros<arma::vec>(3);
   ddEo =  arma::zeros<arma::vec>(3);
   dEo =  arma::zeros<arma::vec>(3);
-
+  Eo =  arma::zeros<arma::vec>(3);
 
 }
 
@@ -256,29 +254,36 @@ void DMP_UR10_controller::runModel()
 void DMP_UR10_controller::initController()
 {
   initControlFlags();
-  initModelexecution();
+  initModelExecution();
 }
 
 
 void DMP_UR10_controller::printHelpMenu() const
 {
   using namespace as64_::io_;
+
+  #define PRINT_KEY_ID_MACRO(key_id) reset << cyan << bold << key_id << reset
+  #define PRINT_KEY_FUNCTION_MACRO(key_fun) reset << cyan << underline << key_fun << reset
+
   std::cout << blue << bold;
   std::cout << "********************************\n";
   std::cout << "*********  Help Menu  **********\n";
   std::cout << "********************************\n";
-  std::cout << cyan << bold;
-  std::cout << "\"spacebar\": run model\n";
-  std::cout << "\"a\": run model in loop\n";
-  std::cout << "\"q\": Go to start pose\n";
-  std::cout << "\"l\": Enable/Disable data logging during model execution\n";
-  std::cout << "\"v\": Save model execution results\n";
-  std::cout << "\"i\": Enter IDLE mode\n";
-  std::cout << "\"f\": Enter FREEDRIVE mode\n";
-  std::cout << "\"r\": Start/Stop demo\n";
-  std::cout << "\"b\": Load training data from file\n";
-  std::cout << "\"y\": Print keys\n";
+  //std::cout << cyan << bold;
+  std::cout << PRINT_KEY_ID_MACRO("\"spacebar\"   : ") << PRINT_KEY_FUNCTION_MACRO("run model\n");
+  std::cout << PRINT_KEY_ID_MACRO("     a       : ") << PRINT_KEY_FUNCTION_MACRO("run model in loop\n");
+  std::cout << PRINT_KEY_ID_MACRO("     q       : ") << PRINT_KEY_FUNCTION_MACRO("Go to start pose\n");
+  std::cout << PRINT_KEY_ID_MACRO("     l       : ") << PRINT_KEY_FUNCTION_MACRO("Enable/Disable data logging during model execution\n");
+  std::cout << PRINT_KEY_ID_MACRO("     v       : ") << PRINT_KEY_FUNCTION_MACRO("Save model execution results\n");
+  std::cout << PRINT_KEY_ID_MACRO("     i       : ") << PRINT_KEY_FUNCTION_MACRO("Enter IDLE mode\n");
+  std::cout << PRINT_KEY_ID_MACRO("     f       : ") << PRINT_KEY_FUNCTION_MACRO("Enter FREEDRIVE mode\n");
+  std::cout << PRINT_KEY_ID_MACRO("     r       : ") << PRINT_KEY_FUNCTION_MACRO("Start/Stop demo\n");
+  std::cout << PRINT_KEY_ID_MACRO("     b       : ") << PRINT_KEY_FUNCTION_MACRO("Load training data from file\n");
+  std::cout << PRINT_KEY_ID_MACRO("     y       : ") << PRINT_KEY_FUNCTION_MACRO("Print keys\n");
   std::cout << reset;
+
+  #undef PRINT_KEY_ID_MACRO
+  #undef PRINT_KEY_FUNCTION_MACRO
 }
 
 void DMP_UR10_controller::keyboardCtrlThreadFun()
@@ -288,13 +293,15 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
   int key = 0;
   while (this->getMode() != DMP_UR10_controller::Mode::STOP)
   {
-    key = as64_::io_::getch();
+    key = std::tolower(as64_::io_::getch());
 
     //std::cout << "Pressed " << (char)key  << "\n";
     std::cout << green << bold  << "[KEY PRESSED]: " << (char)key << "\n";
 
     switch (key)
     {
+      case 'a':
+        run_model_in_loop = true;
       case 32:
         if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
         {
@@ -307,7 +314,7 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
           if (model_trained)
           {
             this->setMode(DMP_UR10_controller::Mode::MODEL_RUN);
-            std::cout << "Run model\n";
+            std::cout << green << bold << "Run model\n";
           }
           else
           {
@@ -411,13 +418,14 @@ void DMP_UR10_controller::printKeys() const
   std::cout << "====== Flags/keys status =====\n";
   std::cout << "==============================\n";
   std::cout << bold << cyan;
-  std::cout << "==> Mode: " << getModeName() << "\n";
-  std::cout << "==> record_demo_on: " << (record_demo_on?"true":"false") << "\n";
-  std::cout << "==> log_on: " << (log_on?"true":"false") << "\n";
-  std::cout << "==> save_exec_results: " << (save_exec_results?"true":"false") << "\n";
-  std::cout << "==> train_model: " << (train_model?"true":"false") << "\n";
-  std::cout << "==> model_trained: " << (model_trained?"true":"false") << "\n";
-  std::cout << "==> goto_start: " << (goto_start?"true":"false") << "\n";
+  std::cout << "==> Mode              : " << getModeName() << "\n";
+  std::cout << "==> record_demo_on    : " << (record_demo_on?"true":"false") << "\n";
+  std::cout << "==> log_on            : " << (log_on?"true":"false") << "\n";
+  std::cout << "==> save_exec_results : " << (save_exec_results?"true":"false") << "\n";
+  std::cout << "==> train_model       : " << (train_model?"true":"false") << "\n";
+  std::cout << "==> model_trained     : " << (model_trained?"true":"false") << "\n";
+  std::cout << "==> goto_start        : " << (goto_start?"true":"false") << "\n";
+  std::cout << "==> run_model_in_loop : " << (run_model_in_loop?"true":"false") << "\n";
   std::cout << reset;
 }
 
@@ -452,7 +460,7 @@ void DMP_UR10_controller::robotWait()
 void DMP_UR10_controller::recordDemo()
 {
   train_model = false;
-  initModelexecution(); // to zero all velocities and accelerations and set all poses/joints to the current ones
+  initModelExecution(); // to zero all velocities and accelerations and set all poses/joints to the current ones
   clearTrainData();
 
   update();
@@ -790,6 +798,7 @@ void DMP_UR10_controller::execute()
       case IDLE:
         model_exec_init = false;
         freedrive_mode_set = false;
+        run_model_in_loop = false;
         robotWait();
         break;
       case FREEDRIVE:
@@ -804,8 +813,13 @@ void DMP_UR10_controller::execute()
       case MODEL_RUN:
         while (train_model) robotWait();
         if (!model_exec_init){
+          if (arma::norm(q_robot-trainData.q0) > 0.5e-2)
+          {
+            gotoStartPose();
+            update();
+          }
           while (save_exec_results) robotWait();
-          initModelexecution();
+          initModelExecution();
           if (log_on) clearLoggedData();
           model_exec_init = true;
         }
@@ -814,7 +828,7 @@ void DMP_UR10_controller::execute()
         command();
         if (targetReached())
         {
-          this->setMode(IDLE);
+          if (!run_model_in_loop) this->setMode(IDLE);
           model_exec_init = false;
         }
         break;
@@ -843,19 +857,13 @@ void DMP_UR10_controller::update()
 
   //J_robot = robot_->getJacobian();
   Fee = robot_->getTaskWrench(); // Need to invert the sign of Fee ??????
-  // Fee = -Fee;
-  // Fee.swap_rows(3,5);
 
   arma::vec Fee_sign = arma::sign(Fee);
-  //  std::cout<<"Fee in update() 1: "<< Fee.t();
-  //  std::cout<<"Fee_sign in update(): "<< Fee_sign.t();
-  //  std::cout<<"F_dead_zone in update(): "<< F_dead_zone.t();
   for(int i=0;i<6;i++)
   {
-    Fee(i) = (Fee_sign(i)) * fmax(0.0,fabs(Fee(i)) - F_dead_zone(i));
+    Fee(i) = (Fee_sign(i)) * fmax(0.0,fabs(Fee(i)) - cmd_args.Fee_dead_zone(i));
   }
-  // std::cout<<"Fee in update() 2: "<< Fee.t();
-  // Fee = Fee - Fee_sign % F_dead_zone;
+  // Fee = Fee - Fee_sign % Fee_dead_zone;
   // Fee = 0.5 * (arma::sign(Fee) + Fee_sign) % Fee;
 
   Fdist_p =  Fee.rows(0,2);
@@ -868,7 +876,10 @@ void DMP_UR10_controller::update()
   dY_robot = V_robot.subvec(0, 2);
   ddY_robot = (dY_robot - dY_robot_prev) / Ts;
 
+  arma::vec Q_robot_prev = Q_robot;
   Q_robot = math_::rotm2quat(T_robot_ee.submat(0, 0, 2, 2));
+  Q_robot = math_::getClosestQuat(Q_robot, Q_robot_prev);
+
   v_rot_robot = V_robot.subvec(3, 5);
   dv_rot_robot = (v_rot_robot - v_rot_robot_prev) / Ts;
 
@@ -896,18 +907,20 @@ void DMP_UR10_controller::command()
 
   //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot - v_rot) - Ko * quatLog(quatProd(Q_robot, quatInv(Q))) + factor_force*Fdist_o);
   //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot) + factor_force*Fdist_o);
-  ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo + factor_force*Fdist_o);
+  ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo - Ko * Eo + factor_force*Fdist_o);
 
   dEp = dEp + ddEp * Ts;
-  dEo = dEo + ddEo * Ts;
   Ep = Ep + dEp * Ts;
+
+  dEo = dEo + ddEo * Ts;
+  Eo = Eo + dEo * Ts;
 
   arma::vec Vd(6);
   Vd.subvec(0, 2) = (dEp + dY - 4.0*(Y_robot - (Y + Ep)));
-  Vd.subvec(3, 5) = (dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
+  Vd.subvec(3, 5) = v_rot; //(dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
 
 
-  Vd.rows(3,5) = arma::zeros<arma::vec>(3);
+  // Vd.rows(3,5) = arma::zeros<arma::vec>(3);
   // arma::vec qd = arma::pinv(J_robot) * Vd;
   robot_->setTaskVelocity(Vd);
 

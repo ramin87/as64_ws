@@ -14,11 +14,7 @@ bool CMD_ARGS::parse_cmd_args(const char *config_file)
   if (!parser.getParam("a_z", a_z)) a_z = 20.0;
   if (!parser.getParam("b_z", b_z)) b_z = a_z/4;
   if (!parser.getParam("DMP_TYPE", DMP_TYPE)) DMP_TYPE = "DMP";
-  if (!parser.getParam("N_kernels", N_kernels))
-  {
-    N_kernels.resize(6);
-    for (int i=0;i<6;i++) N_kernels[i] = 80;
-  }
+  if (!parser.getParam("N_kernels", N_kernels)) N_kernels = arma::vec().ones(6)*40;
   if (!parser.getParam("kernelStdScaling", kernelStdScaling)) kernelStdScaling = 1.0;
   if (!parser.getParam("trainMethod", trainMethod)) trainMethod = "LWR";
   if (!parser.getParam("CAN_CLOCK_TYPE", CAN_CLOCK_TYPE)) CAN_CLOCK_TYPE = "lin";
@@ -46,8 +42,7 @@ bool CMD_ARGS::parse_cmd_args(const char *config_file)
   if (!parser.getParam("Kd_o", Kd_o)) Kd_o = 500.0;
   if (!parser.getParam("Dd_o", Dd_o)) Dd_o = 2*std::sqrt(Md_o*Kd_o);
 
-  if (!parser.getParam("Fp_dead_zone", Fp_dead_zone)) Fp_dead_zone = 0.0;
-  if (!parser.getParam("Fo_dead_zone", Fo_dead_zone)) Fo_dead_zone = 0.0;
+  if (!parser.getParam("Fee_dead_zone", Fee_dead_zone)) Fee_dead_zone = arma::vec().zeros(6);
   if (!parser.getParam("F_norm_retrain_thres", F_norm_retrain_thres)) F_norm_retrain_thres = 100.0;
 
   if (!parser.getParam("pos_tol_stop", pos_tol_stop)) pos_tol_stop = 0.01;
@@ -86,7 +81,7 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "a_z: " << a_z << "\n";
   out << "b_z: " << b_z << "\n";
   out << "DMP_TYPE: " << DMP_TYPE << "\n";
-  for (int i=0;i<N_kernels.size();i++) std::cout << "N_kernels[" << i+1 << "] = " << N_kernels[i] << "\n";
+  out << "N_kernels: " << N_kernels.t() << "\n";
   out << "kernelStdScaling: " << kernelStdScaling << "\n";
   out << "trainMethod: " << trainMethod << "\n";
   out << "CAN_CLOCK_TYPE: " << CAN_CLOCK_TYPE << "\n";
@@ -115,15 +110,14 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "Kd_o: " << Kd_o << "\n";
   out << "Dd_o: " << Dd_o << "\n";
 
-  out << "Fp_dead_zone: " << Fp_dead_zone << "\n";
-  out << "Fo_dead_zone: " << Fo_dead_zone << "\n";
+  out << "Fee_dead_zone: " << Fee_dead_zone.t() << "\n";
   out << "F_norm_retrain_thres: " << F_norm_retrain_thres << "\n";
 
   out << "pos_tol_stop: " << pos_tol_stop << "\n";
   out << "orient_tol_stop: " << orient_tol_stop << "\n";
   out << "tau_sim_scale: " << tau_sim_scale << "\n";
   out << "goal_scale: " << goal_scale << "\n";
-  
+
   out << "binary: " << binary << "\n";
   out << "data_input_path: " << data_input_path << "\n";
   out << "data_output_path: " << data_output_path << "\n";

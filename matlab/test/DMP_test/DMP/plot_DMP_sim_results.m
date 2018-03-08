@@ -14,6 +14,8 @@ end
 
 function plot_DMP_sim_results_helper(log_data)
 
+tic
+
 fontsize = 14;
 
 Time_demo = log_data.Time_demo;
@@ -68,14 +70,14 @@ for j=1:length(x_data)
     end
 end
 
-% Psi_data_train = cell(D,1);
-% for i=1:D
-%     x_data_train = dmp{i}.phase(Time_offline_train);
-%     for j=1:length(x_data_train)
-%         Psi_data_train{i} = [Psi_data_train{i} dmp{i}.kernelFunction(x_data_train(j))];
-%     end
-% end
-% 
+Psi_data_train = cell(D,1);
+for i=1:D
+    x_data_train = dmp{i}.phase(Time_offline_train);
+    for j=1:length(x_data_train)
+        Psi_data_train{i} = [Psi_data_train{i} dmp{i}.kernelFunction(x_data_train(j))];
+    end
+end
+
 % Psi_data = cell(D,1);
 % for i=1:D
 %     x_data_train = dmp{i}.phase(Time);
@@ -94,7 +96,6 @@ USE_GOAL_FILT = g_data(1,1)~=g_data(1,end);
 
 %% ========   Plot results  ========
 disp('Ploting results...')
-tic
 
 if (log_data.poseDataFlag)
     
@@ -171,17 +172,17 @@ for i=1:D
 
 end
 
-% %% Plot 'F' training
-% if (OFFLINE_DMP_TRAINING_enable)
-%     for i=1:D 
-%         lineWidth = 1.2;
-%         F = F_offline_train_data(i,:);
-%         Fd = Fd_offline_train_data(i,:);
-%         Psi = Psi_data_train{i};
-%         plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Offline training', '$F$', '$F_d$');
-%     end
-% end
-% 
+%% Plot 'F' training
+if (OFFLINE_DMP_TRAINING_enable)
+    for i=1:D 
+        lineWidth = 1.2;
+        F = F_offline_train_data(i,:);
+        Fd = Fd_offline_train_data(i,:);
+        Psi = Psi_data_train{i};
+        plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Offline training', '$F$', '$F_d$');
+    end
+end
+
 % 
 % %% Plot 'F' online training
 % if (ONLINE_DMP_UPDATE_enable)
