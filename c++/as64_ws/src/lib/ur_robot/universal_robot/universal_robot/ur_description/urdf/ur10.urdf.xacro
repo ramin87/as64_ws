@@ -2,8 +2,8 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
 <!--
-  Author: Kelsey Hawkins 
-  Contributers: Jimmy Da Silva, Ajit Krisshna N L, Muhammad Asif Rana 
+  Author: Kelsey Hawkins
+  Contributers: Jimmy Da Silva, Ajit Krisshna N L, Muhammad Asif Rana
 -->
 
   <xacro:include filename="$(find ur_description)/urdf/ur.transmission.xacro" />
@@ -319,6 +319,43 @@
       <parent link="${prefix}wrist_3_link"/>
       <child link="${prefix}tool0"/>
     </joint>
+
+
+
+
+    <!-- Joint Force Torque Sensor -->
+    <joint name="${prefix}optoforce_Connection" type="fixed">
+		  <parent link="${prefix}tool0" />
+		  <child link = "${prefix}optoforce_frame" />
+		  <origin xyz="0 0.0 0.015" rpy="0 0 -1.57" />
+    </joint>
+
+    <link name="${prefix}optoforce_frame">
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+      <cylinder length="0" radius="0"/>
+        </geometry>
+      </collision>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+      <cylinder length="0.03" radius="0.035"/>
+        </geometry>
+      </visual>
+
+      <inertial>
+        <mass value="0.1" />
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+      </inertial>
+</link>
+
+
+
+
+
 
   </xacro:macro>
 </robot>

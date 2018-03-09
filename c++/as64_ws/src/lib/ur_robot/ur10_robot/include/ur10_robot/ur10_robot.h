@@ -123,7 +123,7 @@ public:
   arma::vec getJointVelocity() const { return rSt.dq; }
   arma::vec getTaskVelocity() const { return arma::join_vert(rSt.v_lin, rSt.v_rot); }
 
-  arma::vec getTaskWrench() const { return rSt.wrench; }
+  arma::vec getTaskWrench() const;
   arma::vec getJointTorque() const { return rSt.jTorques; }
   arma::mat getJacobian() const { return rSt.Jrobot; }
 
@@ -178,7 +178,7 @@ private:
 
   std::mutex robotState_mtx;
   std::thread printRobotState_thread;
-  bool stop_printRobotStateThread_flag;
+  bool printRobotStateThread_running;
 
   RobotState rSt;
   LoggedData log_data;

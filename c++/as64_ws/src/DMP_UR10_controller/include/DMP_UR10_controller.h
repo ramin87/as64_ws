@@ -49,7 +49,8 @@ class DMP_UR10_controller
     IDLE = 1,
     FREEDRIVE = 2,
     MODEL_RUN = 3,
-    POSITION_CONTROL = 4
+    POSITION_CONTROL = 4,
+    ADMITTANCE_CONTROL = 5
   };
 
   struct TrainData
@@ -85,6 +86,9 @@ public:
 
   // Implements the Admittance controller and send the position commands to the robot.
   void command();
+
+  void admittanceControl();
+  void initAdmittanceController();
 
   // Saves the logged data to an output file, waits for all threads to join and returns.
   void finalize();
@@ -162,6 +166,7 @@ private:
   bool start_pose_set; // true if a start pose has been registered using recordDemo
   bool train_data_loaded;
   bool run_model_in_loop;
+  bool print_robot_state;
 
   int demo_save_counter; // add a number to the data output file to avoid overriding the previous one
 

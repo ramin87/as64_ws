@@ -32,7 +32,7 @@ namespace ur10_
 
     mode = ur10_::Mode::POSITION_CONTROL;
 
-    stop_printRobotStateThread_flag = false;
+    printRobotStateThread_running = false;
     logging_on = false;
     cycle = 0.008; // control cycle of 8 ms
 
@@ -403,7 +403,7 @@ namespace ur10_
     ros::Rate loop_rate(freq);
     std::unique_lock<std::mutex> robotState_lck(this->robotState_mtx, std::defer_lock);
 
-    while (!stop_printRobotStateThread_flag)
+    while (printRobotStateThread_running)
     {
       robotState_lck.lock();
       this->printRobotState(out);
@@ -414,12 +414,16 @@ namespace ur10_
 
   void Robot::launch_printRobotStateThread(double freq, std::ostream &out)
   {
-    printRobotState_thread =  std::thread(&Robot::printRobotStateThreadFun, this, freq, std::ref(out));
+    if (printRobotStateThread_running == false)
+    {
+      printRobotStateThread_running = true;
+      printRobotState_thread =  std::thread(&Robot::printRobotStateThreadFun, this, freq, std::ref(out));
+    }
   }
 
   void Robot::stop_printRobotStateThread()
   {
-    stop_printRobotStateThread_flag = true;
+    printRobotStateThread_running = false;
     if (printRobotState_thread.joinable()) printRobotState_thread.join();
   }
 
@@ -551,6 +555,17 @@ namespace ur10_
   {
     this->speedl(Twist, arma::max(arma::abs((Twist-getTaskVelocity()))/this->cycle), this->cycle);
     // this->speedl(Twist, 1.5, this->cycle);
+  }
+
+  arma::vec Robot::getTaskWrench() const
+  {
+    arma::mat T_robot_ee = this->getTaskPose();
+    arma::vec wrench(6);
+
+    wrench.subvec(0,2) = T_robot_ee.submat(0,0,2,2)*rSt.wrench.subvec(0,2);
+    wrench.subvec(3,5) = T_robot_ee.submat(0,0,2,2)*rSt.wrench.subvec(3,5);
+
+    return wrench;
   }
 
 } // namespace ur10_
