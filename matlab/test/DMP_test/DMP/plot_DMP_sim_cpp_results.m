@@ -2,7 +2,7 @@
 
 set_matlab_utils_path();
 
-filename = 'data/data_outDMP_Fri_Mar__9_11-30-30_2018.bin';
+filename = 'data/data_out_Tue_Mar_13_18-42-31_2018.bin';
 fid = fopen(filename,'r');
 if (fid < 0), error(['Failed to open file ' filename]); end
 
@@ -119,6 +119,8 @@ if (log_data.poseDataFlag)
    Time = Time;
    Pos = y_robot_data(1:3,:);
    Quat = qpos2quat(y_robot_data(4:6,:));
+%    Pos = y_data(1:3,:);
+%    Quat = qpos2quat(y_data(4:6,:));
    
    figure;
    ax = axes();
@@ -144,22 +146,22 @@ end
 
 
 %% Plot the training data
-plotPosVelAccel(Time_demo, yd_data, dyd_data, ddyd_data, 'LineWidth',2, 'FontSize',14, 'Interpreter','latex');
+% plotPosVelAccel(Time_demo, yd_data, dyd_data, ddyd_data, 'LineWidth',2, 'FontSize',14, 'Interpreter','latex');
 
-% for i=1:D
-%     n_splots = 3;
-%     figure;
-%     subplot(n_splots,1,1);
-%     plot(Time,x_data, Time,shapeAttrGating_data, Time, goalAttrGating_data);
-%     legend({'$x$','$shapeAttrGating$', '$goalAttrGating$'},'Interpreter','latex','fontsize',fontsize);
-%     subplot(n_splots,1,2);
-%     plot(Time,y_robot_data(i,:), Time,y_data(i,:), Time_demo,yd_data(i,:), Time,g_data(i,:), '--', Time(end),g0(i),'r*','Markersize',10);
-%     legend({'$p_{robot}$','$p_{DMP}$','$p_{train}$','goal evolution','$p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
-%     subplot(n_splots,1,3);
-%     plot(Time,Fdist_data(i,:));
-%     legend({'Disturbance force'},'Interpreter','latex','fontsize',fontsize);
-% 
-% end
+for i=1:D
+    n_splots = 3;
+    figure;
+    subplot(n_splots,1,1);
+    plot(Time,x_data, Time,shapeAttrGating_data, Time, goalAttrGating_data);
+    legend({'$x$','$shapeAttrGating$', '$goalAttrGating$'},'Interpreter','latex','fontsize',fontsize);
+    subplot(n_splots,1,2);
+    plot(Time,y_robot_data(i,:), Time,y_data(i,:), Time_demo,yd_data(i,:), Time,g_data(i,:), '--', Time(end),g0(i),'r*','Markersize',10);
+    legend({'$p_{robot}$','$p_{DMP}$','$p_{train}$','goal evolution','$p_{goal}$'},'Interpreter','latex','fontsize',fontsize);
+    subplot(n_splots,1,3);
+    plot(Time,Fdist_data(i,:));
+    legend({'Disturbance force'},'Interpreter','latex','fontsize',fontsize);
+
+end
 
 % %% Plot 'F' training
 % for i=1:D
@@ -179,7 +181,7 @@ lineWidth = 1.2;
 
 plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,yd_data, 'robot', 'demo', 'Position', lineWidth);
 plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dyd_data, 'robot', 'demo', 'Velocity', lineWidth);
-plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddyd_data, 'robot', 'demo', 'Acceleration', lineWidth);
+% plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddyd_data, 'robot', 'demo', 'Acceleration', lineWidth);
 
 plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
 plot_signals_and_errorSignal(Time,dy_data, Time_demo,dyd_data, 'DMP', 'demo', 'Velocity', lineWidth);

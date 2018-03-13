@@ -130,6 +130,11 @@ namespace param_
               return getCxMat(key, value);
             }
 
+            bool getParam(const std::string key, std::vector<std::string> &value)
+            {
+              return getVectorString(key, value);
+            }
+
             ////////////////////////////////////////////////////////////////////////////////////////////
             /// \brief String type get function.
             /// @returns String value, if it not exists in file the default value is returned
@@ -252,6 +257,8 @@ namespace param_
             /// @param def_val Default value if key was not found in file
             ////////////////////////////////////////////////////////////////////////////////////////////
             bool getCxMat(const std::string key, arma::cx_mat &value);
+
+            bool getVectorString(const std::string key, std::vector<std::string> &value);
 
     }; // end Class
     /// @}

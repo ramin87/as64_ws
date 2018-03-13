@@ -66,7 +66,7 @@ cmd_args.Dd_o = eye(3,3)*2*sqrt(cmd_args.Kd_o*cmd_args.Md_o); % rotational dampi
 
 
 %% Simulation params
-cmd_args.dt = 0.002; %simulation time_step;
+cmd_args.dt = 0.008; %simulation time_step;
 cmd_args.tol_stop = 0.01; % position error tolerance to stop the simulation
 cmd_args.orient_tol_stop = 0.005; % orientation error tolerance to stop the simulation
 cmd_args.max_iters = 3000; % maximum iteration steps

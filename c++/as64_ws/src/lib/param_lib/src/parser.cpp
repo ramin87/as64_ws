@@ -136,6 +136,22 @@ bool Parser::getString(const std::string key, std::string &value)
     return true;
 }
 
+bool Parser::getVectorString(const std::string key, std::vector<std::string> &value)
+{
+    if(!valid_key(key)) return false;
+
+    std::string col,str=par_map.find(key)->second;
+    std::istringstream full_str(str);
+    int K = static_cast<int>(std::count(str.begin(),str.end(),',')+1);
+    value.resize(K);
+    for(int k=0; k<K; k++)
+    {
+        std::getline(full_str, col, ',');
+        std::stringstream iss(col);
+        iss >> value[k];
+    }
+    return true;
+}
 
 bool Parser::getCxCol(const std::string key, arma::cx_vec &value)
 {

@@ -18,6 +18,14 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
   modeName[4] = "POSITION_CONTROL";
   modeName[5] = "ADMITTANCE_CONTROL";
 
+  admModeName.resize(2);
+  admModeName[0] = "MASS-DAMPER";
+  admModeName[1] = "MASS-SPRING-DAMPER";
+
+  adm_mode = MASS_DAMP;
+  adm_ctrl_fun[0] = &DMP_UR10_controller::admittanceMDcontrol;
+  adm_ctrl_fun[1] = &DMP_UR10_controller::admittanceMSDcontrol;
+
   Dp = 3;
   Do = 3;
   D = Dp + Do;
@@ -36,6 +44,8 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
   initController();
 
   model_trained = false;
+  admittance_in_model = false;
+  safety_stop = false;
 
   keyboard_ctrl_thread.reset(new std::thread(&DMP_UR10_controller::keyboardCtrlThreadFun, this));
 }
@@ -234,7 +244,12 @@ void DMP_UR10_controller::runModel()
   // Phase stopping
   if (cmd_args.USE_PHASE_STOP)
   {
-    double stop_coeff = 1 / (1 + 0.5 * cmd_args.a_px * arma::norm(Y_robot - Y) + 0.5 * cmd_args.a_px * arma::norm(quatLog(quatProd(Q_robot, quatInv(Q)))));
+    //double stop_coeff = 1 / (1 + 0.5 * cmd_args.a_px * arma::norm(Y_robot - Y) + 0.5 * cmd_args.a_px * arma::norm(quatLog(quatProd(Q_robot, quatInv(Q)))));
+    // double stop_coeff = 1 / (1 + cmd_args.a_px * std::pow(arma::norm(Y_robot - Y),2));
+    double err = arma::norm(Y_robot - Y);
+    double a_sig = 950;
+    double c_sig = cmd_args.phase_stop_err;
+    double stop_coeff = 1 - 1/( 1 + std::exp(a_sig*(c_sig-err)) );
 
     dx = dx * stop_coeff;
     dg_p = dg_p * stop_coeff;
@@ -284,6 +299,7 @@ void DMP_UR10_controller::printHelpMenu() const
   std::cout << PRINT_KEY_ID_MACRO("     b       : ") << PRINT_KEY_FUNCTION_MACRO("Load training data from file\n");
   std::cout << PRINT_KEY_ID_MACRO("     y       : ") << PRINT_KEY_FUNCTION_MACRO("Print keys\n");
   std::cout << PRINT_KEY_ID_MACRO("     t       : ") << PRINT_KEY_FUNCTION_MACRO("Print robot state\n");
+  std::cout << PRINT_KEY_ID_MACRO("     n       : ") << PRINT_KEY_FUNCTION_MACRO("Enable/Disable admittance in model run\n");
   std::cout << reset;
 
   #undef PRINT_KEY_ID_MACRO
@@ -294,103 +310,140 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
 {
   using namespace as64_::io_;
 
+  #define PRINT_INFO_MSG(msg) std::cout << green << bold << "[INFO]: " << reset << green << msg << reset
+  #define PRINT_WARN_MSG(msg) std::cout << yellow << bold << "[WARNING]: " << reset << yellow << msg << reset
+  #define PRINT_ERR_MSG(msg) std::cout << red << bold << "[ERROR]: " << reset << red << msg << reset
+
+  std::string msg;
   int key = 0;
   while (this->getMode() != DMP_UR10_controller::Mode::STOP)
   {
     key = std::tolower(as64_::io_::getch());
 
     //std::cout << "Pressed " << (char)key  << "\n";
-    std::cout << green << bold  << "[KEY PRESSED]: " << (char)key << "\n";
+    std::cout << green << bold  << "[KEY PRESSED]: " << (char)key << "\n" << reset;
 
     switch (key)
     {
       case 'a':
         if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
         {
-          std::cout << yellow << bold << "[WARNING]: Cannot set mode to \"ADMITTANCE_CONTROL\"\n";
-          std::cout << "Current mode is \"" << getModeName() << "\"\n";
-          std::cout << "Wait or set mode to \"IDLE\" by pressing \"i\".";
+          msg = "Cannot set mode to \"ADMITTANCE_CONTROL\"\n";
+          msg += "Current mode is \"" + getModeName() + "\"\n";
+          msg += "Wait or set mode to \"IDLE\" by pressing \"i\".\n";
+          PRINT_WARN_MSG(msg);
         }
         else
         {
+          std::cout << "Select type of admittance (1-2):\n";
+          std::cout << "1. mass-damper\n";
+          std::cout << "2. mass-spring-damper\n";
+          unsigned ch;
+          std::cin >> ch;
+          adm_mode = (ADMITTANCE_MODE)((ch-1)%2);
+          std::cout << "ADMITANCE MODE: " << admModeName[adm_mode] << "\n";
           this->setMode(DMP_UR10_controller::Mode::ADMITTANCE_CONTROL);
         }
         break;
       case 'o':
         run_model_in_loop = true;
+        PRINT_INFO_MSG("Run model in loop enabled");
       case 32:
         if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
         {
-          std::cout << yellow << bold << "[WARNING]: Cannot set mode to \"MODEL_RUN\"\n";
-          std::cout << "Current mode is \"" << getModeName() << "\"\n";
-          std::cout << "Wait or set mode to \"IDLE\" by pressing \"i\".";
+          msg = "Cannot set mode to \"MODEL_RUN\"\n";
+          msg += "Current mode is \"" + getModeName() + "\"\n";
+          msg += "Wait or set mode to \"IDLE\" by pressing \"i\".\n";
+          PRINT_WARN_MSG(msg);
         }
         else
         {
           if (model_trained)
           {
             this->setMode(DMP_UR10_controller::Mode::MODEL_RUN);
-            std::cout << green << bold << "Run model\n";
+            PRINT_INFO_MSG("Run model\n");
           }
           else
           {
-            std::cout << yellow << green << "[WARNING]: Cannot run model. The model has not been trained.\n";
+            PRINT_WARN_MSG("Cannot run model. The model has not been trained.\n");
           }
         }
         break;
       case 'q':
         if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
         {
-          std::cout << yellow << bold << "[WARNING]: Cannot go to start pose (change mode to \"POSITION_CONTROL\")\n";
-          std::cout << "Current mode is \"" << getModeName() << "\"\n";
-          std::cout << "Wait or set mode to \"IDLE\" by pressing \"i\".\n";
+          msg = "Cannot go to start pose (change mode to \"POSITION_CONTROL\")\n";
+          msg += "Current mode is \"" + getModeName() + "\"\n";
+          msg += "Wait or set mode to \"IDLE\" by pressing \"i\".\n";
+          PRINT_WARN_MSG(msg);
         }
         else
         {
-          this->setMode(DMP_UR10_controller::Mode::POSITION_CONTROL);
-          goto_start = true;
+          if (!start_pose_set)
+          {
+            msg = "No starting pose has been set...\n";
+            msg += "Record/load a demo to register a starting pose.\n";
+            PRINT_WARN_MSG(msg);
+          }
+          else
+          {
+            this->setMode(DMP_UR10_controller::Mode::POSITION_CONTROL);
+            goto_start = true;
+          }
         }
         break;
       case 'l':
         if (save_exec_results && !log_on)
         {
-          std::cout << yellow << bold << "[WARNING]: Cannot enable \"log on\"!\n";
-          std::cout << "Reason: save execution results is active...\n";
+          msg = "Cannot enable \"log on\"!\n";
+          msg += "Reason: save execution results is active...\n";
+          PRINT_WARN_MSG(msg);
         }
         else
         {
           log_on = !log_on;
-          std::cout << "Log on " << (log_on?"enabled":"disabled") << "\n";
+          msg = std::string("Log on ") + (log_on?"enabled":"disabled") + "\n";
+          PRINT_INFO_MSG(msg);
         }
         break;
       case 's':
         // stop_robot = true;
         this->setMode(DMP_UR10_controller::Mode::STOP);
-        std::cout << "Stop robot\n";
+        PRINT_INFO_MSG("Stop robot\n");
         break;
       case 'r':
         if (this->getMode() != DMP_UR10_controller::Mode::FREEDRIVE)
         {
-          std::cout << yellow << bold << "WARNING: Cannot start demo.\n";
-          std::cout << "Set the mode first to \"FREEDRIVE\" by pressing \"f\".\n";
+          msg = "Cannot start demo.\n";
+          msg += "Set the mode first to \"FREEDRIVE\" by pressing \"f\".\n";
+          PRINT_WARN_MSG(msg);
         }
         else{
           record_demo_on = !record_demo_on;
-          std::cout << (record_demo_on?"Start":"Stop")<< " demo recording\n";
+          msg = std::string((record_demo_on?"Start":"Stop")) + " demo recording\n";
+          PRINT_INFO_MSG(msg);
         }
         break;
       case 'v':
-        std::cout << "Saving execution results\n";
-        if (log_on)
+        if (!data_logged)
         {
-          std::cout << yellow << bold << "[WARNING]: Cannot save execution results!\n";
-          std::cout << "You have to disable \"log on\" first...\n";
+          PRINT_ERR_MSG("Cannot save data. No data logged...\n");
         }
         else
         {
-          save_exec_results = true;
-          save_exec_results_thread.reset(new std::thread(&DMP_UR10_controller::saveExecutionResults, this));
-          save_exec_results_thread->detach();
+          if (log_on)
+          {
+            msg = "Cannot save execution results!\n";
+            msg += "You have to disable \"log on\" first...\n";
+            PRINT_WARN_MSG(msg);
+          }
+          else
+          {
+            PRINT_INFO_MSG("Saving execution results\n");
+            save_exec_results = true;
+            save_exec_results_thread.reset(new std::thread(&DMP_UR10_controller::saveExecutionResults, this));
+            save_exec_results_thread->detach();
+          }
         }
         break;
       case 'f':
@@ -399,11 +452,11 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
       case 'b':
         if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
         {
-          std::cout << yellow << bold << "[WARNING]: Change mode to IDLE and then press \"b\" to load the train data.\n";
+          PRINT_WARN_MSG("Change mode to IDLE and then press \"b\" to load the train data.\n");
         }
         else
         {
-          std::cout << "Using training data from file\n";
+          PRINT_INFO_MSG("Using training data from file\n");
           loadDataAndTrainModel();
         }
         break;
@@ -420,14 +473,25 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
         break;
       case 't':
         print_robot_state = !print_robot_state;
+        msg = std::string("Print robot state ") + (print_robot_state?"enabled":"disabled") + "\n";
+        PRINT_INFO_MSG(msg);
         if (print_robot_state) robot_->launch_printRobotStateThread(1);
         else robot_->stop_printRobotStateThread();
         break;
+      case 'n':
+        admittance_in_model = !admittance_in_model;
+        msg = std::string("Model admittance ") + (admittance_in_model?"enabled":"disabled") + "\n";
+        PRINT_INFO_MSG(msg);
+        break;
       default:
-        std::cout << bold << yellow << "[WARNING]: Unrecognized key...\n";
+        PRINT_WARN_MSG("Unrecognized key...\n");
     }
     std::cout << reset;
   }
+
+  #undef PRINT_INFO_MSG
+  #undef PRINT_WARN_MSG
+  #undef PRINT_ERR_MSG
 }
 
 void DMP_UR10_controller::printKeys() const
@@ -439,15 +503,16 @@ void DMP_UR10_controller::printKeys() const
   std::cout << "====== Flags/keys status =====\n";
   std::cout << "==============================\n";
   std::cout << bold << cyan;
-  std::cout << "==> Mode              : " << getModeName() << "\n";
-  std::cout << "==> record_demo_on    : " << (record_demo_on?"true":"false") << "\n";
-  std::cout << "==> log_on            : " << (log_on?"true":"false") << "\n";
-  std::cout << "==> save_exec_results : " << (save_exec_results?"true":"false") << "\n";
-  std::cout << "==> train_model       : " << (train_model?"true":"false") << "\n";
-  std::cout << "==> model_trained     : " << (model_trained?"true":"false") << "\n";
-  std::cout << "==> goto_start        : " << (goto_start?"true":"false") << "\n";
-  std::cout << "==> run_model_in_loop : " << (run_model_in_loop?"true":"false") << "\n";
-  std::cout << "==> print_robot_state : " << (print_robot_state?"true":"false") << "\n";
+  std::cout << "==> Mode                : " << getModeName() << "\n";
+  std::cout << "==> record_demo_on      : " << (record_demo_on?"true":"false") << "\n";
+  std::cout << "==> log_on              : " << (log_on?"true":"false") << "\n";
+  std::cout << "==> save_exec_results   : " << (save_exec_results?"true":"false") << "\n";
+  std::cout << "==> train_model         : " << (train_model?"true":"false") << "\n";
+  std::cout << "==> model_trained       : " << (model_trained?"true":"false") << "\n";
+  std::cout << "==> goto_start          : " << (goto_start?"true":"false") << "\n";
+  std::cout << "==> run_model_in_loop   : " << (run_model_in_loop?"true":"false") << "\n";
+  std::cout << "==> print_robot_state   : " << (print_robot_state?"true":"false") << "\n";
+  std::cout << "==> admittance_in_model : " << (admittance_in_model?"true":"false") << "\n";
   std::cout << reset;
 }
 
@@ -625,20 +690,19 @@ void DMP_UR10_controller::gotoStartPose()
 
   goto_start = false;
 
-  if (!start_pose_set)
-  {
-      std::cout << yellow << bold << "[WARNING]: No starting pose has been set...\n";
-      std::cout << "Record a demo to register a starting pose.\n" << reset;
-  }
-  else
-  {
-    std::cout << bold << cyan << "Moving to start pose...\n" << reset;
+  // if (!start_pose_set)
+  // {
+  //     std::cout << yellow << bold << "[WARNING]: No starting pose has been set...\n";
+  //     std::cout << "Record a demo to register a starting pose.\n" << reset;
+  //     return;
+  // }
 
-    double duration = std::max(arma::max(arma::abs(trainData.q0-q_robot))*6.5/arma::datum::pi,2.0);
-    robot_->setJointTrajectory(trainData.q0, duration);
+  std::cout << bold << cyan << "Moving to start pose...\n" << reset;
 
-    std::cout << bold << cyan << "Reached start pose!\n" << reset;
-  }
+  double duration = std::max(arma::max(arma::abs(trainData.q0-q_robot))*6.5/arma::datum::pi,2.0);
+  robot_->setJointTrajectory(trainData.q0, duration);
+
+  std::cout << bold << cyan << "Reached start pose!\n" << reset;
 
 }
 
@@ -790,7 +854,7 @@ void DMP_UR10_controller::saveLoggedData()
   o_str << "";
   if (demo_save_counter > 0) o_str << demo_save_counter + 1;
 
-  std::string suffix = cmd_args.DMP_TYPE + "_" + tm_::getTimeStamp();
+  std::string suffix = "_" + tm_::getTimeStamp();
 
   log_data.cmd_args = cmd_args;
   // std::cout << "Saving to \"" << cmd_args.out_data_filename + o_str.str() <<"\" ...\n";
@@ -810,12 +874,19 @@ void DMP_UR10_controller::execute()
   bool  exit_ctrl_loop = false;
   bool freedrive_mode_set = false;
   bool  admittance_ctrl_init = false;
+  data_logged = false;
 
   // Start simulation
   while (ros::ok() && robot_->isOk() && !exit_ctrl_loop)
   {
     //ros::spinOnce();
     update();
+
+    if (safety_stop)
+    {
+      safety_stop = false;
+      this->setMode(IDLE);
+    }
 
     switch (this->getMode())
     {
@@ -848,7 +919,11 @@ void DMP_UR10_controller::execute()
           }
           while (save_exec_results) robotWait();
           initModelExecution();
-          if (log_on) clearLoggedData();
+          initAdmittanceController();
+          if (log_on){
+            clearLoggedData();
+            data_logged = false;
+          }
           model_exec_init = true;
         }
         if (log_on) logOnline();
@@ -858,6 +933,7 @@ void DMP_UR10_controller::execute()
         {
           if (!run_model_in_loop) this->setMode(IDLE);
           model_exec_init = false;
+          if (log_on) data_logged = true;
         }
         break;
       case POSITION_CONTROL:
@@ -930,14 +1006,14 @@ void DMP_UR10_controller::update()
 
 void DMP_UR10_controller::command()
 {
-  double  factor_force = 0.0;
+  double  use_admittance = admittance_in_model;
 
   //ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * (dY_robot - dY) - Kp * (Y_robot - Y) + factor_force*Fdist_p);
-  ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - cmd_args.Kd_p * Ep + factor_force*Fdist_p);
+  ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - cmd_args.Kd_p * Ep + use_admittance*Fdist_p);
 
   //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot - v_rot) - Ko * quatLog(quatProd(Q_robot, quatInv(Q))) + factor_force*Fdist_o);
   //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot) + factor_force*Fdist_o);
-  ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo - cmd_args.Kd_o * Eo + factor_force*Fdist_o);
+  ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo - cmd_args.Kd_o * Eo + use_admittance*Fdist_o);
 
   dEp = dEp + ddEp * Ts;
   Ep = Ep + dEp * Ts;
@@ -945,16 +1021,42 @@ void DMP_UR10_controller::command()
   dEo = dEo + ddEo * Ts;
   Eo = Eo + dEo * Ts;
 
-  arma::vec Vd(6);
-  Vd.subvec(0, 2) = (dEp + dY - 4.0*(Y_robot - (Y + Ep)));
-  Vd.subvec(3, 5) = v_rot; //(dEo + v_rot - 4.0*quatLog( quatProd( Q_robot, quatInv(Q) ) ) );
+  double Kp_click = 4.0;
+  double Ko_click = 0.5;
 
-  Vd.rows(3,5) = arma::zeros<arma::vec>(3);
+  arma::vec Vd(6);
+  Vd.subvec(0, 2) = ( dEp + dY - Kp_click*(Y_robot - (Y + Ep)) );
+  Vd.subvec(3, 5) = ( dEo + v_rot - Ko_click*quatLog(quatProd(Q_robot,quatInv(Q))) );
+
+  //Vd.rows(3,5) = arma::zeros<arma::vec>(3);
   robot_->setTaskVelocity(Vd);
 
 }
 
 void DMP_UR10_controller::admittanceControl()
+{
+  (this->*(adm_ctrl_fun[adm_mode]))();
+}
+
+void DMP_UR10_controller::admittanceMDcontrol()
+{
+  ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp + Fdist_p);
+
+  ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo + Fdist_o);
+
+  dEp = dEp + ddEp * Ts;
+
+  dEo = dEo + ddEo * Ts;
+
+  Vd.resize(6);
+  Vd.subvec(0, 2) = dEp;
+  Vd.subvec(3, 5) = dEo;
+
+  if (safetyCheck()) robot_->setTaskVelocity(Vd);
+
+}
+
+void DMP_UR10_controller::admittanceMSDcontrol()
 {
   ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - cmd_args.Kd_p * Ep + Fdist_p);
 
@@ -966,22 +1068,17 @@ void DMP_UR10_controller::admittanceControl()
   dEo = dEo + ddEo * Ts;
   Eo = Eo + dEo * Ts;
 
-  arma::vec Vd(6);
-  Vd.subvec(0, 2) = dEp;
-  Vd.subvec(3, 5) = dEo;
+  double Kp_click = 3.0;
+  double Ko_click = 1.0;
 
-  // if (arma::norm(Vd) > 0.00001)
-  // {
-  //   std::cout << bold << red << "[DANGER]: Too high speed!\n";
-  //   std::cout << "Vd = " << Vd.t() << "\n";
-  //   std::cout << "Fdist_p = " << Fdist_p.t() << "\n";
-  //   std::cout << reset;
-  //   Vd.fill(0.0);
-  // }
+  Vd.resize(6);
+  Vd.subvec(0, 2) = dEp; // + Kp_click*Ep;
+  Vd.subvec(3, 5) = dEo; // + Ko_click*Ep;
 
   //Vd.rows(3,5) = arma::zeros<arma::vec>(3);
   // arma::vec qd = arma::pinv(J_robot) * Vd;
-  robot_->setTaskVelocity(Vd);
+
+  if (safetyCheck()) robot_->setTaskVelocity(Vd);
 
 }
 
@@ -995,9 +1092,35 @@ void DMP_UR10_controller::initAdmittanceController()
   Eo =  arma::zeros<arma::vec>(3);
 }
 
+bool DMP_UR10_controller::safetyCheck()
+{
+  using namespace as64_::io_;
+
+  if (arma::norm(Vd.subvec(0,2)) > cmd_args.lin_vel_lim)
+  {
+    std::cout << bold << red << "[DANGER]: Too high linear velocity!\n";
+    std::cout << "Vd = " << Vd.t() << "\n";
+    std::cout << "Satety stop will be triggered!\n" << reset;
+    safety_stop = true;
+    return false;
+  }
+
+  if (arma::norm(Vd.subvec(3,5)) > cmd_args.rot_vel_lim)
+  {
+    std::cout << bold << red << "[DANGER]: Too high angular velocity!\n";
+    std::cout << "Vd = " << Vd.t() << "\n";
+    std::cout << "Satety stop will be triggered!\n" << reset;
+    safety_stop = true;
+    return false;
+  }
+
+  return true;
+}
+
 void DMP_UR10_controller::finalize()
 {
     if (keyboard_ctrl_thread->joinable()) keyboard_ctrl_thread->join();
+    robot_->stop_printRobotStateThread();
 }
 
 DMP_UR10_controller::Mode DMP_UR10_controller::getMode() const
@@ -1007,10 +1130,9 @@ DMP_UR10_controller::Mode DMP_UR10_controller::getMode() const
 
 void DMP_UR10_controller::setMode(const DMP_UR10_controller::Mode &mode)
 {
+  using namespace as64_::io_;
   this->mode = mode;
-  std::cout << as64_::io_::green << as64_::io_::bold;
-  std::cout << "Mode changed to \"" << getModeName() << "\"\n";
-  std::cout << as64_::io_::reset;
+  std::cout << green << "Mode changed to \"" << bold << getModeName() << reset << green << "\"\n" << reset;
 }
 
 std::string DMP_UR10_controller::getModeName() const
@@ -1024,7 +1146,7 @@ bool DMP_UR10_controller::targetReached() const
   double err_o = 0*arma::norm(quatLog(quatProd(Qg, quatInv(Q_robot))));
   //std::cout << "err_p !!:  " << err_p <<std::endl;
   //std::cout << "err_o !!:  " << err_o <<std::endl;
-  if (err_p <= cmd_args.pos_tol_stop && err_o <= cmd_args.orient_tol_stop && t >= tau)
+  if (err_p <= cmd_args.pos_tol_stop && err_o <= cmd_args.orient_tol_stop && x >= 1.0)
   {
     std::cout << as64_::io_::cyan << "Target reached!\n" << as64_::io_::reset;
     return true;

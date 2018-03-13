@@ -11,10 +11,10 @@
 
 struct CMD_ARGS
 {
-  double a_z;
-  double b_z;
-  std::string DMP_TYPE; // "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
-  arma::vec N_kernels;
+  arma::vec a_z;
+  arma::vec b_z;
+  arma::uvec N_kernels;
+  std::vector<std::string> DMP_TYPE; // "DMP", "DMP-bio", "DMP-plus", "DMP-Shannon"
   double kernelStdScaling; // scaling factor for the kernels std
   std::string trainMethod; // "LWR", "LS", "RLS" , "RLWR"
   std::string CAN_CLOCK_TYPE;
@@ -30,6 +30,7 @@ struct CMD_ARGS
   bool USE_PHASE_STOP;
   double a_px;
   double a_py;
+  double phase_stop_err;
   int k_trunc_kernel; // number of stds beyond which the kernel is truncated
   double Wmin;
   double Freq_min;
@@ -48,6 +49,9 @@ struct CMD_ARGS
   double orient_tol_stop; // orientation error tolerance to stop the simulation
   double tau_sim_scale; // scaling factor for the time of the DMP simulation
   double goal_scale; // scaling factor for the goal in the DMP simulation
+
+  double lin_vel_lim;
+  double rot_vel_lim;
 
   bool binary;
 

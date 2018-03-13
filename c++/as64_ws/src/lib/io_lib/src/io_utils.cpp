@@ -54,6 +54,13 @@ char getch()
     return (buf);
 }
 
+void print_vectorString(const std::vector<std::string> &v, std::ostream& out, char delim)
+{
+  out << "[";
+  for (int i=0;i<v.size()-1;i++) out << v[i] << delim;
+  out << v.back() << "]";
+}
+
 void read_mat(arma::mat &m, long n_rows, long n_cols, std::istream &in, bool binary)
 {
   m.resize(n_rows,n_cols);

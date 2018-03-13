@@ -53,6 +53,8 @@ void print_vector(const std::vector<T> &v, std::ostream& out=std::cout, char del
   out << v.back();
 }
 
+void print_vectorString(const std::vector<std::string> &v, std::ostream& out=std::cout, char delim=',');
+
 
 /** \brief Pauses until a key is pressed.
  */

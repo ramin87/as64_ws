@@ -44,13 +44,20 @@ using namespace as64_;
 
 class DMP_UR10_controller
 {
-  enum Mode{
+  enum Mode
+  {
     STOP = 0,
     IDLE = 1,
     FREEDRIVE = 2,
     MODEL_RUN = 3,
     POSITION_CONTROL = 4,
     ADMITTANCE_CONTROL = 5
+  };
+
+  enum ADMITTANCE_MODE
+  {
+    MASS_DAMP = 0,
+    MASS_SPRING_DAMP = 1,
   };
 
   struct TrainData
@@ -61,6 +68,8 @@ class DMP_UR10_controller
     arma::mat Y_data, dY_data, ddY_data;
     arma::mat Q_data, v_rot_data, dv_rot_data;
   };
+
+  typedef void (DMP_UR10_controller::*AdmittanceControlFunction)(void );
 
 public:
   // Constructor that initializes variables that must be set once at the start of the program.
@@ -88,6 +97,8 @@ public:
   void command();
 
   void admittanceControl();
+  void admittanceMDcontrol();
+  void admittanceMSDcontrol();
   void initAdmittanceController();
 
   // Saves the logged data to an output file, waits for all threads to join and returns.
@@ -146,7 +157,14 @@ public:
   void printKeys() const;
 
   void loadDataAndTrainModel();
+
+  bool safetyCheck();
+
 private:
+
+  ADMITTANCE_MODE adm_mode;
+  AdmittanceControlFunction adm_ctrl_fun[2];
+  std::vector<std::string> admModeName;
 
   Mode mode;
   std::vector<std::string> modeName;
@@ -167,6 +185,9 @@ private:
   bool train_data_loaded;
   bool run_model_in_loop;
   bool print_robot_state;
+  bool admittance_in_model;
+  bool safety_stop;
+  bool data_logged;
 
   int demo_save_counter; // add a number to the data output file to avoid overriding the previous one
 
@@ -228,6 +249,8 @@ private:
 	arma::vec ddEo;
 	arma::vec dEo;
   arma::vec Eo;
+
+  arma::vec Vd;
 
   arma::vec sim_mse;
 

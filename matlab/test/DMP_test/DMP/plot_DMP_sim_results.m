@@ -131,7 +131,7 @@ end
 
 
 %% Plot the training data
-plotPosVelAccel(Time_demo, yd_data, dyd_data, ddyd_data, 'LineWidth',2, 'FontSize',14, 'Interpreter','latex');
+% plotPosVelAccel(Time_demo, yd_data, dyd_data, ddyd_data, 'LineWidth',2, 'FontSize',14, 'Interpreter','latex');
 
 for i=1:D
 %     figure;
@@ -173,15 +173,15 @@ for i=1:D
 end
 
 %% Plot 'F' training
-if (OFFLINE_DMP_TRAINING_enable)
-    for i=1:D 
-        lineWidth = 1.2;
-        F = F_offline_train_data(i,:);
-        Fd = Fd_offline_train_data(i,:);
-        Psi = Psi_data_train{i};
-        plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Offline training', '$F$', '$F_d$');
-    end
-end
+% if (OFFLINE_DMP_TRAINING_enable)
+%     for i=1:D 
+%         lineWidth = 1.2;
+%         F = F_offline_train_data(i,:);
+%         Fd = Fd_offline_train_data(i,:);
+%         Psi = Psi_data_train{i};
+%         plot_F1_F2_Psi(Time_offline_train, F, Time_offline_train, Fd, Time_offline_train, Psi, lineWidth, fontsize, 'Forcing term - Offline training', '$F$', '$F_d$');
+%     end
+% end
 
 % 
 % %% Plot 'F' online training
@@ -232,7 +232,7 @@ lineWidth = 1.2;
 
 plot_signals_and_errorSignal(Time,y_robot_data, Time_demo,yd_data, 'robot', 'demo', 'Position', lineWidth);
 plot_signals_and_errorSignal(Time,dy_robot_data, Time_demo,dyd_data, 'robot', 'demo', 'Velocity', lineWidth);
-plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddyd_data, 'robot', 'demo', 'Acceleration', lineWidth);
+% plot_signals_and_errorSignal(Time,ddy_robot_data, Time_demo,ddyd_data, 'robot', 'demo', 'Acceleration', lineWidth);
 
 % plot_signals_and_errorSignal(Time,y_data, Time_demo,yd_data, 'DMP', 'demo', 'Position', lineWidth);
 % plot_signals_and_errorSignal(Time,dy_data, Time_demo,dyd_data, 'DMP', 'demo', 'Velocity', lineWidth);

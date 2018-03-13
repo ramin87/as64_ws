@@ -1,6 +1,7 @@
 #include <cmd_args.h>
 #include <ros/package.h>
 #include <param_lib/param_lib.h>
+#include <io_lib/io_lib.h>
 
 CMD_ARGS::CMD_ARGS() {}
 
@@ -11,10 +12,10 @@ bool CMD_ARGS::parse_cmd_args(const char *config_file)
   else path_to_config_file = ros::package::getPath("dmp_ur10_controller")+ "/config/DMP_UR10_controller_config.yml";
   as64_::param_::Parser parser(path_to_config_file);
 
-  if (!parser.getParam("a_z", a_z)) a_z = 20.0;
+  if (!parser.getParam("a_z", a_z)) a_z = arma::vec().ones(6)*20.0;
   if (!parser.getParam("b_z", b_z)) b_z = a_z/4;
-  if (!parser.getParam("DMP_TYPE", DMP_TYPE)) DMP_TYPE = "DMP";
-  if (!parser.getParam("N_kernels", N_kernels)) N_kernels = arma::vec().ones(6)*40;
+  if (!parser.getParam("DMP_TYPE", DMP_TYPE)) DMP_TYPE = std::vector<std::string>(0);
+  if (!parser.getParam("N_kernels", N_kernels)) N_kernels = arma::uvec().ones(6)*40;
   if (!parser.getParam("kernelStdScaling", kernelStdScaling)) kernelStdScaling = 1.0;
   if (!parser.getParam("trainMethod", trainMethod)) trainMethod = "LWR";
   if (!parser.getParam("CAN_CLOCK_TYPE", CAN_CLOCK_TYPE)) CAN_CLOCK_TYPE = "lin";
@@ -29,6 +30,7 @@ bool CMD_ARGS::parse_cmd_args(const char *config_file)
   if (!parser.getParam("USE_PHASE_STOP", USE_PHASE_STOP)) USE_PHASE_STOP = true;
   if (!parser.getParam("a_px", a_px)) a_px = 50.0;
   if (!parser.getParam("a_py", a_py)) a_py = 40.0;
+  if (!parser.getParam("phase_stop_err", phase_stop_err)) phase_stop_err = 0.015;
   if (!parser.getParam("k_trunc_kernel", k_trunc_kernel)) k_trunc_kernel = 3;
   if (!parser.getParam("Wmin", Wmin)) Wmin = 0.9999;
   if (!parser.getParam("Freq_min", Freq_min)) Freq_min = 60.0;
@@ -41,6 +43,9 @@ bool CMD_ARGS::parse_cmd_args(const char *config_file)
   if (!parser.getParam("Md_o", Md_o)) Md_o = 2.0;
   if (!parser.getParam("Kd_o", Kd_o)) Kd_o = 500.0;
   if (!parser.getParam("Dd_o", Dd_o)) Dd_o = 2*std::sqrt(Md_o*Kd_o);
+
+  if (!parser.getParam("lin_vel_lim", lin_vel_lim)) lin_vel_lim = 0.4;
+  if (!parser.getParam("rot_vel_lim", rot_vel_lim)) rot_vel_lim = 0.8;
 
   if (!parser.getParam("Fee_dead_zone", Fee_dead_zone)) Fee_dead_zone = arma::vec().zeros(6);
   if (!parser.getParam("F_norm_retrain_thres", F_norm_retrain_thres)) F_norm_retrain_thres = 100.0;
@@ -78,9 +83,11 @@ bool CMD_ARGS::parse_cmd_args(const char *config_file)
 
 void CMD_ARGS::print(std::ostream &out) const
 {
-  out << "a_z: " << a_z << "\n";
-  out << "b_z: " << b_z << "\n";
-  out << "DMP_TYPE: " << DMP_TYPE << "\n";
+  out << "a_z: " << a_z.t() << "\n";
+  out << "b_z: " << b_z.t() << "\n";
+  out << "DMP_TYPE = ";
+  as64_::io_::print_vectorString(DMP_TYPE, out);
+  out << "\n";
   out << "N_kernels: " << N_kernels.t() << "\n";
   out << "kernelStdScaling: " << kernelStdScaling << "\n";
   out << "trainMethod: " << trainMethod << "\n";
@@ -97,6 +104,7 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "USE_PHASE_STOP: " << USE_PHASE_STOP << "\n";
   out << "a_px: " << a_px << "\n";
   out << "a_py: " << a_py << "\n";
+  out << "phase_stop_err: " << phase_stop_err << "\n";
   out << "k_trunc_kernel: " << k_trunc_kernel << "\n";
   out << "Wmin: " << Wmin << "\n";
   out << "Freq_min: " << Freq_min << "\n";
@@ -109,6 +117,9 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "Md_o: " << Md_o << "\n";
   out << "Kd_o: " << Kd_o << "\n";
   out << "Dd_o: " << Dd_o << "\n";
+
+  out << "lin_vel_lim: " << lin_vel_lim << "\n";
+  out << "rot_vel_lim: " << rot_vel_lim << "\n";
 
   out << "Fee_dead_zone: " << Fee_dead_zone.t() << "\n";
   out << "F_norm_retrain_thres: " << F_norm_retrain_thres << "\n";
