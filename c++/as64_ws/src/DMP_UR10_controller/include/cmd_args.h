@@ -31,6 +31,7 @@ struct CMD_ARGS
   double a_px;
   double a_py;
   double phase_stop_err;
+  double phase_stop_Fdist;
   int k_trunc_kernel; // number of stds beyond which the kernel is truncated
   double Wmin;
   double Freq_min;

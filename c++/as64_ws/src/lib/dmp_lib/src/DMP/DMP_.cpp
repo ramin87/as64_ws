@@ -196,6 +196,7 @@ namespace as64_
   {
     double goal_attr = this->a_z*(this->b_z*(g-y)-z);
     goal_attr *= this->goalAttrGating(x);
+
     return goal_attr;
   }
 

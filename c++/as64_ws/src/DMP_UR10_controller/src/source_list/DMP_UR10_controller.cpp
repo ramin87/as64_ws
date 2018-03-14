@@ -10,21 +10,26 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
 {
   using namespace as64_;
 
-  modeName.resize(6);
-  modeName[0] = "STOP";
-  modeName[1] = "IDLE";
-  modeName[2] = "FREEDRIVE";
-  modeName[3] = "MODEL_RUN";
-  modeName[4] = "POSITION_CONTROL";
-  modeName[5] = "ADMITTANCE_CONTROL";
+  robotModeName.resize(6);
+  robotModeName[0] = "STOP";
+  robotModeName[1] = "IDLE";
+  robotModeName[2] = "FREEDRIVE";
+  robotModeName[3] = "MODEL_RUN";
+  robotModeName[4] = "POSITION_CONTROL";
+  robotModeName[5] = "ADMITTANCE_CONTROL";
+  robotMode = IDLE;
 
   admModeName.resize(2);
   admModeName[0] = "MASS-DAMPER";
   admModeName[1] = "MASS-SPRING-DAMPER";
-
   adm_mode = MASS_DAMP;
   adm_ctrl_fun[0] = &DMP_UR10_controller::admittanceMDcontrol;
   adm_ctrl_fun[1] = &DMP_UR10_controller::admittanceMSDcontrol;
+
+  modelDistName.resize(2);
+  modelDistName[0] = "HALT";
+  modelDistName[1] = "MODIFY";
+  model_dist_mode = HALT;
 
   Dp = 3;
   Do = 3;
@@ -55,7 +60,7 @@ void DMP_UR10_controller::initControlFlags()
   // pause_robot = false;
   // stop_robot = false;
   // run_dmp = false;
-  this->setMode(DMP_UR10_controller::Mode::IDLE);
+  this->settRobotMode(DMP_UR10_controller::ROBOT_MODE::IDLE);
 
   save_exec_results = false;
   log_on = false;
@@ -130,6 +135,8 @@ void DMP_UR10_controller::initModelExecution()
   dEo =  arma::zeros<arma::vec>(3);
   Eo =  arma::zeros<arma::vec>(3);
 
+  stop_coeff = 1.0;
+
 }
 
 void DMP_UR10_controller::trainModel()
@@ -190,7 +197,13 @@ void DMP_UR10_controller::trainModel()
 void DMP_UR10_controller::runModel()
 {
   // DMP CartPos simulation
-  arma::vec Y_c = cmd_args.a_py * (Y_robot - Y);
+  arma::vec Y_c = arma::vec(Dp).zeros();
+  if (model_dist_mode == MODIFY)
+  {
+    //Y_c = (1-stop_coeff)*cmd_args.a_py * (Y_robot - Y);
+    // Y = Y_robot;
+    Y_c = (1-stop_coeff)*cmd_args.a_py * (Y_robot - Y);
+  }
   arma::vec Z_c = arma::vec(Dp).zeros();
 
   arma::vec X = arma::vec(Dp).fill(x);
@@ -201,6 +214,12 @@ void DMP_UR10_controller::runModel()
   dZ = statesDot.col(0);
   dY = statesDot.col(1);
   // dX = statesDot.col(2);
+
+  // std::cout << "dZ = " << dZ.t() << "\n";
+  // std::cout << "dY = " << dY.t() << "\n";
+  // std::cout << "Y = " << Y.t() << "\n";
+  // std::cout << "Y_robot = " << Y_robot.t() << "\n";
+  // std::cout << "Yg = " << Yg.t() << "\n";
 
   ddY = dZ / dmpCartPos->get_v_scale();
 
@@ -246,10 +265,29 @@ void DMP_UR10_controller::runModel()
   {
     //double stop_coeff = 1 / (1 + 0.5 * cmd_args.a_px * arma::norm(Y_robot - Y) + 0.5 * cmd_args.a_px * arma::norm(quatLog(quatProd(Q_robot, quatInv(Q)))));
     // double stop_coeff = 1 / (1 + cmd_args.a_px * std::pow(arma::norm(Y_robot - Y),2));
-    double err = arma::norm(Y_robot - Y);
-    double a_sig = 950;
-    double c_sig = cmd_args.phase_stop_err;
-    double stop_coeff = 1 - 1/( 1 + std::exp(a_sig*(c_sig-err)) );
+    if (model_dist_mode == HALT)
+    {
+      double err = arma::norm(Y_robot - Y);
+      double a_sig = 950;
+      double c_sig = cmd_args.phase_stop_err;
+      stop_coeff = 1 - 1/( 1 + std::exp(a_sig*(c_sig-err)) );
+    }
+    else if (model_dist_mode == MODIFY)
+    {
+      double err = arma::norm(Fdist_p);
+      double a_sig = 80;
+      double axf = 1.0;
+      double c_sig = cmd_args.phase_stop_Fdist;
+      double stop_coeff2 = 1 - 1/( 1 + std::exp(a_sig*(c_sig-err)) );
+      stop_coeff = (1-axf*Ts)*stop_coeff + (axf*Ts)*stop_coeff2;
+      if (stop_coeff<0) stop_coeff = 0.0;
+      if (stop_coeff>1) stop_coeff = 1.0;
+      // std::cout << "err = " << err << "\n";
+      // std::cout << "stop_coeff2 = " << stop_coeff2 << "\n";
+    }
+    // std::cout << "stop_coeff = " << stop_coeff << "\n";
+    // std::cout << "x = " << x << "\n";
+    // std::cout << "Fdist_p = " << Fdist_p.t() << "\n";
 
     dx = dx * stop_coeff;
     dg_p = dg_p * stop_coeff;
@@ -316,7 +354,7 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
 
   std::string msg;
   int key = 0;
-  while (this->getMode() != DMP_UR10_controller::Mode::STOP)
+  while (this->getRobotMode() != DMP_UR10_controller::ROBOT_MODE::STOP)
   {
     key = std::tolower(as64_::io_::getch());
 
@@ -326,10 +364,10 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
     switch (key)
     {
       case 'a':
-        if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
+        if (this->getRobotMode() != DMP_UR10_controller::ROBOT_MODE::IDLE)
         {
           msg = "Cannot set mode to \"ADMITTANCE_CONTROL\"\n";
-          msg += "Current mode is \"" + getModeName() + "\"\n";
+          msg += "Current mode is \"" + getRobotModeName() + "\"\n";
           msg += "Wait or set mode to \"IDLE\" by pressing \"i\".\n";
           PRINT_WARN_MSG(msg);
         }
@@ -342,17 +380,17 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
           std::cin >> ch;
           adm_mode = (ADMITTANCE_MODE)((ch-1)%2);
           std::cout << "ADMITANCE MODE: " << admModeName[adm_mode] << "\n";
-          this->setMode(DMP_UR10_controller::Mode::ADMITTANCE_CONTROL);
+          this->settRobotMode(DMP_UR10_controller::ROBOT_MODE::ADMITTANCE_CONTROL);
         }
         break;
       case 'o':
         run_model_in_loop = true;
         PRINT_INFO_MSG("Run model in loop enabled");
       case 32:
-        if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
+        if (this->getRobotMode() != DMP_UR10_controller::ROBOT_MODE::IDLE)
         {
           msg = "Cannot set mode to \"MODEL_RUN\"\n";
-          msg += "Current mode is \"" + getModeName() + "\"\n";
+          msg += "Current mode is \"" + getRobotModeName() + "\"\n";
           msg += "Wait or set mode to \"IDLE\" by pressing \"i\".\n";
           PRINT_WARN_MSG(msg);
         }
@@ -360,7 +398,7 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
         {
           if (model_trained)
           {
-            this->setMode(DMP_UR10_controller::Mode::MODEL_RUN);
+            this->settRobotMode(DMP_UR10_controller::ROBOT_MODE::MODEL_RUN);
             PRINT_INFO_MSG("Run model\n");
           }
           else
@@ -370,10 +408,10 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
         }
         break;
       case 'q':
-        if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
+        if (this->getRobotMode() != DMP_UR10_controller::ROBOT_MODE::IDLE)
         {
           msg = "Cannot go to start pose (change mode to \"POSITION_CONTROL\")\n";
-          msg += "Current mode is \"" + getModeName() + "\"\n";
+          msg += "Current mode is \"" + getRobotModeName() + "\"\n";
           msg += "Wait or set mode to \"IDLE\" by pressing \"i\".\n";
           PRINT_WARN_MSG(msg);
         }
@@ -387,7 +425,7 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
           }
           else
           {
-            this->setMode(DMP_UR10_controller::Mode::POSITION_CONTROL);
+            this->settRobotMode(DMP_UR10_controller::ROBOT_MODE::POSITION_CONTROL);
             goto_start = true;
           }
         }
@@ -408,11 +446,11 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
         break;
       case 's':
         // stop_robot = true;
-        this->setMode(DMP_UR10_controller::Mode::STOP);
+        this->settRobotMode(DMP_UR10_controller::ROBOT_MODE::STOP);
         PRINT_INFO_MSG("Stop robot\n");
         break;
       case 'r':
-        if (this->getMode() != DMP_UR10_controller::Mode::FREEDRIVE)
+        if (this->getRobotMode() != DMP_UR10_controller::ROBOT_MODE::FREEDRIVE)
         {
           msg = "Cannot start demo.\n";
           msg += "Set the mode first to \"FREEDRIVE\" by pressing \"f\".\n";
@@ -447,10 +485,10 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
         }
         break;
       case 'f':
-        this->setMode(DMP_UR10_controller::Mode::FREEDRIVE);
+        this->settRobotMode(DMP_UR10_controller::ROBOT_MODE::FREEDRIVE);
         break;
       case 'b':
-        if (this->getMode() != DMP_UR10_controller::Mode::IDLE)
+        if (this->getRobotMode() != DMP_UR10_controller::ROBOT_MODE::IDLE)
         {
           PRINT_WARN_MSG("Change mode to IDLE and then press \"b\" to load the train data.\n");
         }
@@ -468,7 +506,7 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
         break;
       case 'i':
         // pause_robot = !pause_robot;
-        this->setMode(DMP_UR10_controller::Mode::IDLE);
+        this->settRobotMode(DMP_UR10_controller::ROBOT_MODE::IDLE);
         //std::cout << "Setting mode to \"IDLE\"\n";
         break;
       case 't':
@@ -481,6 +519,16 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
       case 'n':
         admittance_in_model = !admittance_in_model;
         msg = std::string("Model admittance ") + (admittance_in_model?"enabled":"disabled") + "\n";
+        PRINT_INFO_MSG(msg);
+        break;
+      case 'z':
+        std::cout << "Choose model disturbance mode (1-2):\n";
+        std::cout << "1. Halt\n";
+        std::cout << "2. Modify\n";
+        unsigned ch;
+        std::cin >> ch;
+        model_dist_mode = (MODEL_DIST_MODE)((ch-1)%2);
+        msg = "MODEL_DIST_MODE: " + modelDistName[model_dist_mode] + "\n";
         PRINT_INFO_MSG(msg);
         break;
       default:
@@ -503,16 +551,18 @@ void DMP_UR10_controller::printKeys() const
   std::cout << "====== Flags/keys status =====\n";
   std::cout << "==============================\n";
   std::cout << bold << cyan;
-  std::cout << "==> Mode                : " << getModeName() << "\n";
-  std::cout << "==> record_demo_on      : " << (record_demo_on?"true":"false") << "\n";
-  std::cout << "==> log_on              : " << (log_on?"true":"false") << "\n";
-  std::cout << "==> save_exec_results   : " << (save_exec_results?"true":"false") << "\n";
-  std::cout << "==> train_model         : " << (train_model?"true":"false") << "\n";
-  std::cout << "==> model_trained       : " << (model_trained?"true":"false") << "\n";
-  std::cout << "==> goto_start          : " << (goto_start?"true":"false") << "\n";
-  std::cout << "==> run_model_in_loop   : " << (run_model_in_loop?"true":"false") << "\n";
-  std::cout << "==> print_robot_state   : " << (print_robot_state?"true":"false") << "\n";
-  std::cout << "==> admittance_in_model : " << (admittance_in_model?"true":"false") << "\n";
+  std::cout << "==> Robot-Mode               : " << getRobotModeName() << "\n";
+  std::cout << "==> Model-dist-mode          : " << modelDistName[model_dist_mode] << "\n";
+  std::cout << "==> Admittance-mode          : " << admModeName[adm_mode] << "\n";
+  std::cout << "==> record_demo_on           : " << (record_demo_on?"true":"false") << "\n";
+  std::cout << "==> log_on                   : " << (log_on?"true":"false") << "\n";
+  std::cout << "==> save_exec_results        : " << (save_exec_results?"true":"false") << "\n";
+  std::cout << "==> train_model              : " << (train_model?"true":"false") << "\n";
+  std::cout << "==> model_trained            : " << (model_trained?"true":"false") << "\n";
+  std::cout << "==> goto_start               : " << (goto_start?"true":"false") << "\n";
+  std::cout << "==> run_model_in_loop        : " << (run_model_in_loop?"true":"false") << "\n";
+  std::cout << "==> print_robot_state        : " << (print_robot_state?"true":"false") << "\n";
+  std::cout << "==> admittance_in_model      : " << (admittance_in_model?"true":"false") << "\n";
   std::cout << reset;
 }
 
@@ -526,7 +576,7 @@ void DMP_UR10_controller::saveExecutionResults()
 
 void DMP_UR10_controller::robotWait()
 {
-  switch (this->getMode())
+  switch (this->getRobotMode())
   {
     case IDLE:
       //robot_->stopj(3.14);
@@ -875,6 +925,7 @@ void DMP_UR10_controller::execute()
   bool freedrive_mode_set = false;
   bool  admittance_ctrl_init = false;
   data_logged = false;
+  modify_model = false;
 
   // Start simulation
   while (ros::ok() && robot_->isOk() && !exit_ctrl_loop)
@@ -885,10 +936,10 @@ void DMP_UR10_controller::execute()
     if (safety_stop)
     {
       safety_stop = false;
-      this->setMode(IDLE);
+      this->settRobotMode(IDLE);
     }
 
-    switch (this->getMode())
+    switch (this->getRobotMode())
     {
       case STOP:
         exit_ctrl_loop = true;
@@ -922,7 +973,7 @@ void DMP_UR10_controller::execute()
           initAdmittanceController();
           if (log_on){
             clearLoggedData();
-            data_logged = false;
+            data_logged = true;
           }
           model_exec_init = true;
         }
@@ -931,7 +982,7 @@ void DMP_UR10_controller::execute()
         command();
         if (targetReached())
         {
-          if (!run_model_in_loop) this->setMode(IDLE);
+          if (!run_model_in_loop) this->settRobotMode(IDLE);
           model_exec_init = false;
           if (log_on) data_logged = true;
         }
@@ -940,7 +991,7 @@ void DMP_UR10_controller::execute()
         if (goto_start)
         {
           gotoStartPose();
-          this->setMode(IDLE);
+          this->settRobotMode(IDLE);
         }
         break;
       case ADMITTANCE_CONTROL:
@@ -953,7 +1004,7 @@ void DMP_UR10_controller::execute()
         break;
     }
   }
-  this->setMode(STOP);
+  this->settRobotMode(STOP);
 }
 
 void DMP_UR10_controller::update()
@@ -1008,18 +1059,36 @@ void DMP_UR10_controller::command()
 {
   double  use_admittance = admittance_in_model;
 
+  double Kp = cmd_args.Kd_p;
+  double Ko = cmd_args.Kd_o;
+
+  bool modify_off = (model_dist_mode != MODIFY);
+
+  // if (model_dist_mode == MODIFY)
+  // {
+  //   Kp = 0.0;
+  //   Ko = 0.0;
+  // }
+  // else if (model_dist_mode == HALT)
+  // {
+  //   Kp = cmd_args.Kd_p;
+  //   Ko = cmd_args.Kd_o;
+  // }
+
   //ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * (dY_robot - dY) - Kp * (Y_robot - Y) + factor_force*Fdist_p);
-  ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - cmd_args.Kd_p * Ep + use_admittance*Fdist_p);
+  ddEp = (1.0 / cmd_args.Md_p) * (- cmd_args.Dd_p * dEp - modify_off*Kp * Ep + use_admittance*Fdist_p);
 
   //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot - v_rot) - Ko * quatLog(quatProd(Q_robot, quatInv(Q))) + factor_force*Fdist_o);
   //ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * (v_rot_robot) + factor_force*Fdist_o);
-  ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo - cmd_args.Kd_o * Eo + use_admittance*Fdist_o);
+  ddEo = (1.0 / cmd_args.Md_o) * (- cmd_args.Dd_o * dEo - modify_off*Ko * Eo + use_admittance*Fdist_o);
 
   dEp = dEp + ddEp * Ts;
   Ep = Ep + dEp * Ts;
+  Ep = Ep*modify_off;
 
   dEo = dEo + ddEo * Ts;
   Eo = Eo + dEo * Ts;
+  Eo = Eo*modify_off;
 
   double Kp_click = 4.0;
   double Ko_click = 0.5;
@@ -1028,7 +1097,14 @@ void DMP_UR10_controller::command()
   Vd.subvec(0, 2) = ( dEp + dY - Kp_click*(Y_robot - (Y + Ep)) );
   Vd.subvec(3, 5) = ( dEo + v_rot - Ko_click*quatLog(quatProd(Q_robot,quatInv(Q))) );
 
-  //Vd.rows(3,5) = arma::zeros<arma::vec>(3);
+  std::cout << "modify_off = " << modify_off << "\n";
+  std::cout << "Fdist_p = " << Fdist_p.t() << "\n";
+  std::cout << "Ep = " << Ep.t() << "\n";
+  std::cout << "dEp = " << dEp.t() << "\n";
+  // std::cout << "Kp_click*(Y_robot - (Y + Ep)) = " << Kp_click*(Y_robot - (Y + Ep)).t() << "\n";
+  // std::cout << "Vd_lin = " << Vd.subvec(0, 2).t() << "\n";
+
+  Vd.rows(3,5) = arma::zeros<arma::vec>(3);
   robot_->setTaskVelocity(Vd);
 
 }
@@ -1123,21 +1199,21 @@ void DMP_UR10_controller::finalize()
     robot_->stop_printRobotStateThread();
 }
 
-DMP_UR10_controller::Mode DMP_UR10_controller::getMode() const
+DMP_UR10_controller::ROBOT_MODE DMP_UR10_controller::getRobotMode() const
 {
-  return this->mode;
+  return this->robotMode;
 }
 
-void DMP_UR10_controller::setMode(const DMP_UR10_controller::Mode &mode)
+void DMP_UR10_controller::settRobotMode(const DMP_UR10_controller::ROBOT_MODE &mode)
 {
   using namespace as64_::io_;
-  this->mode = mode;
-  std::cout << green << "Mode changed to \"" << bold << getModeName() << reset << green << "\"\n" << reset;
+  this->robotMode = mode;
+  std::cout << green << "Mode changed to \"" << bold << getRobotModeName() << reset << green << "\"\n" << reset;
 }
 
-std::string DMP_UR10_controller::getModeName() const
+std::string DMP_UR10_controller::getRobotModeName() const
 {
-  return modeName[this->getMode()];
+  return robotModeName[this->getRobotMode()];
 }
 
 bool DMP_UR10_controller::targetReached() const

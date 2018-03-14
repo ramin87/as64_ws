@@ -44,7 +44,7 @@ using namespace as64_;
 
 class DMP_UR10_controller
 {
-  enum Mode
+  enum ROBOT_MODE
   {
     STOP = 0,
     IDLE = 1,
@@ -57,8 +57,15 @@ class DMP_UR10_controller
   enum ADMITTANCE_MODE
   {
     MASS_DAMP = 0,
-    MASS_SPRING_DAMP = 1,
+    MASS_SPRING_DAMP = 1
   };
+
+  enum MODEL_DIST_MODE
+  {
+    HALT = 0,
+    MODIFY = 1
+  };
+
 
   struct TrainData
   {
@@ -147,9 +154,9 @@ public:
   void keyboardCtrlThreadFun();
   void saveExecutionResults();
 
-  DMP_UR10_controller::Mode getMode() const;
-  void setMode(const DMP_UR10_controller::Mode &mode);
-  std::string getModeName() const;
+  DMP_UR10_controller::ROBOT_MODE getRobotMode() const;
+  void settRobotMode(const DMP_UR10_controller::ROBOT_MODE &mode);
+  std::string getRobotModeName() const;
 
   bool targetReached() const;
 
@@ -162,12 +169,15 @@ public:
 
 private:
 
+  MODEL_DIST_MODE model_dist_mode;
+  std::vector<std::string> modelDistName;
+
   ADMITTANCE_MODE adm_mode;
   AdmittanceControlFunction adm_ctrl_fun[2];
   std::vector<std::string> admModeName;
 
-  Mode mode;
-  std::vector<std::string> modeName;
+  ROBOT_MODE robotMode;
+  std::vector<std::string> robotModeName;
 
   // Program control flags
   bool save_exec_results;
@@ -188,6 +198,7 @@ private:
   bool admittance_in_model;
   bool safety_stop;
   bool data_logged;
+  bool modify_model;
 
   int demo_save_counter; // add a number to the data output file to avoid overriding the previous one
 
@@ -237,6 +248,8 @@ private:
   arma::vec Q_robot, v_rot_robot, v_rot_robot_prev, dv_rot_robot;
   arma::vec eta, deta;
   arma::vec Fdist_o; // Torques exerted to the robot by the environment (human, objects etc.)
+
+  double stop_coeff;
 
   arma::vec Fee;
   arma::vec Fee_dead_zone; // 6x1 vector with the force and torque dead zone values.

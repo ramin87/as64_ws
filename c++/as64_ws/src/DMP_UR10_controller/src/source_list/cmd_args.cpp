@@ -31,6 +31,7 @@ bool CMD_ARGS::parse_cmd_args(const char *config_file)
   if (!parser.getParam("a_px", a_px)) a_px = 50.0;
   if (!parser.getParam("a_py", a_py)) a_py = 40.0;
   if (!parser.getParam("phase_stop_err", phase_stop_err)) phase_stop_err = 0.015;
+  if (!parser.getParam("phase_stop_Fdist", phase_stop_Fdist)) phase_stop_Fdist = 1.0;
   if (!parser.getParam("k_trunc_kernel", k_trunc_kernel)) k_trunc_kernel = 3;
   if (!parser.getParam("Wmin", Wmin)) Wmin = 0.9999;
   if (!parser.getParam("Freq_min", Freq_min)) Freq_min = 60.0;
@@ -105,6 +106,7 @@ void CMD_ARGS::print(std::ostream &out) const
   out << "a_px: " << a_px << "\n";
   out << "a_py: " << a_py << "\n";
   out << "phase_stop_err: " << phase_stop_err << "\n";
+  out << "phase_stop_Fdist: " << phase_stop_Fdist << "\n";
   out << "k_trunc_kernel: " << k_trunc_kernel << "\n";
   out << "Wmin: " << Wmin << "\n";
   out << "Freq_min: " << Freq_min << "\n";
