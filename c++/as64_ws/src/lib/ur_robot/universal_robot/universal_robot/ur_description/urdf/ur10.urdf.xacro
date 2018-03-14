@@ -327,7 +327,7 @@
     <joint name="${prefix}optoforce_Connection" type="fixed">
 		  <parent link="${prefix}tool0" />
 		  <child link = "${prefix}optoforce_frame" />
-		  <origin xyz="0 0.0 0.015" rpy="0 0 -1.57" />
+		  <origin xyz="0 0.0 0.015" rpy="0 0 0" />
     </joint>
 
     <link name="${prefix}optoforce_frame">

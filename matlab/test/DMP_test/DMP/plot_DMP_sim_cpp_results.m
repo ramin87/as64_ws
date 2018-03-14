@@ -2,7 +2,7 @@
 
 set_matlab_utils_path();
 
-filename = 'data/data_out_Wed_Mar_14_11-53-23_2018.bin';
+filename = 'data/data_out_Wed_Mar_14_20-13-49_2018.bin';
 fid = fopen(filename,'r');
 if (fid < 0), error(['Failed to open file ' filename]); end
 

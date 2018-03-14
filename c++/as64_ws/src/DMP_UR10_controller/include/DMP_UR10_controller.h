@@ -62,8 +62,9 @@ class DMP_UR10_controller
 
   enum MODEL_DIST_MODE
   {
-    HALT = 0,
-    MODIFY = 1
+    REJECT = 0,
+    HALT = 1,
+    MODIFY = 2
   };
 
 
@@ -195,7 +196,6 @@ private:
   bool train_data_loaded;
   bool run_model_in_loop;
   bool print_robot_state;
-  bool admittance_in_model;
   bool safety_stop;
   bool data_logged;
   bool modify_model;

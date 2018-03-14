@@ -26,10 +26,11 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
   adm_ctrl_fun[0] = &DMP_UR10_controller::admittanceMDcontrol;
   adm_ctrl_fun[1] = &DMP_UR10_controller::admittanceMSDcontrol;
 
-  modelDistName.resize(2);
-  modelDistName[0] = "HALT";
-  modelDistName[1] = "MODIFY";
-  model_dist_mode = HALT;
+  modelDistName.resize(3);
+  modelDistName[0] = "REJECT";
+  modelDistName[1] = "HALT";
+  modelDistName[2] = "MODIFY";
+  model_dist_mode = REJECT;
 
   Dp = 3;
   Do = 3;
@@ -49,7 +50,6 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
   initController();
 
   model_trained = false;
-  admittance_in_model = false;
   safety_stop = false;
 
   keyboard_ctrl_thread.reset(new std::thread(&DMP_UR10_controller::keyboardCtrlThreadFun, this));
@@ -337,7 +337,7 @@ void DMP_UR10_controller::printHelpMenu() const
   std::cout << PRINT_KEY_ID_MACRO("     b       : ") << PRINT_KEY_FUNCTION_MACRO("Load training data from file\n");
   std::cout << PRINT_KEY_ID_MACRO("     y       : ") << PRINT_KEY_FUNCTION_MACRO("Print keys\n");
   std::cout << PRINT_KEY_ID_MACRO("     t       : ") << PRINT_KEY_FUNCTION_MACRO("Print robot state\n");
-  std::cout << PRINT_KEY_ID_MACRO("     n       : ") << PRINT_KEY_FUNCTION_MACRO("Enable/Disable admittance in model run\n");
+  std::cout << PRINT_KEY_ID_MACRO("     z       : ") << PRINT_KEY_FUNCTION_MACRO("Choose admittance model in model run\n");
   std::cout << reset;
 
   #undef PRINT_KEY_ID_MACRO
@@ -516,18 +516,14 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
         if (print_robot_state) robot_->launch_printRobotStateThread(1);
         else robot_->stop_printRobotStateThread();
         break;
-      case 'n':
-        admittance_in_model = !admittance_in_model;
-        msg = std::string("Model admittance ") + (admittance_in_model?"enabled":"disabled") + "\n";
-        PRINT_INFO_MSG(msg);
-        break;
       case 'z':
         std::cout << "Choose model disturbance mode (1-2):\n";
-        std::cout << "1. Halt\n";
-        std::cout << "2. Modify\n";
+        std::cout << "1. Reject\n";
+        std::cout << "2. Halt\n";
+        std::cout << "3. Modify\n";
         unsigned ch;
         std::cin >> ch;
-        model_dist_mode = (MODEL_DIST_MODE)((ch-1)%2);
+        model_dist_mode = (MODEL_DIST_MODE)((ch-1)%3);
         msg = "MODEL_DIST_MODE: " + modelDistName[model_dist_mode] + "\n";
         PRINT_INFO_MSG(msg);
         break;
@@ -562,7 +558,6 @@ void DMP_UR10_controller::printKeys() const
   std::cout << "==> goto_start               : " << (goto_start?"true":"false") << "\n";
   std::cout << "==> run_model_in_loop        : " << (run_model_in_loop?"true":"false") << "\n";
   std::cout << "==> print_robot_state        : " << (print_robot_state?"true":"false") << "\n";
-  std::cout << "==> admittance_in_model      : " << (admittance_in_model?"true":"false") << "\n";
   std::cout << reset;
 }
 
@@ -995,7 +990,7 @@ void DMP_UR10_controller::execute()
         }
         break;
       case ADMITTANCE_CONTROL:
-        if (admittance_ctrl_init = false)
+        if (admittance_ctrl_init == false)
         {
           initAdmittanceController();
           admittance_ctrl_init = true;
@@ -1057,7 +1052,7 @@ void DMP_UR10_controller::update()
 
 void DMP_UR10_controller::command()
 {
-  double  use_admittance = admittance_in_model;
+  double  use_admittance = model_dist_mode != REJECT;
 
   double Kp = cmd_args.Kd_p;
   double Ko = cmd_args.Kd_o;
@@ -1097,10 +1092,10 @@ void DMP_UR10_controller::command()
   Vd.subvec(0, 2) = ( dEp + dY - Kp_click*(Y_robot - (Y + Ep)) );
   Vd.subvec(3, 5) = ( dEo + v_rot - Ko_click*quatLog(quatProd(Q_robot,quatInv(Q))) );
 
-  std::cout << "modify_off = " << modify_off << "\n";
-  std::cout << "Fdist_p = " << Fdist_p.t() << "\n";
-  std::cout << "Ep = " << Ep.t() << "\n";
-  std::cout << "dEp = " << dEp.t() << "\n";
+  // std::cout << "modify_off = " << modify_off << "\n";
+  // std::cout << "Fdist_p = " << Fdist_p.t() << "\n";
+  // std::cout << "Ep = " << Ep.t() << "\n";
+  // std::cout << "dEp = " << dEp.t() << "\n";
   // std::cout << "Kp_click*(Y_robot - (Y + Ep)) = " << Kp_click*(Y_robot - (Y + Ep)).t() << "\n";
   // std::cout << "Vd_lin = " << Vd.subvec(0, 2).t() << "\n";
 
