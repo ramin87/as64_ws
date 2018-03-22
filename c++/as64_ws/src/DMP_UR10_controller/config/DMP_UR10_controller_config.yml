@@ -47,10 +47,11 @@ Md_o: 1.0 # rotational inertia
 Kd_o: 8.0 # rotational stiffness
 Dd_o: 5.5  # rotational damping
 
-lin_vel_lim: 0.65
-rot_vel_lim: 0.85
+lin_vel_lim: 0.85
+rot_vel_lim: 1.2
 
-Fee_dead_zone: [0.5; 0.5; 0.5; 0.3; 0.3; 0.3]
+Fee_dead_zone: [0.1; 0.1; 0.1; 0.1; 0.1; 0.1]
+#Fee_dead_zone: [0.0; 0.0; 0.0; 0.0; 0.0; 0.0]
 F_norm_retrain_thres: 5
 
 ## Simulation params

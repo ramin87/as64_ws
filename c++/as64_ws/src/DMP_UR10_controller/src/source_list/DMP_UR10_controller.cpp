@@ -47,6 +47,8 @@ DMP_UR10_controller::DMP_UR10_controller(std::shared_ptr<ur10_::Robot> robot)
 
   demo_save_counter = 0;
 
+  ft_sensor_bias = arma::vec().zeros(6);
+
   initController();
 
   model_trained = false;
@@ -527,6 +529,19 @@ void DMP_UR10_controller::keyboardCtrlThreadFun()
         msg = "MODEL_DIST_MODE: " + modelDistName[model_dist_mode] + "\n";
         PRINT_INFO_MSG(msg);
         break;
+      // case 'm':
+      //   if (this->getRobotMode() != DMP_UR10_controller::ROBOT_MODE::IDLE)
+      //   {
+      //     msg = "Cannot calculate FT sensor bias";
+      //     msg += "Current mode is \"" + getRobotModeName() + "\"\n";
+      //     msg += "Set mode to \"IDLE\" by pressing \"i\".\n";
+      //     PRINT_WARN_MSG(msg);
+      //   }
+      //   else
+      //   {
+      //     calcFTsensorBias();
+      //   }
+      //   break;
       default:
         PRINT_WARN_MSG("Unrecognized key...\n");
     }
@@ -966,6 +981,7 @@ void DMP_UR10_controller::execute()
           while (save_exec_results) robotWait();
           initModelExecution();
           initAdmittanceController();
+          calcFTsensorBias();
           if (log_on){
             clearLoggedData();
             data_logged = true;
@@ -980,6 +996,7 @@ void DMP_UR10_controller::execute()
           if (!run_model_in_loop) this->settRobotMode(IDLE);
           model_exec_init = false;
           if (log_on) data_logged = true;
+          ft_sensor_bias = arma::vec().zeros(6);
         }
         break;
       case POSITION_CONTROL:
@@ -1015,6 +1032,7 @@ void DMP_UR10_controller::update()
 
   //J_robot = robot_->getJacobian();
   Fee = robot_->getTaskWrench(); // Need to invert the sign of Fee ??????
+  Fee -= ft_sensor_bias;
 
   // std::cout << "1) Fee = " << Fee.t() << "\n";
 
@@ -1223,4 +1241,22 @@ bool DMP_UR10_controller::targetReached() const
     return true;
   }
   return false;
+}
+
+void DMP_UR10_controller::calcFTsensorBias()
+{
+  const int N = 50;
+
+  arma::vec ft_bias = arma::vec().zeros(6);
+
+  for (int i=0; i<N; i++)
+  {
+    robot_->waitNextCycle();
+    Fee = robot_->getTaskWrench();
+    ft_bias += Fee;
+    robotWait();
+  }
+  ft_sensor_bias = ft_bias/N;
+
+  std::cout << "ft_sensor_bias = " << ft_sensor_bias.t() << "\n";
 }

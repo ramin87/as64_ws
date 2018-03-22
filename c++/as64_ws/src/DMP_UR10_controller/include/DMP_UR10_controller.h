@@ -168,6 +168,8 @@ public:
 
   bool safetyCheck();
 
+  void calcFTsensorBias();
+
 private:
 
   MODEL_DIST_MODE model_dist_mode;
@@ -270,6 +272,8 @@ private:
 	arma::vec q0_robot, q_prev_robot, q_robot, dq_robot;
   arma::mat T_robot_ee; // stores the robot's forwarda kinematic
   arma::mat J_robot; // stoes the robot's Jacobian
+
+  arma::vec ft_sensor_bias;
 
 	std::shared_ptr<ur10_::Robot> robot_;
 

@@ -1,4 +1,4 @@
-# generic filename used for successive storing
+ # generic filename used for successive storing
 filename: "/tmp/optoforce_topic"
 
 # Maximun number of samples to be stored
@@ -20,7 +20,8 @@ devices:
   - name: "HEXEA152"
     # IRE0A004 Calibration from Sensitivity Report
     #calibration: [183.0,186.06,39.83,7359.85,7324.34,7786.72]
-    calibration: [68.0, 57.0, 76.0, 7359.85, 7324.34, 7786.72]
+    calibration: [68.0, 57.0, 100.0, 300.0, 300.0, 200.0]
+    #calibration: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     # OptoForce DAQ Transmission frequency in Hz
     speed: 1000
     # OptoForce DAQ Filters. Cut-off frequencies of 150Hz, 50Hz, 15Hz are suppported. NoFilter is also supoorted assigning filter: 0
