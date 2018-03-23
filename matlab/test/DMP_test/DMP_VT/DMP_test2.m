@@ -44,6 +44,8 @@ dmp.setTrainingParams(cmd_args.trainMethod, trainParamsName, trainParamsValue);
 dmp.trainMulti(Time_data, Y_data, dY_data, ddY_data);      
 toc
 
+% dmp.w = zeros(size(dmp.w));
+
 canClockPtr.setTau(1.0);
 
 %% ========================================================
@@ -64,23 +66,23 @@ ddy_dmp = 0.0;
 z = 0;
 dz = 0;
 
+Fgrav = cmd_args.Mo*grav;
+Fgrav_h_d = cmd_args.human_load_p*Fgrav;
+Fgrav_r_d = cmd_args.robot_load_p*Fgrav;
+
 y_robot = y0;
 dy_robot = 0.0;
 ddy_robot = 0.0;
 u_robot = 0.0;
-F_robot_ext = 0.0;
+F_robot_ext = -Fgrav_r_d;
 
 y_human = y0;
 dy_human = 0.0;
 ddy_human = 0.0;
 u_human = 0.0;
-F_human_ext = 0.0;
+F_human_ext = -Fgrav_h_d;
 
 F_err = 0.0;
-
-Fgrav = cmd_args.Mo*grav;
-Fgrav_h_d = cmd_args.human_load*Fgrav;
-Fgrav_r_d = cmd_args.robot_load*Fgrav;
 
 P_lwr = cmd_args.P_cov*ones(dmp.N_kernels,1);
 lambda = cmd_args.lambda;
@@ -100,7 +102,7 @@ log_data = struct('Time',[], ...,
                   'y_robot_data',[],'dy_robot_data',[],'ddy_robot_data',[], 'u_robot_data',[], 'F_robot_ext_data',[], ...
                   'y_ref_data',[],'dy_ref_data',[],'ddy_ref_data',[], ...
                   'y_human_data',[],'dy_human_data',[],'ddy_human_data',[], 'u_human_data',[], 'F_human_ext_data',[],  ...
-                  'F_err_data',[]);
+                  'F_err_data',[], 'Fgrav_r_d_data',[], 'Fgrav_h_d_data',[]);
         
 %% Simulation
 disp('Simulation...')
@@ -144,6 +146,9 @@ while (true)
     
     log_data.P_lwr_data = [log_data.P_lwr_data P_lwr];
     
+    log_data.Fgrav_r_d_data = [log_data.Fgrav_r_d_data Fgrav_r_d];
+    log_data.Fgrav_h_d_data = [log_data.Fgrav_h_d_data Fgrav_h_d];
+    
     %% DMP model simulation
     Y_c = 0.0;
     Z_c = 0.0; %0.05*F_err;
@@ -153,11 +158,20 @@ while (true)
     
     %% Robot and Human model simulation
     
+    % desired load carried by human
+    if (cmd_args.const_wh_error)
+        a_h = cmd_args.human_load_p + cmd_args.human_load_p_var;
+    else
+        a_h = cmd_args.human_load_p + (2*rand()-1)*cmd_args.human_load_p_var;
+    end
+    Fgrav_h_d = Fgrav*a_h; % simulates the scenario where the human  carries a varying load because he cannot estimate well how much force he applies
+    Fgrav_h = Fgrav_h_d;
+    
+    % desired load carried by robot
+    Fgrav_r_d = cmd_args.robot_load_p*Fgrav;
+    
     % Force exerted by the robot
     u_robot = cmd_args.Kr*(y_dmp-y_robot) + cmd_args.Dr*dy_dmp + cmd_args.Mr*ddy_dmp;
-    
-    Fgrav_h_d = Fgrav*rand(); % simulates the scenario where the human  carries a varying load because he cannot estimate well how much force he applies
-    Fgrav_h = Fgrav_h_d;
     
     % Force exerted by the human
     u_human = cmd_args.Kh*(y_ref-y_human) + cmd_args.Dh*dy_ref + cmd_args.Mh*ddy_ref + Fgrav_h_d;
@@ -220,29 +234,30 @@ end
 toc
 
 fontsize = 14;
-lineWidth = 1.3;
+lineWidth = 1.4;
 
 figure;
-subplot(4,1,1);
-plot(log_data.Time, log_data.y_dmp_data, 'c:', log_data.Time, log_data.y_robot_data, 'b-',log_data.Time, log_data.y_human_data, 'g-', log_data.Time, log_data.y_ref_data, 'r-.', 'LineWidth',lineWidth);
+subplot(3,1,1);
+plot(log_data.Time, log_data.y_dmp_data, 'm-.', log_data.Time, log_data.y_robot_data, 'b-',log_data.Time, log_data.y_human_data, 'g-', log_data.Time, log_data.y_ref_data, 'r-.', 'LineWidth',lineWidth);
 title('Position', 'FontSize',fontsize, 'Interpreter','latex');
 legend({'DMP','Robot','Human','Ref'}, 'FontSize',fontsize, 'Interpreter','latex');
 ylabel('[$m$]', 'FontSize',fontsize, 'Interpreter','latex');
 axis tight;
-subplot(4,1,2);
-plot(log_data.Time, log_data.dy_dmp_data, 'c:', log_data.Time, log_data.dy_robot_data, 'b-',log_data.Time, log_data.dy_human_data, 'g-', log_data.Time, log_data.dy_ref_data, 'r-.', 'LineWidth',lineWidth);
+subplot(3,1,2);
+plot(log_data.Time, log_data.dy_dmp_data, 'm-.', log_data.Time, log_data.dy_robot_data, 'b-',log_data.Time, log_data.dy_human_data, 'g-', log_data.Time, log_data.dy_ref_data, 'r-.', 'LineWidth',lineWidth);
 title('Velocity', 'FontSize',fontsize, 'Interpreter','latex');
 ylabel('[$m/s$]', 'FontSize',fontsize, 'Interpreter','latex');
 axis tight;
-subplot(4,1,3);
-plot(log_data.Time, log_data.ddy_dmp_data, 'c:', log_data.Time, log_data.ddy_robot_data, 'b-',log_data.Time, log_data.ddy_human_data, 'g-', log_data.Time, log_data.ddy_ref_data, 'r-.', 'LineWidth',lineWidth);
+subplot(3,1,3);
+plot(log_data.Time, log_data.ddy_dmp_data, 'm-.', log_data.Time, log_data.ddy_robot_data, 'b-',log_data.Time, log_data.ddy_human_data, 'g-', log_data.Time, log_data.ddy_ref_data, 'r-.', 'LineWidth',lineWidth);
 title('Acceleration', 'FontSize',fontsize, 'Interpreter','latex');
 ylabel('[$m/s^2$]', 'FontSize',fontsize, 'Interpreter','latex');
 axis tight;
-subplot(4,1,4);
+
+figure
 t0 = log_data.Time(1);
 tend = log_data.Time(end);
-plot(log_data.Time,log_data.F_robot_ext_data,'b-' ,log_data.Time,log_data.F_human_ext_data,'g-', [t0 tend],-[Fgrav_r_d Fgrav_r_d],'r--', [t0 tend],-[Fgrav_h_d Fgrav_h_d],'m--','LineWidth',lineWidth);
+plot(log_data.Time,log_data.F_robot_ext_data,'b-' ,log_data.Time,log_data.F_human_ext_data,'g-', log_data.Time,-log_data.Fgrav_r_d_data,'r--', log_data.Time,-log_data.Fgrav_h_d_data,'m--','LineWidth',lineWidth);
 title('Forces exterted on robot and human', 'FontSize',14, 'Interpreter','latex');
 legend({'$Fext_{robot}$','$Fext_{human}$','$Load_{robot}$','$Load_{human}$'}, 'FontSize',fontsize, 'Interpreter','latex');
 ylabel('[$N$]', 'FontSize',fontsize, 'Interpreter','latex');
@@ -311,7 +326,7 @@ axis tight;
 hold off;
 
 
-% figure;
-% plot(log_data.Time, log_data.P_lwr_data, 'LineWidth', 1.5);
-% title('Increamental LWR - covariance evolution', 'FontSize',fontsize, 'Interpreter','latex');
-% xlabel('time [$s$]', 'FontSize',fontsize, 'Interpreter','latex');
+figure;
+plot(log_data.Time, log_data.P_lwr_data, 'LineWidth', 1.5);
+title('Increamental LWR - covariance evolution', 'FontSize',fontsize, 'Interpreter','latex');
+xlabel('time [$s$]', 'FontSize',fontsize, 'Interpreter','latex');

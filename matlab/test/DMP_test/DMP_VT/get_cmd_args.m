@@ -15,7 +15,7 @@ cmd_args.kernelStdScaling = 1.0; % scaling factor for the kernels std
 cmd_args.trainMethod = 'LWR'; % 'LWR', 'LS', 'RLS' , 'RLWR'
 
 cmd_args.lambda = 0.98; % forgetting factor for recursive training methods
-cmd_args.P_cov = 1e9; % initial value of covariance matrix for recursive training methods
+cmd_args.P_cov = 1e6; % initial value of covariance matrix for recursive training methods
 
 cmd_args.USE_GOAL_FILT = false;
 cmd_args.a_g = 0.0;
@@ -26,11 +26,18 @@ cmd_args.a_py = 0.0;
 cmd_args.K_f_err = 1.0;
 
 %% Reference model
+% cmd_args.y0_ref = 0.0;
+% cmd_args.g_ref = 1.0;
+% cmd_args.a6 = -2.0;
+% cmd_args.a7 = 0.0;
+% cmd_args.tau_ref = 1.0;
+
 cmd_args.y0_ref = 0.0;
-cmd_args.g_ref = 0.4;
-cmd_args.a6 = 15.0;
+cmd_args.g_ref = 1.5;
+cmd_args.a6 = 20.0;
 cmd_args.a7 = 0.0;
-cmd_args.tau_ref = 1.0;
+cmd_args.tau_ref = 0.9;
+
 
 %% Human model
 cmd_args.Mh = 1.0;
@@ -44,8 +51,10 @@ cmd_args.Dr = 2*sqrt(cmd_args.Mr*cmd_args.Kr);
 
 %% Object Model
 cmd_args.Mo = 10.0;
-cmd_args.robot_load = 0.7; % percent of the weight carried by the robot
-cmd_args.human_load = 0.3; % percent of the weight carried by the human
+cmd_args.robot_load_p = 0.7; % percent of the weight carried by the robot
+cmd_args.human_load_p = 0.3; % percent of the weight carried by the human
+cmd_args.human_load_p_var = 0;
+cmd_args.const_wh_error = false;
 
 cmd_args.Kc = 1000;
 
