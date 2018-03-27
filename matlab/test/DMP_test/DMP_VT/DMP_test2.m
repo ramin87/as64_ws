@@ -66,21 +66,21 @@ ddy_dmp = 0.0;
 z = 0;
 dz = 0;
 
-Fgrav = cmd_args.Mo*grav;
-Fgrav_h_d = cmd_args.human_load_p*Fgrav;
-Fgrav_r_d = cmd_args.robot_load_p*Fgrav;
+w_o = cmd_args.Mo*grav;
+w_h = cmd_args.human_load_p*w_o;
+w_r = cmd_args.robot_load_p*w_o;
 
 y_robot = y0;
 dy_robot = 0.0;
 ddy_robot = 0.0;
 u_robot = 0.0;
-F_robot_ext = -Fgrav_r_d;
+F_robot_ext = -w_r;
 
 y_human = y0;
 dy_human = 0.0;
 ddy_human = 0.0;
 u_human = 0.0;
-F_human_ext = -Fgrav_h_d;
+F_human_ext = -w_h;
 
 F_err = 0.0;
 
@@ -102,7 +102,7 @@ log_data = struct('Time',[], ...,
                   'y_robot_data',[],'dy_robot_data',[],'ddy_robot_data',[], 'u_robot_data',[], 'F_robot_ext_data',[], ...
                   'y_ref_data',[],'dy_ref_data',[],'ddy_ref_data',[], ...
                   'y_human_data',[],'dy_human_data',[],'ddy_human_data',[], 'u_human_data',[], 'F_human_ext_data',[],  ...
-                  'F_err_data',[], 'Fgrav_r_d_data',[], 'Fgrav_h_d_data',[]);
+                  'F_err_data',[], 'w_r_data',[], 'w_h_data',[]);
         
 %% Simulation
 disp('Simulation...')
@@ -146,8 +146,8 @@ while (true)
     
     log_data.P_lwr_data = [log_data.P_lwr_data P_lwr];
     
-    log_data.Fgrav_r_d_data = [log_data.Fgrav_r_d_data Fgrav_r_d];
-    log_data.Fgrav_h_d_data = [log_data.Fgrav_h_d_data Fgrav_h_d];
+    log_data.w_r_data = [log_data.w_r_data w_r];
+    log_data.w_h_data = [log_data.w_h_data w_h];
     
     %% DMP model simulation
     Y_c = 0.0;
@@ -164,28 +164,27 @@ while (true)
     else
         a_h = cmd_args.human_load_p + (2*rand()-1)*cmd_args.human_load_p_var;
     end
-    Fgrav_h_d = Fgrav*a_h; % simulates the scenario where the human  carries a varying load because he cannot estimate well how much force he applies
-    Fgrav_h = Fgrav_h_d;
+    w_h = w_o*a_h; % simulates the scenario where the human  carries a varying load because he cannot estimate well how much force he applies
+    w_h_hat = w_h;
     
     % desired load carried by robot
-    Fgrav_r_d = cmd_args.robot_load_p*Fgrav;
+    w_r = cmd_args.robot_load_p*w_o;
     
     % Force exerted by the robot
     u_robot = cmd_args.Kr*(y_dmp-y_robot) + cmd_args.Dr*dy_dmp + cmd_args.Mr*ddy_dmp;
     
     % Force exerted by the human
-    u_human = cmd_args.Kh*(y_ref-y_human) + cmd_args.Dh*dy_ref + cmd_args.Mh*ddy_ref + Fgrav_h_d;
+    u_human = cmd_args.Kh*(y_ref-y_human) + cmd_args.Dh*dy_ref + cmd_args.Mh*ddy_ref + w_h;
     
 %     Fc = cmd_args.Kc*(y_robot-y_human);
-%     Fc = Fgrav_h - u_human + cmd_args.Kh*(y_dmp-y_human) + cmd_args.Dh*dy_dmp + cmd_args.Mh*ddy_dmp;
-%     Fc = Fgrav_h - u_human + cmd_args.Kr*(y_robot-y_human) + cmd_args.Dr*(dy_robot-dy_human) + cmd_args.Mh*ddy_robot + cmd_args.Dh*dy_human;
-    Fc = Fgrav_h - u_human + cmd_args.Kr*(y_dmp-y_human) + cmd_args.Dr*(dy_dmp-dy_human) + cmd_args.Mh*ddy_dmp + cmd_args.Dh*dy_human;
+%     Fc = w_h_hat - u_human + cmd_args.Kr*(y_dmp-y_human) + cmd_args.Dr*(dy_dmp-dy_human) + cmd_args.Mh*ddy_dmp + cmd_args.Dh*dy_human;
+    Fc = w_h_hat - u_human + cmd_args.Mh*( inv(cmd_args.Mr)*(cmd_args.Kr*(y_dmp-y_robot) + cmd_args.Dr*(dy_dmp-dy_robot)) + ddy_dmp) + cmd_args.Dh*dy_human;
 
     % External force exerted on the human
-    F_human_ext = - Fgrav_h + Fc;
+    F_human_ext = - w_h_hat + Fc;
     
     % External force exerted on the robot
-    F_robot_ext = - (Fgrav-Fgrav_h) - Fc;
+    F_robot_ext = - (w_o-w_h_hat) - Fc;
     
     % Robot model dynamics
     ddy_robot = inv(cmd_args.Mr) * ( - cmd_args.Dr*dy_robot + u_robot + 0*F_robot_ext);
@@ -195,8 +194,8 @@ while (true)
     
     
     %% Force error
-    %F_err = 1.0*(F_robot_ext + 2*Fgrav + (1-cmd_args.w_dmp)*Fgrav + 0*cmd_args.w_dmp*Fgrav);
-    F_err = 1.0*(F_robot_ext + Fgrav_r_d);
+    %F_err = 1.0*(F_robot_ext + 2*w_o + (1-cmd_args.w_dmp)*w_o + 0*cmd_args.w_dmp*w_o);
+    F_err = 1.0*(F_robot_ext + w_r);
     
     %% DMP model online adaption
     P_lwr = dmp.update_weights(x, F_err, 0.0, 0.0, P_lwr, lambda);
@@ -257,7 +256,7 @@ axis tight;
 figure
 t0 = log_data.Time(1);
 tend = log_data.Time(end);
-plot(log_data.Time,log_data.F_robot_ext_data,'b-' ,log_data.Time,log_data.F_human_ext_data,'g-', log_data.Time,-log_data.Fgrav_r_d_data,'r--', log_data.Time,-log_data.Fgrav_h_d_data,'m--','LineWidth',lineWidth);
+plot(log_data.Time,log_data.F_robot_ext_data,'b-' ,log_data.Time,log_data.F_human_ext_data,'g-', log_data.Time,-log_data.w_r_data,'r--', log_data.Time,-log_data.w_h_data,'m--','LineWidth',lineWidth);
 title('Forces exterted on robot and human', 'FontSize',14, 'Interpreter','latex');
 legend({'$Fext_{robot}$','$Fext_{human}$','$Load_{robot}$','$Load_{human}$'}, 'FontSize',fontsize, 'Interpreter','latex');
 ylabel('[$N$]', 'FontSize',fontsize, 'Interpreter','latex');
