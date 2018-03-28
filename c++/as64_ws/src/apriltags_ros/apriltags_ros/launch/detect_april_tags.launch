@@ -8,7 +8,7 @@
 
   <!-- creates and publishes to all topics relevant to the camera sensor -->
   <include file="$(find openni_launch)/launch/openni.launch">
-    <arg name="publish_tf" default="false" />
+    <arg name="publish_tf" value="false" />
   </include>
 
   <arg name="rvizconfig" default="$(find apriltags_ros)/rviz/config.rviz" />
@@ -31,12 +31,12 @@
 
     <!-- Describe the tags -->
     <rosparam param="tag_descriptions">[
-      {id: 0, size: 0.163513},
-      {id: 1, size: 0.163513, frame_id: a_frame},
+      {id: 0, size: 0.163513, frame_id: tag_0},
+      {id: 1, size: 0.163513, frame_id: tag_1},
       {id: 2, size: 0.163513, frame_id: tag_2},
-      {id: 3, size: 0.163513},
-      {id: 4, size: 0.163513},
-      {id: 5, size: 0.163513}]
+      {id: 3, size: 0.163513, frame_id: tag_3},
+      {id: 4, size: 0.163513, frame_id: tag_4},
+      {id: 5, size: 0.163513, frame_id: tag_5}]
     </rosparam>
   </node>
 
