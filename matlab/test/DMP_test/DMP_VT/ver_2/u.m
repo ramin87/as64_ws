@@ -1,0 +1,16 @@
+clc;
+close all;
+clear;
+
+syms M_r D_r K_r u_r ddx_r dx_r x_r F_cr...
+     M_h D_h K_h u_h ddx_h dx_h x_h F_ch...
+     M_o ...
+     ddx dx x ...
+     g ...
+     real
+ 
+ A = [M_r 1 0; M_h 0 1; M_o -1 -1];
+ X = [ddx; F_cr; F_ch];
+ b = [-D_r*dx_r + u_r; -D_h*dx_h + u_h; -M_o*g];
+ 
+ X_sol = simplify(A\b);

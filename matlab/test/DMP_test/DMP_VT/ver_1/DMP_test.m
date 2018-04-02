@@ -3,13 +3,27 @@ clc;
 clear;
 format compact;
 
-global cmd_args grav
+global a_ grav ...
+       M_r D_r K_r ...
+       M_h D_h K_h
 
-grav = 9.81;
-
+ 
 %% ========================================================
 %% initialize cmd params
-cmd_args = get_cmd_args();
+a_ = get_cmd_args();
+
+M_h = a_.M_h;
+D_h = a_.D_h;
+K_h = a_.K_h;
+
+M_r = a_.M_r;
+D_r = a_.D_r;
+K_r = a_.K_r;
+   
+grav = 9.81;
+
+a_.a_z = 20;
+D_r = a_.a_z;
 
 %% ========================================================
 %% Set the matlab utils paths to use custom built utility functions
@@ -17,7 +31,7 @@ set_matlab_utils_path();
 
 %% ========================================================
 %% Set up Reference model
-refModel = RefModel(cmd_args.y0_ref, cmd_args.g_ref, cmd_args.tau_ref, cmd_args.a6, cmd_args.a7);
+refModel = RefModel(a_.y0_ref, a_.g_ref, a_.tau_ref, a_.a6, a_.a7);
 
 %% ========================================================
 %% Load training data
@@ -25,26 +39,27 @@ load data/data.mat Ts Time_data Y_data dY_data ddY_data
 
 %% ========================================================
 %% Set up DMP params
-number_of_kernels = cmd_args.N_kernels
+number_of_kernels = a_.N_kernels
 
 %% ========================================================
 %% Init canonical clock goal and shape attractor gating functions and dmp
 canClockPtr = LinCanonicalClock(1.0);
 shapeAttrGatingPtr = ConstGatingFunction(1.0, 1.0);
 goalAttrGatingPtr = ConstGatingFunction(1.0, 1.0);
-dmp = DMP_VT(cmd_args.N_kernels, cmd_args.a_z, cmd_args.b_z, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, cmd_args.kernelStdScaling);
+dmp = DMP_VT(a_.N_kernels, a_.a_z, a_.b_z, canClockPtr, shapeAttrGatingPtr, goalAttrGatingPtr, a_.kernelStdScaling);
 
 %% ========================================================
 %% Train the DMP
-trainParamsName = {'lambda', 'P_cov'};
-trainParamsValue = {cmd_args.lambda, cmd_args.P_cov};
-disp('DMP training...')
-tic
-dmp.setTrainingParams(cmd_args.trainMethod, trainParamsName, trainParamsValue);
-dmp.trainMulti(Time_data, Y_data, dY_data, ddY_data);      
-toc
 
-% dmp.w = zeros(size(dmp.w));
+% trainParamsName = {'lambda', 'P_cov'};
+% trainParamsValue = {a_.lambda, a_.P_cov};
+% disp('DMP training...')
+% tic
+% dmp.setTrainingParams(a_.trainMethod, trainParamsName, trainParamsValue);
+% dmp.trainMulti(Time_data, Y_data, dY_data, ddY_data);      
+% toc
+
+dmp.w = zeros(size(dmp.w));
 
 canClockPtr.setTau(1.0);
 
@@ -53,8 +68,8 @@ canClockPtr.setTau(1.0);
 %% DMP simulation
 
 %% set initial values
-y0 = cmd_args.y0_ref;
-g0 = cmd_args.g_ref; 
+y0 = a_.y0_ref;
+g0 = a_.g_ref; 
 g = g0; 
 x = 0.0;
 dx = 0.0;
@@ -66,31 +81,32 @@ ddy_dmp = 0.0;
 z = 0;
 dz = 0;
 
-w_o = cmd_args.Mo*grav;
-w_h = cmd_args.human_load_p*w_o;
-w_r = cmd_args.robot_load_p*w_o;
+w_o = a_.Mo*grav;
+w_h = a_.human_load_p*w_o;
+w_r = a_.robot_load_p*w_o;
 
-y_robot = y0;
-dy_robot = 0.0;
-ddy_robot = 0.0;
-u_robot = 0.0;
-F_robot_ext = -w_r;
+y_r = y0;
+dy_r = 0.0;
+ddy_r = 0.0;
+u_r = 0.0;
+F_ext_r = -w_r;
 
-y_human = y0;
-dy_human = 0.0;
-ddy_human = 0.0;
-u_human = 0.0;
-F_human_ext = -w_h;
+y_h = y0;
+dy_h = 0.0;
+ddy_h = 0.0;
+u_h = 0.0;
+F_ext_h = -w_h;
 
 F_err = 0.0;
 
-P_lwr = cmd_args.P_cov*ones(dmp.N_kernels,1);
-lambda = cmd_args.lambda;
+P_lwr = a_.P_cov*ones(dmp.N_kernels,1);
+Sigma_w = diag(P_lwr);
+lambda = a_.lambda;
 
 tau0 = canClockPtr.getTau();
-tau = cmd_args.tau_sim_scale*tau0;
+tau = a_.tau_sim_scale*tau0;
 canClockPtr.setTau(tau);
-dt = cmd_args.dt;
+dt = a_.dt;
 
 iters = 0;
 
@@ -99,9 +115,9 @@ iters = 0;
 log_data = struct('Time',[], ...,
                   'y_dmp_data',[],'dy_dmp_data',[],'ddy_dmp_data',[],'x_data',[], 'w_dmp_data',[], ...
                   'P_lwr_data',[], ...
-                  'y_robot_data',[],'dy_robot_data',[],'ddy_robot_data',[], 'u_robot_data',[], 'F_robot_ext_data',[], ...
+                  'y_r_data',[],'dy_r_data',[],'ddy_r_data',[], 'u_r_data',[], 'F_ext_r_data',[], ...
                   'y_ref_data',[],'dy_ref_data',[],'ddy_ref_data',[], ...
-                  'y_human_data',[],'dy_human_data',[],'ddy_human_data',[], 'u_human_data',[], 'F_human_ext_data',[],  ...
+                  'y_h_data',[],'dy_h_data',[],'ddy_h_data',[], 'u_h_data',[], 'F_ext_h_data',[],  ...
                   'F_err_data',[], 'w_r_data',[], 'w_h_data',[]);
         
 %% Simulation
@@ -109,10 +125,24 @@ disp('Simulation...')
 tic
 while (true)
 
-    %% get the reference model trajectory
+    %% ===========  Get refernce trajectories =================
+    
+    %% get the human's model reference
     [y_ref, dy_ref, ddy_ref] = refModel.getRef(t);
+    
+    %% get the DMP's model reference
+    Y_c = 0.0;
+    Z_c = 0.0;
+    [dy_dmp, dz] = dmp.getStatesDot(x, y_dmp, z, y0, g, Y_c, Z_c);
+    dx = canClockPtr.getPhaseDot(x);
+    ddy_dmp = dz/dmp.get_v_scale();
+    
+%     y_dmp = y_ref;
+%     dy_dmp = dy_ref;
+%     ddy_dmp = ddy_ref;
+    
      
-    %% data logging
+    %% ===========  data logging ===========  
 
     log_data.Time = [log_data.Time t];
     
@@ -122,23 +152,23 @@ while (true)
     log_data.dy_dmp_data = [log_data.dy_dmp_data dy_dmp];   
     log_data.ddy_dmp_data = [log_data.ddy_dmp_data ddy_dmp];
     
-    log_data.y_robot_data = [log_data.y_robot_data y_robot];
-    log_data.dy_robot_data = [log_data.dy_robot_data dy_robot];   
-    log_data.ddy_robot_data = [log_data.ddy_robot_data ddy_robot];
+    log_data.y_r_data = [log_data.y_r_data y_r];
+    log_data.dy_r_data = [log_data.dy_r_data dy_r];   
+    log_data.ddy_r_data = [log_data.ddy_r_data ddy_r];
     
-    log_data.y_human_data = [log_data.y_human_data y_human];
-    log_data.dy_human_data = [log_data.dy_human_data dy_human];   
-    log_data.ddy_human_data = [log_data.ddy_human_data ddy_human];
+    log_data.y_h_data = [log_data.y_h_data y_h];
+    log_data.dy_h_data = [log_data.dy_h_data dy_h];   
+    log_data.ddy_h_data = [log_data.ddy_h_data ddy_h];
         
     log_data.y_ref_data = [log_data.y_ref_data y_ref];
     log_data.dy_ref_data = [log_data.dy_ref_data dy_ref];   
     log_data.ddy_ref_data = [log_data.ddy_ref_data ddy_ref];
     
-    log_data.u_human_data = [log_data.u_human_data u_human];
-    log_data.F_human_ext_data = [log_data.F_human_ext_data F_human_ext];
+    log_data.u_h_data = [log_data.u_h_data u_h];
+    log_data.F_ext_h_data = [log_data.F_ext_h_data F_ext_h];
     
-    log_data.u_robot_data = [log_data.u_robot_data u_robot];
-    log_data.F_robot_ext_data = [log_data.F_robot_ext_data F_robot_ext];
+    log_data.u_r_data = [log_data.u_r_data u_r];
+    log_data.F_ext_r_data = [log_data.F_ext_r_data F_ext_r];
     
     log_data.F_err_data = [log_data.F_err_data F_err];
     
@@ -149,67 +179,64 @@ while (true)
     log_data.w_r_data = [log_data.w_r_data w_r];
     log_data.w_h_data = [log_data.w_h_data w_h];
     
-    %% DMP model simulation
-    Y_c = 0.0;
-    Z_c = 0.0; %0.05*F_err;
-    [dy_dmp, dz] = dmp.getStatesDot(x, y_dmp, z, y0, g, Y_c, Z_c);
-    dx = canClockPtr.getPhaseDot(x);
-    ddy_dmp = dz/dmp.get_v_scale();
     
     %% Robot and Human model simulation
     
     % desired load carried by human
-    if (cmd_args.const_wh_error)
-        a_h = cmd_args.human_load_p + cmd_args.human_load_p_var;
+    if (a_.const_wh_error)
+        a_h = a_.human_load_p + a_.human_load_p_var;
     else
-        a_h = cmd_args.human_load_p + (2*rand()-1)*cmd_args.human_load_p_var;
+        a_h = a_.human_load_p + (2*rand()-1)*a_.human_load_p_var;
     end
     w_h = w_o*a_h; % simulates the scenario where the human  carries a varying load because he cannot estimate well how much force he applies
     w_h_hat = w_h;
     
     % desired load carried by robot
-    w_r = cmd_args.robot_load_p*w_o;
+    w_r = a_.robot_load_p*w_o;
     
-    % Force exerted by the robot
-    u_robot = cmd_args.Kr*(y_dmp-y_robot) + cmd_args.Dr*dy_dmp + cmd_args.Mr*ddy_dmp;
+    v_r = K_r*(y_dmp-y_r) + D_r*dy_dmp + M_r*ddy_dmp;
     
     % Force exerted by the human
-    u_human = cmd_args.Kh*(y_ref-y_human) + cmd_args.Dh*dy_ref + cmd_args.Mh*ddy_ref + w_h;
+    u_h = K_h*(y_ref-y_h) + D_h*dy_ref + M_h*ddy_ref + w_h;
     
-%     Fc = cmd_args.Kc*(y_robot-y_human);
-%     Fc = w_h_hat - u_human + cmd_args.Kr*(y_dmp-y_human) + cmd_args.Dr*(dy_dmp-dy_human) + cmd_args.Mh*ddy_dmp + cmd_args.Dh*dy_human;
-    Fc = w_h_hat - u_human + cmd_args.Mh*( inv(cmd_args.Mr)*(cmd_args.Kr*(y_dmp-y_robot) + cmd_args.Dr*(dy_dmp-dy_robot)) + ddy_dmp) + cmd_args.Dh*dy_human;
+    Fc = w_h_hat + M_h * ( inv(M_r)*(-D_r*dy_r + v_r) - inv(M_h)*(-D_h*dy_h + u_h) );
 
     % External force exerted on the human
-    F_human_ext = - w_h_hat + Fc;
+    F_ext_h = - w_h_hat + Fc;
     
     % External force exerted on the robot
-    F_robot_ext = - (w_o-w_h_hat) - Fc;
+    F_ext_r = - (w_o-w_h_hat) - Fc;
+    
+    % Force exerted by the robot
+    u_r = v_r - F_ext_r;
     
     % Robot model dynamics
-    ddy_robot = inv(cmd_args.Mr) * ( - cmd_args.Dr*dy_robot + u_robot + 0*F_robot_ext);
+    ddy_r = inv(M_r) * ( - D_r*dy_r + u_r + F_ext_r);
     
     % Human model dynamics
-    ddy_human = inv(cmd_args.Mh) * ( - cmd_args.Dh*dy_human + u_human + F_human_ext); 
+    ddy_h = inv(M_h) * ( - D_h*dy_h + u_h + F_ext_h); 
     
     
     %% Force error
-    %F_err = 1.0*(F_robot_ext + 2*w_o + (1-cmd_args.w_dmp)*w_o + 0*cmd_args.w_dmp*w_o);
-    F_err = 1.0*(F_robot_ext + w_r);
+    F_err = 1.0*(F_ext_r + w_r);
     
     %% DMP model online adaption
-    P_lwr = dmp.update_weights(x, F_err, 0.0, 0.0, P_lwr, lambda);
+    Sigma_w = dmp.update_weights_with_KF(x, F_err, 0.0, 0.0, Sigma_w, 0.01);
+    P_lwr = diag(Sigma_w);
+%     Sigma_w
+%     dmp.w
+%     pause
     
     
     %% Stopping criteria
-    err_p = max(abs(g-y_robot));
-    if (err_p <= cmd_args.tol_stop ...
-        && t>=tau && abs(dy_robot)<0.03 && abs(dy_human)<0.03)
+    err_p = max(abs(g-y_r));
+    if (err_p <= a_.tol_stop ...
+        && t>=tau && abs(dy_r)<0.03 && abs(dy_h)<0.03)
         break; 
     end
     
     iters = iters + 1;
-    if (t>=1.2*tau || iters>=cmd_args.max_iters)
+    if (t>=1.2*tau || iters>=a_.max_iters)
         warning('Iteration limit reached. Stopping simulation...\n');
         break;
     end
@@ -222,33 +249,40 @@ while (true)
     y_dmp = y_dmp + dy_dmp*dt;
     z = z + dz*dt;
     
-    y_robot = y_robot + dy_robot*dt;
-    dy_robot = dy_robot + ddy_robot*dt;
+    y_r = y_r + dy_r*dt;
+    dy_r = dy_r + ddy_r*dt;
     
-    y_human = y_human + dy_human*dt;
-    dy_human = dy_human + ddy_human*dt;
+    y_h = y_h + dy_h*dt;
+    dy_h = dy_h + ddy_h*dt;
     
 
 end
 toc
+
+% figure
+% hold on;
+% plot(log_data.Time, log_data.y_r_data-log_data.y_ref_data,'-r','LineWidth',1.5);
+% plot(log_data.Time, log_data.dy_r_data-log_data.dy_ref_data,'-m','LineWidth',1.5);
+% legend('pos-err','vel-err');
+% hold off;
 
 fontsize = 14;
 lineWidth = 1.4;
 
 figure;
 subplot(3,1,1);
-plot(log_data.Time, log_data.y_dmp_data, 'm-.', log_data.Time, log_data.y_robot_data, 'b-',log_data.Time, log_data.y_human_data, 'g-', log_data.Time, log_data.y_ref_data, 'r-.', 'LineWidth',lineWidth);
+plot(log_data.Time, log_data.y_dmp_data, 'm-.', log_data.Time, log_data.y_r_data, 'b-',log_data.Time, log_data.y_h_data, 'g-', log_data.Time, log_data.y_ref_data, 'r-.', 'LineWidth',lineWidth);
 title('Position', 'FontSize',fontsize, 'Interpreter','latex');
 legend({'DMP','Robot','Human','Ref'}, 'FontSize',fontsize, 'Interpreter','latex');
 ylabel('[$m$]', 'FontSize',fontsize, 'Interpreter','latex');
 axis tight;
 subplot(3,1,2);
-plot(log_data.Time, log_data.dy_dmp_data, 'm-.', log_data.Time, log_data.dy_robot_data, 'b-',log_data.Time, log_data.dy_human_data, 'g-', log_data.Time, log_data.dy_ref_data, 'r-.', 'LineWidth',lineWidth);
+plot(log_data.Time, log_data.dy_dmp_data, 'm-.', log_data.Time, log_data.dy_r_data, 'b-',log_data.Time, log_data.dy_h_data, 'g-', log_data.Time, log_data.dy_ref_data, 'r-.', 'LineWidth',lineWidth);
 title('Velocity', 'FontSize',fontsize, 'Interpreter','latex');
 ylabel('[$m/s$]', 'FontSize',fontsize, 'Interpreter','latex');
 axis tight;
 subplot(3,1,3);
-plot(log_data.Time, log_data.ddy_dmp_data, 'm-.', log_data.Time, log_data.ddy_robot_data, 'b-',log_data.Time, log_data.ddy_human_data, 'g-', log_data.Time, log_data.ddy_ref_data, 'r-.', 'LineWidth',lineWidth);
+plot(log_data.Time, log_data.ddy_dmp_data, 'm-.', log_data.Time, log_data.ddy_r_data, 'b-',log_data.Time, log_data.ddy_h_data, 'g-', log_data.Time, log_data.ddy_ref_data, 'r-.', 'LineWidth',lineWidth);
 title('Acceleration', 'FontSize',fontsize, 'Interpreter','latex');
 ylabel('[$m/s^2$]', 'FontSize',fontsize, 'Interpreter','latex');
 axis tight;
@@ -256,9 +290,9 @@ axis tight;
 figure
 t0 = log_data.Time(1);
 tend = log_data.Time(end);
-plot(log_data.Time,log_data.F_robot_ext_data,'b-' ,log_data.Time,log_data.F_human_ext_data,'g-', log_data.Time,-log_data.w_r_data,'r--', log_data.Time,-log_data.w_h_data,'m--','LineWidth',lineWidth);
+plot(log_data.Time,log_data.F_ext_r_data,'b-' ,log_data.Time,log_data.F_ext_h_data,'g-', log_data.Time,-log_data.w_r_data,'r--', log_data.Time,-log_data.w_h_data,'m--','LineWidth',lineWidth);
 title('Forces exterted on robot and human', 'FontSize',14, 'Interpreter','latex');
-legend({'$Fext_{robot}$','$Fext_{human}$','$Load_{robot}$','$Load_{human}$'}, 'FontSize',fontsize, 'Interpreter','latex');
+legend({'$F_{ext,r}$','$F_{ext,h}$','$Load_{robot}$','$Load_{human}$'}, 'FontSize',fontsize, 'Interpreter','latex');
 ylabel('[$N$]', 'FontSize',fontsize, 'Interpreter','latex');
 xlabel('time [$s$]', 'FontSize',fontsize, 'Interpreter','latex');
 axis tight;
