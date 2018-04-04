@@ -64,9 +64,9 @@ classdef RefModel < handle
 %             y = [y y+y(end) 2*y(end)-y];
 %             dy = 3*[dy dy -dy];
 %             ddy = 9*[ddy ddy -ddy];
-%             
-%             dt = tau/(length(y)-1);
-%             this.t = 0:dt:tau;
+            
+            dt = tau/(length(y)-1);
+            this.t = 0:dt:tau;
 
             this.y = y;
             this.dy = dy;

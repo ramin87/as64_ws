@@ -1,11 +1,10 @@
-%% OL_1D_DMP_KF_nod class
+%% OL_1D_DMP_KF class
 %  OL: Object load.
 %  1D: 1 dimension (gravity direction)
 %  DMP_KF: DMP with Kalman-filter update for the weights
-%  nod: No object dynamics are included.
 %
 
-classdef OL_1D_DMP_KF_nod < handle
+classdef OL_1D_DMP_KF < handle
     properties
         %% DMP parameters
         dmp % dmp model
@@ -43,6 +42,7 @@ classdef OL_1D_DMP_KF_nod < handle
 
         %% Object Model
         M_o % object's mass
+        od_flag % true of we consider the object dynamics
         
         %% Object lifting params
         load_r_p % percent of the object load carried by the robot
@@ -74,12 +74,12 @@ classdef OL_1D_DMP_KF_nod < handle
 
     methods
         %% constructor
-        function this = OL_1D_DMP_KF_nod()
+        function this = OL_1D_DMP_KF()
             
             setMatlabPath();
             this.init();
             
-            disp('Object lift - 1D - DMP with KF update - no object dynamics');
+            disp('Object lift - 1D - DMP with KF update - with object dynamics');
             
         end
 
@@ -93,6 +93,8 @@ classdef OL_1D_DMP_KF_nod < handle
 
         function initProgramArguments(this)
             
+            zero_tol = 1e-50;
+            
             %% DMP parameters
             this.D_z = 50.0;
             this.K_z = 0;
@@ -102,43 +104,44 @@ classdef OL_1D_DMP_KF_nod < handle
             this.train_method = 'LWR';
             this.lambda = 0.98;
             this.sigma_dmp_w = 1e2;
-            this.k_Ferr = 1.0;
-            this.sigma_noise = 1e-6;
+            this.sigma_noise = 8e-1;
             this.train_dmp_offline = false;
             
             
             %% Reference model
             this.y0_ref = 0.0;
-            this.g_ref = 0.5;
-            this.a6 = 0.0;
+            this.g_ref = 0.6;
+            this.a6 = -5.0;
             this.a7 = 0.0;
-            this.tau_ref = 2.0;
+            this.tau_ref = 2.5;
 
 
             %% Human model
-            this.M_h = 1.0;
-            this.K_h = 250.0;
+            this.M_h = 20.0 + zero_tol;
+            this.K_h = 1000.0;
             this.D_h = 2*sqrt(this.M_h*this.K_h);
 
             
             %% Robot model
-            this.M_r = 1.0;
-            this.K_r = 0.0;
-            this.D_r = 100; %this.D_z; %2*sqrt(cmd_args.M_r*cmd_args.K_r);
+            this.M_r = 100.0 + zero_tol;
+            this.K_r = 1000.0;
+            this.D_r = 1000; %this.D_z; %2*sqrt(cmd_args.M_r*cmd_args.K_r);
 
             
             %% Object model
-            this.M_o = 10.0;
-            this.load_r_p = 0.7;
-            this.load_h_p = 0.3;
+            this.M_o = 10 + zero_tol;
+            this.od_flag = true;
+            this.load_r_p = 0.8;
+            this.load_h_p = 0.2;
             this.load_h_p_var = 0.0;
 
+            this.k_Ferr = 1/this.M_h;
             
             %% Simulation params
             this.sim_timestep = 0.002;
             this.pos_tol_stop = 0.01;
             this.vel_tol_stop = 0.005;
-            this.max_sim_time_p = 3.0;
+            this.max_sim_time_p = 1.4;
             
         end
         
@@ -162,11 +165,11 @@ classdef OL_1D_DMP_KF_nod < handle
             this.log_data = struct('Time',[], ...,
                                   'y_dmp_data',[],'dy_dmp_data',[],'ddy_dmp_data',[],'x_data',[], 'w_dmp_data',[], ...
                                   'P_lwr_data',[], ...
-                                  'y_r_data',[],'dy_r_data',[],'ddy_r_data',[], 'u_r_data',[], 'F_ext_r_data',[], ...
+                                  'y_r_data',[],'dy_r_data',[],'ddy_r_data',[], 'u_r_data',[], 'F_c_r_data',[], ...
                                   'y_ref_data',[],'dy_ref_data',[],'ddy_ref_data',[], ...
-                                  'y_h_data',[],'dy_h_data',[],'ddy_h_data',[], 'u_h_data',[], 'F_ext_h_data',[],  ...
-                                  'F_err_data',[], 'w_r_data',[], 'w_h_data',[], ...
-                                  'F_c_data',[], 'F_c1_data',[], 'F_c2_data',[]);
+                                  'y_h_data',[],'dy_h_data',[],'ddy_h_data',[], 'u_h_data',[], 'F_c_h_data',[],  ...
+                                  'y_o_data',[],'dy_o_data',[],'ddy_o_data',[], 'F_c_o_data',[],  ...
+                                  'F_err_data',[], 'F_c_r_d_data',[], 'F_c_h_d_data',[]);
             
             %% load train data
             load data/data.mat Ts Time_data Y_data dY_data ddY_data
@@ -222,20 +225,25 @@ classdef OL_1D_DMP_KF_nod < handle
             dz = 0;
 
             w_o = this.M_o*this.grav;
-            w_h = this.load_h_p*w_o;
-            w_r = this.load_r_p*w_o;
+            F_c_h_d = this.load_h_p*w_o;
+            F_c_r_d = this.load_r_p*w_o;
 
             y_r = y0;
             dy_r = 0.0;
             ddy_r = 0.0;
             u_r = 0.0;
-            F_ext_r = -w_r;
+            F_c_r = 0;
 
             y_h = y0;
             dy_h = 0.0;
             ddy_h = 0.0;
             u_h = 0.0;
-            F_ext_h = -w_h;
+            F_c_h = 0;
+            
+            y_o = y0;
+            dy_o = 0.0;
+            ddy_o = 0.0;
+            F_c_o = F_c_r+F_c_h;
 
             F_err_prev = 0.0;
             F_err = 0.0;
@@ -282,84 +290,99 @@ classdef OL_1D_DMP_KF_nod < handle
                 log_data.y_r_data = [log_data.y_r_data y_r];
                 log_data.dy_r_data = [log_data.dy_r_data dy_r];   
                 log_data.ddy_r_data = [log_data.ddy_r_data ddy_r];
+                log_data.u_r_data = [log_data.u_r_data u_r];
+                log_data.F_c_r_data = [log_data.F_c_r_data F_c_r];
 
                 log_data.y_h_data = [log_data.y_h_data y_h];
                 log_data.dy_h_data = [log_data.dy_h_data dy_h];   
                 log_data.ddy_h_data = [log_data.ddy_h_data ddy_h];
+                log_data.u_h_data = [log_data.u_h_data u_h];
+                log_data.F_c_h_data = [log_data.F_c_h_data F_c_h];
+                
+                log_data.y_o_data = [log_data.y_o_data y_o];
+                log_data.dy_o_data = [log_data.dy_o_data dy_o];   
+                log_data.ddy_o_data = [log_data.ddy_o_data ddy_o];
+                log_data.F_c_o_data = [log_data.F_c_o_data F_c_o];
 
                 log_data.y_ref_data = [log_data.y_ref_data y_ref];
                 log_data.dy_ref_data = [log_data.dy_ref_data dy_ref];   
                 log_data.ddy_ref_data = [log_data.ddy_ref_data ddy_ref];
 
-                log_data.u_h_data = [log_data.u_h_data u_h];
-                log_data.F_ext_h_data = [log_data.F_ext_h_data F_ext_h];
-
-                log_data.u_r_data = [log_data.u_r_data u_r];
-                log_data.F_ext_r_data = [log_data.F_ext_r_data F_ext_r];
-
+                
                 log_data.F_err_data = [log_data.F_err_data F_err];
 
                 log_data.w_dmp_data = [log_data.w_dmp_data this.dmp.w];
 
                 log_data.P_lwr_data = [log_data.P_lwr_data P_lwr];
 
-                log_data.w_r_data = [log_data.w_r_data w_r];
-                log_data.w_h_data = [log_data.w_h_data w_h];
-
-                log_data.F_c1_data = [log_data.F_c1_data F_c1];
-                log_data.F_c2_data = [log_data.F_c2_data F_c2];
+                log_data.F_c_r_d_data = [log_data.F_c_r_d_data F_c_r_d];
+                log_data.F_c_h_d_data = [log_data.F_c_h_d_data F_c_h_d];
 
 
                 %% Robot and Human model simulation
 
-                % desired load carried by human
-                a_h = this.load_h_p + (2*rand()-1)*this.load_h_p_var;
-                w_h_hat = w_o*a_h; % simulates the scenario where the human  carries a varying load because he cannot estimate well how much force he applies
-
-                % desired load carried by robot
-                w_r = this.load_r_p*w_o;
-
+                % Control applied by the robot to track its reference
                 v_r = K_r*(y_dmp-y_r) + D_r*dy_dmp + M_r*ddy_dmp;
 
-                % Force exerted by the human
-                u_h = K_h*(y_ref-y_h) + D_h*dy_ref + M_h*ddy_ref + w_h_hat;
-
-                F_c = w_h_hat + M_h * ( inv(M_r)*(-D_r*dy_r + v_r) - inv(M_h)*(-D_h*dy_h + u_h) );         
-   
-                F_c1 =  M_h*(ddy_dmp-ddy_ref);
-                F_c2 = ( D_h*(dy_h-dy_ref) - M_h*inv(M_r)*D_r*(dy_r-dy_dmp) - M_h*inv(M_r)*K_r*(y_r-y_dmp) + K_h*(y_h-y_ref) );
-%                 F_c = F_c1 + F_c2;
-   
+                % Control applied by the human to track its reference
+                v_h = K_h*(y_ref-y_h) + D_h*dy_ref + M_h*ddy_ref;
                 
-                % External force exerted on the human
-                F_ext_h = - w_h_hat + F_c;
+                
+                % desired load carried by human
+%                 a_h = this.load_h_p + (2*rand()-1)*this.load_h_p_var;
+%                 F_c_h_d_hat = 0*w_o*a_h; % simulates the scenario where the human  carries a varying load because he cannot estimate well how much force he applies
+                A = [M_h 1; this.load_h_p*M_o -1];
+                b = [-D_h*dy_h+v_h; -this.load_h_p*w_o];
+                X = A\b;
+                F_c_h_d = X(2);
+                
+                % desired load carried by robot
+                A = [M_r 1; this.load_r_p*M_o -1];
+                b = [-D_r*dy_r+v_r; -this.load_r_p*w_o];
+                X = A\b;
+                F_c_r_d = X(2);
+%                 F_c_r_d = this.load_r_p*w_o;
 
-                % External force exerted on the robot
-                F_ext_r = - (w_o-w_h_hat) - F_c;
-
-                % Force exerted by the robot
-                u_r = v_r - F_ext_r;
+                % Control applied by the human to track its reference and compensate for coupling forces
+                u_h = v_h + F_c_h_d;
+                 
+                A = [M_r 0 0; M_h 0 1; M_o -1 -1];
+                b = [-D_r*dy_r+v_r; -D_h*dy_h+u_h; -w_o];
+                X = A\b;
+                ddy = X(1);
+                F_c_r = X(2);
+                F_c_h = X(3);
+                F_c_o = (F_c_r + F_c_h);
+                
+                % Control applied by the robot to track its reference and compensate for coupling forces
+                u_r = v_r + F_c_r;
 
                 % Robot model dynamics
-                ddy_r = inv(M_r) * ( - D_r*dy_r + u_r + F_ext_r);
+                ddy_r = inv(M_r) * ( - D_r*dy_r + u_r - F_c_r);
 
                 % Human model dynamics
-                ddy_h = inv(M_h) * ( - D_h*dy_h + u_h + F_ext_h); 
+                ddy_h = inv(M_h) * ( - D_h*dy_h + u_h - F_c_h); 
+                
+                % Object model dynamics
+%                 ddy_o = inv(M_o) * (F_c_o - w_o);
+                ddy_o = ddy;
+%                 ddy_r = ddy;
+%                 ddy_h = ddy;
 
 
                 %% Force error
                 F_err_prev = F_err;
-                F_err = this.k_Ferr*(F_ext_r + w_r);
-
-%                 F_err = (F_ext_r + w_r);
-%                 k_err = 1 ./ ( 1 + exp(-1.5*(20-F_err)) );
-%                 F_err = k_err*F_err;
-%                 k_err
+                F_err = this.k_Ferr*(-F_c_r + F_c_r_d);
 
 
                 %% DMP model online adaption
                 Sigma_w = this.dmp.update_weights_with_KF(x, F_err, 0.0, 0.0, Sigma_w, this.sigma_noise);
                 P_lwr = diag(Sigma_w);
+                sn_a = 0.05;
+                this.sigma_noise = (1-sn_a)*this.sigma_noise + sn_a*1e-5;
+                
+%                 this.sigma_noise
+%                 pause
 
                 %% Stopping criteria
                 err_p = max(abs(g-y_r));
@@ -387,6 +410,9 @@ classdef OL_1D_DMP_KF_nod < handle
 
                 y_h = y_h + dy_h*dt;
                 dy_h = dy_h + ddy_h*dt;
+                
+                y_o = y_o + dy_o*dt;
+                dy_o = dy_o + ddy_o*dt;
 
             end
             toc
@@ -414,18 +440,18 @@ classdef OL_1D_DMP_KF_nod < handle
 
             figure;
             subplot(3,1,1);
-            plot(log_data.Time, log_data.y_dmp_data, 'm-.', log_data.Time, log_data.y_r_data, 'b-',log_data.Time, log_data.y_h_data, 'g-', log_data.Time, log_data.y_ref_data, 'r-.', 'LineWidth',lineWidth);
+            plot(log_data.Time, log_data.y_dmp_data, 'm-.', log_data.Time, log_data.y_r_data, 'b-',log_data.Time, log_data.y_h_data, 'g-', log_data.Time, log_data.y_o_data, 'y-.', log_data.Time, log_data.y_ref_data, 'r-.', 'LineWidth',lineWidth);
             title('Position', 'FontSize',fontsize, 'Interpreter','latex');
-            legend({'DMP','Robot','Human','Ref'}, 'FontSize',fontsize, 'Interpreter','latex');
+            legend({'DMP','Robot','Human','Object','Ref'}, 'FontSize',fontsize, 'Interpreter','latex');
             ylabel('[$m$]', 'FontSize',fontsize, 'Interpreter','latex');
             axis tight;
             subplot(3,1,2);
-            plot(log_data.Time, log_data.dy_dmp_data, 'm-.', log_data.Time, log_data.dy_r_data, 'b-',log_data.Time, log_data.dy_h_data, 'g-', log_data.Time, log_data.dy_ref_data, 'r-.', 'LineWidth',lineWidth);
+            plot(log_data.Time, log_data.dy_dmp_data, 'm-.', log_data.Time, log_data.dy_r_data, 'b-',log_data.Time, log_data.dy_h_data, 'g-', log_data.Time, log_data.dy_o_data, 'y-.', log_data.Time, log_data.dy_ref_data, 'r-.', 'LineWidth',lineWidth);
             title('Velocity', 'FontSize',fontsize, 'Interpreter','latex');
             ylabel('[$m/s$]', 'FontSize',fontsize, 'Interpreter','latex');
             axis tight;
             subplot(3,1,3);
-            plot(log_data.Time, log_data.ddy_dmp_data, 'm-.', log_data.Time, log_data.ddy_r_data, 'b-',log_data.Time, log_data.ddy_h_data, 'g-', log_data.Time, log_data.ddy_ref_data, 'r-.', 'LineWidth',lineWidth);
+            plot(log_data.Time, log_data.ddy_dmp_data, 'm-.', log_data.Time, log_data.ddy_r_data, 'b-',log_data.Time, log_data.ddy_h_data, 'g-', log_data.Time, log_data.ddy_o_data, 'y-.', log_data.Time, log_data.ddy_ref_data, 'r-.', 'LineWidth',lineWidth);
             title('Acceleration', 'FontSize',fontsize, 'Interpreter','latex');
             ylabel('[$m/s^2$]', 'FontSize',fontsize, 'Interpreter','latex');
             axis tight;
@@ -433,9 +459,9 @@ classdef OL_1D_DMP_KF_nod < handle
             figure;
             t0 = log_data.Time(1);
             tend = log_data.Time(end);
-            plot(log_data.Time,log_data.F_ext_r_data,'b-' ,log_data.Time,log_data.F_ext_h_data,'g-', log_data.Time,-log_data.w_r_data,'r--', log_data.Time,-log_data.w_h_data,'m--','LineWidth',lineWidth);
+            plot(log_data.Time,log_data.F_c_r_data,'b-' ,log_data.Time,log_data.F_c_h_data,'g-', log_data.Time, log_data.F_c_r_d_data,'r--', log_data.Time, log_data.F_c_h_d_data,'m--','LineWidth',lineWidth);
             title('Forces exterted on robot and human', 'FontSize',14, 'Interpreter','latex');
-            legend({'$F_{ext,r}$','$F_{ext,h}$','$Load_{robot}$','$Load_{human}$'}, 'FontSize',fontsize, 'Interpreter','latex');
+            legend({'$F_{c,r}$','$F_{c,h}$','$Load_{robot}$','$Load_{human}$'}, 'FontSize',fontsize, 'Interpreter','latex');
             ylabel('[$N$]', 'FontSize',fontsize, 'Interpreter','latex');
             xlabel('time [$s$]', 'FontSize',fontsize, 'Interpreter','latex');
             axis tight;
@@ -515,18 +541,7 @@ classdef OL_1D_DMP_KF_nod < handle
             xlim([log_data.Time(1) log_data.Time(end)]);
             title('DMP weights', 'FontSize',fontsize, 'Interpreter','latex');
             xlabel('time [$s$]', 'FontSize',fontsize, 'Interpreter','latex');
-            
-            figure;
-            subplot(2,1,1);
-            hold on;
-            plot(log_data.Time, log_data.F_c1_data);
-            plot(log_data.Time, log_data.F_c2_data);
-            plot(log_data.Time, log_data.F_c1_data+log_data.F_c2_data);
-            legend({'$F_{c1}$','$F_{c2}$','$F_c$'}, 'FontSize',fontsize, 'Interpreter','latex');
-            hold off;
-            subplot(2,1,2);
-            plot(log_data.Time,log_data.ddy_dmp_data, log_data.Time,log_data.ddy_ref_data, 'LineWidth',1.5);
-            legend({'$\ddot{y}_{dmp}$','$\ddot{y}_{ref}$'}, 'FontSize',fontsize, 'Interpreter','latex');
+
         end
 
     end

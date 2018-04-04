@@ -3,9 +3,8 @@ clc;
 clear;
 
 % m = OL_1D_DMP_RLWR_nod();
-m = OL_1D_DMP_KF_nod();
-% m = OL_1D_DMP_RLWR_wod();
-% m = OL_1D_DMP_KF_wod();
+% m = OL_1D_DMP_KF_nod();
+m = OL_1D_DMP_KF();
 
 m.trainModel();
 
