@@ -56,7 +56,7 @@ classdef DMP_VT < handle % : public DMP_
         trainMethod % training method for weights of the DMP forcing term
 
         lambda % forgetting factor in recursive training methods
-        P_cov% Initial value of covariance matrix in recursive training methods
+        P_cov % Initial value of covariance matrix in recursive training methods
 
     end
 
@@ -249,7 +249,7 @@ classdef DMP_VT < handle % : public DMP_
         %  @param[in] g: Goal position.
         %  @param[in,out] P: \a P matrix of RLWR.
         %  @param[in] lambda: Forgetting factor.
-        function [P] = update_weights(dmp, x, Ferr, y0, g, P, lambda)
+        function [P] = update_weights_with_RLWR(dmp, x, Ferr, y0, g, P, lambda)
             
             s = dmp.forcingTermScaling(y0, g);
             psi = dmp.kernelFunction(x);
@@ -257,8 +257,29 @@ classdef DMP_VT < handle % : public DMP_
             % error = Fd - dmp.w*s;
             error = Ferr;
 
+            P_prev = P;
+            
             P = (P - (P.^2.*s.^2) ./ (lambda./psi + P.*s.^2)) / lambda;
+            
+            ind = P>P_prev;
+            P(ind) = P_prev(ind);
+            
             dmp.w = dmp.w + psi.*P.*s.*error; 
+
+        end
+        
+        function [Sigma_w] = update_weights_with_KF(dmp, x, Ferr, y0, g, Sigma_w, sigma_noise)
+            
+            s = dmp.forcingTermScaling(y0, g);
+            psi = dmp.kernelFunction(x);
+            
+            Psi = psi / (sum(psi) + dmp.zero_tol);
+            
+            A = inv(sigma_noise + Psi'*Sigma_w*Psi);
+            sigmaW_psi = Sigma_w*Psi;
+            
+            dmp.w = dmp.w + sigmaW_psi*A*Ferr;
+            Sigma_w = Sigma_w - sigmaW_psi*A*(sigmaW_psi)';
 
         end
 
@@ -424,6 +445,14 @@ classdef DMP_VT < handle % : public DMP_
         function tau = getTau(dmp)
 
             tau = DMP_getTau(dmp);
+
+        end
+        
+        %% Returns DMP's number of kernels
+        %  @param[out] numKernels: The number of kernels in the DMP
+        function numKernels = getNumKernels(dmp)
+
+            numKernels = length(dmp.w);
 
         end
 
