@@ -45,8 +45,8 @@ classdef OL_1D_DMP_KF < handle
         od_flag % true of we consider the object dynamics
         
         %% Object lifting params
-        load_r_p % percent of the object load carried by the robot
-        load_h_p % percent of the object load carried by the human
+        M_o_r % object load carried by the robot
+        M_o_h % object load carried by the human
         load_h_p_var % variance in the load carried by the human
 
 
@@ -117,31 +117,31 @@ classdef OL_1D_DMP_KF < handle
 
 
             %% Human model
-            this.M_h = 20.0 + zero_tol;
-            this.K_h = 1000.0;
+            this.M_h = 15.0 + zero_tol;
+            this.K_h = 500.0;
             this.D_h = 2*sqrt(this.M_h*this.K_h);
 
             
             %% Robot model
-            this.M_r = 100.0 + zero_tol;
-            this.K_r = 1000.0;
-            this.D_r = 1000; %this.D_z; %2*sqrt(cmd_args.M_r*cmd_args.K_r);
+            this.M_r = 20.0 + zero_tol;
+            this.K_r = 750.0;
+            this.D_r = 2*sqrt(this.M_r*this.K_r);
 
             
             %% Object model
-            this.M_o = 10 + zero_tol;
+            this.M_o = 10.0 + zero_tol;
             this.od_flag = true;
-            this.load_r_p = 0.8;
-            this.load_h_p = 0.2;
+            this.M_o_r = 7.0;
+            this.M_o_h = 3.0;
             this.load_h_p_var = 0.0;
 
             this.k_Ferr = 1/this.M_h;
             
             %% Simulation params
             this.sim_timestep = 0.002;
-            this.pos_tol_stop = 0.01;
+            this.pos_tol_stop = 0.02;
             this.vel_tol_stop = 0.005;
-            this.max_sim_time_p = 1.4;
+            this.max_sim_time_p = 1.3;
             
         end
         
@@ -208,7 +208,11 @@ classdef OL_1D_DMP_KF < handle
             M_r = this.M_r;  D_r = this.D_r;  K_r = this.K_r;
             M_h = this.M_h;  D_h = this.D_h;  K_h = this.K_h;
             M_o = this.M_o;
+            M_o_r = this. M_o_r;
+            M_o_h = this. M_o_h;
             log_data = this.log_data;
+            grav = this.grav;
+
             
             %% set initial values
             y0 = this.y0_ref;
@@ -225,8 +229,8 @@ classdef OL_1D_DMP_KF < handle
             dz = 0;
 
             w_o = this.M_o*this.grav;
-            F_c_h_d = this.load_h_p*w_o;
-            F_c_r_d = this.load_r_p*w_o;
+            F_c_h_d = M_o_r;
+            F_c_r_d = M_o_h;
 
             y_r = y0;
             dy_r = 0.0;
@@ -247,6 +251,7 @@ classdef OL_1D_DMP_KF < handle
 
             F_err_prev = 0.0;
             F_err = 0.0;
+            F_err_mean = 0.0;
 
             F_c1 = 0.0;
             F_c2 = 0.0;
@@ -264,7 +269,7 @@ classdef OL_1D_DMP_KF < handle
             tic
             while (true)
 
-                %% ===========  Get refernce trajectories =================
+                %% ===========  Get refernce trajectories  =================
 
                 %% get the human's model reference
                 [y_ref, dy_ref, ddy_ref] = this.ref_model.getRef(t);
@@ -319,7 +324,7 @@ classdef OL_1D_DMP_KF < handle
                 log_data.F_c_h_d_data = [log_data.F_c_h_d_data F_c_h_d];
 
 
-                %% Robot and Human model simulation
+                %% ===========  Robot and Human model simulation  ===========  
 
                 % Control applied by the robot to track its reference
                 v_r = K_r*(y_dmp-y_r) + D_r*dy_dmp + M_r*ddy_dmp;
@@ -327,32 +332,18 @@ classdef OL_1D_DMP_KF < handle
                 % Control applied by the human to track its reference
                 v_h = K_h*(y_ref-y_h) + D_h*dy_ref + M_h*ddy_ref;
                 
+                % Nominal coupling force exerted on the human
+                F_c_h_d = this.calc_Fc_d(dy_h, M_h, D_h, v_h, M_o_h);
                 
-                % desired load carried by human
-%                 a_h = this.load_h_p + (2*rand()-1)*this.load_h_p_var;
-%                 F_c_h_d_hat = 0*w_o*a_h; % simulates the scenario where the human  carries a varying load because he cannot estimate well how much force he applies
-                A = [M_h 1; this.load_h_p*M_o -1];
-                b = [-D_h*dy_h+v_h; -this.load_h_p*w_o];
-                X = A\b;
-                F_c_h_d = X(2);
-                
-                % desired load carried by robot
-                A = [M_r 1; this.load_r_p*M_o -1];
-                b = [-D_r*dy_r+v_r; -this.load_r_p*w_o];
-                X = A\b;
-                F_c_r_d = X(2);
-%                 F_c_r_d = this.load_r_p*w_o;
+                % Nominal coupling force exerted on the robot
+                F_c_r_d = this.calc_Fc_d(dy_r, M_r, D_r, v_r, M_o_r);
+                % F_c_r_d = -M_o_r*grav;
 
                 % Control applied by the human to track its reference and compensate for coupling forces
                 u_h = v_h + F_c_h_d;
                  
-                A = [M_r 0 0; M_h 0 1; M_o -1 -1];
-                b = [-D_r*dy_r+v_r; -D_h*dy_h+u_h; -w_o];
-                X = A\b;
-                ddy = X(1);
-                F_c_r = X(2);
-                F_c_h = X(3);
-                F_c_o = (F_c_r + F_c_h);
+                % Actual coupling forces exerted on the robot and the human
+                [F_c_r, F_c_h, F_c_o] = this.calc_Fc(dy_r, M_r, D_r, v_r, dy_h, M_h, D_h, u_h, M_o);
                 
                 % Control applied by the robot to track its reference and compensate for coupling forces
                 u_r = v_r + F_c_r;
@@ -364,27 +355,25 @@ classdef OL_1D_DMP_KF < handle
                 ddy_h = inv(M_h) * ( - D_h*dy_h + u_h - F_c_h); 
                 
                 % Object model dynamics
-%                 ddy_o = inv(M_o) * (F_c_o - w_o);
-                ddy_o = ddy;
-%                 ddy_r = ddy;
-%                 ddy_h = ddy;
+                ddy_o = inv(M_o) * (F_c_o - w_o);
 
 
                 %% Force error
                 F_err_prev = F_err;
                 F_err = this.k_Ferr*(-F_c_r + F_c_r_d);
+                
+%                 this.sigma_noise = 0.1*abs(F_err-F_err_prev).^2;
 
 
-                %% DMP model online adaption
+                %% ===========  DMP model online adaption  ===========  
                 Sigma_w = this.dmp.update_weights_with_KF(x, F_err, 0.0, 0.0, Sigma_w, this.sigma_noise);
                 P_lwr = diag(Sigma_w);
-                sn_a = 0.05;
+                sn_a = 0.07;
                 this.sigma_noise = (1-sn_a)*this.sigma_noise + sn_a*1e-5;
                 
-%                 this.sigma_noise
-%                 pause
+                
 
-                %% Stopping criteria
+                %%  ===========  Stopping criteria  ===========  
                 err_p = max(abs(g-y_r));
                 if (err_p <= this.pos_tol_stop ...
                     && t>=tau && abs(dy_r)<this.vel_tol_stop && abs(dy_h)<this.vel_tol_stop)
@@ -397,7 +386,7 @@ classdef OL_1D_DMP_KF < handle
                     break;
                 end
 
-                %% Numerical integration
+                %%  ===========  Numerical integration  ===========  
                 t = t + dt;
 
                 x = x + dx*dt;
@@ -544,5 +533,26 @@ classdef OL_1D_DMP_KF < handle
 
         end
 
+        function Fc_d = calc_Fc_d(this, dy, M, D, u, M_o)
+
+            A = [M 0; M_o -1];
+            b = [-D*dy+u; -M_o*this.grav];
+            X = A\b;
+            Fc_d = X(2);
+                
+        end
+        
+        function [F_c_r, F_c_h, F_c_o] = calc_Fc(this, dy_r, M_r, D_r, v_r, dy_h, M_h, D_h, u_h, M_o)
+            
+            A = [M_r 0 0; M_h 0 1; M_o -1 -1];
+            b = [-D_r*dy_r+v_r; -D_h*dy_h+u_h; -M_o*this.grav];
+            X = A\b;
+            % ddy = X(1);
+            F_c_r = X(2);
+            F_c_h = X(3);
+            F_c_o = (F_c_r + F_c_h);
+            
+        end
+        
     end
 end
