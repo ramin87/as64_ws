@@ -4,7 +4,7 @@ clear;
 
 % m = OL_1D_DMP_RLWR_nod();
 % m = OL_1D_DMP_KF_nod();
-m = OL_1D_DMP_KF();
+m = OL_1D_DMP_rup();
 
 m.trainModel();
 

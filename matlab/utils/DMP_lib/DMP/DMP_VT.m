@@ -249,10 +249,12 @@ classdef DMP_VT < handle % : public DMP_
         %  @param[in] g: Goal position.
         %  @param[in,out] P: \a P matrix of RLWR.
         %  @param[in] lambda: Forgetting factor.
-        function [P] = update_weights_with_RLWR(dmp, x, Ferr, y0, g, P, lambda)
+        function [Sigma_w] = update_weights_with_RLWR(dmp, x, Ferr, y0, g, Sigma_w, lambda)
             
             s = dmp.forcingTermScaling(y0, g);
             psi = dmp.kernelFunction(x);
+            
+            P = diag(Sigma_w);
 
             % error = Fd - dmp.w*s;
             error = Ferr;
@@ -265,21 +267,37 @@ classdef DMP_VT < handle % : public DMP_
             P(ind) = P_prev(ind);
             
             dmp.w = dmp.w + psi.*P.*s.*error; 
+            
+            Sigma_w = diag(P);
 
         end
         
         function [Sigma_w] = update_weights_with_KF(dmp, x, Ferr, y0, g, Sigma_w, sigma_noise)
             
-            s = dmp.forcingTermScaling(y0, g);
             psi = dmp.kernelFunction(x);
-            
             Psi = psi / (sum(psi) + dmp.zero_tol);
             
-            A = inv(sigma_noise + Psi'*Sigma_w*Psi);
-            sigmaW_psi = Sigma_w*Psi;
+            K = Sigma_w*Psi*inv(sigma_noise + Psi'*Sigma_w*Psi);
             
-            dmp.w = dmp.w + sigmaW_psi*A*Ferr;
-            Sigma_w = Sigma_w - sigmaW_psi*A*(sigmaW_psi)';
+            dmp.w = dmp.w + K*Ferr;
+            Sigma_w = Sigma_w - K*(Sigma_w*Psi)';
+
+        end
+        
+        function [Sigma_w] = update_weights_with_RLS(dmp, x, Ferr, y0, g, Sigma_w, lambda)
+
+            psi = dmp.kernelFunction(x);
+            Psi = psi / (sum(psi) + dmp.zero_tol);
+            
+            K = Sigma_w*Psi*inv(lambda + Psi'*Sigma_w*Psi);
+            
+%             Sigma_w_prev = Sigma_w;
+            
+            dmp.w = dmp.w + K*Ferr;
+            Sigma_w = (1/lambda) * (Sigma_w - K*(Sigma_w*Psi)');
+            
+%             ind = Sigma_w>Sigma_w_prev;
+%             Sigma_w(ind) = Sigma_w_prev(ind);
 
         end
 

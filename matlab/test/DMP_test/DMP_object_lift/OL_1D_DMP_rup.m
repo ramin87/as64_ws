@@ -1,27 +1,30 @@
-%% OL_1D_DMP_KF class
+%% OL_1D_DMP_rup class
 %  OL: Object load.
 %  1D: 1 dimension (gravity direction)
-%  DMP_KF: DMP with Kalman-filter update for the weights
+%  DMP_rup: DMP with recursive update method
 %
 
-classdef OL_1D_DMP_KF < handle
+classdef OL_1D_DMP_rup < handle
     properties
         %% DMP parameters
         dmp % dmp model
-        canClockPtr % canonical clock pointer
-        shapeAttrGatingPtr % shape attractor gating function pointer
-        goalAttrGatingPtr % goal attractor gating function pointer
+        can_clock_ptr % canonical clock pointer
+        shape_attrGating_ptr % shape attractor gating function pointer
+        goal_attrGating_ptr % goal attractor gating function pointer
         D_z % dmp damping
         K_z % dmp stiffness
         N_kernels % number of kernels used in the DMP
-        kernelStdScaling % scaling factor for the kernels std
+        kernel_std_scaling % scaling factor for the kernels std
         train_method % 'LWR', 'LS', 'RLS' , 'RLWR'
-        lambda % forgetting factor for recursive training methods
-        sigma_dmp_w % initial value of covariance matrix for dmp weights (used in online updates)
-        sigma_noise % variance of noise in force error measurement
-        k_Ferr % gain applied to force error used to updata the dmp weights
         dmp_tau % dmp duration
         train_dmp_offline % if true trains offline the DMP (before online updata/execution)
+        
+        %% recursive estimation parameters
+        est_method % {'KF', 'RLS', 'RLWR'}
+        sigma_dmp_w % initial value of covariance matrix for dmp weights
+        sigma_noise % variance of noise in force error measurement
+        lambda % forgetting factor for recursive training methods
+        k_Ferr % gain applied to force error used to updata the dmp weights
 
         %% Reference model
         y0_ref % initial position for reference 
@@ -74,12 +77,12 @@ classdef OL_1D_DMP_KF < handle
 
     methods
         %% constructor
-        function this = OL_1D_DMP_KF()
+        function this = OL_1D_DMP_rup()
             
             setMatlabPath();
             this.init();
             
-            disp('Object lift - 1D - DMP with KF update - with object dynamics');
+            disp(['Object lift - 1D - DMP with ' this.est_method ' update - with object dynamics']);
             
         end
 
@@ -100,12 +103,16 @@ classdef OL_1D_DMP_KF < handle
             this.K_z = 0;
             this.dmp_tau = 10; % 10 sec
             this.N_kernels = 50 * this.dmp_tau;
-            this.kernelStdScaling = 1.0;
+            this.kernel_std_scaling = 1.0;
             this.train_method = 'LWR';
-            this.lambda = 0.98;
+            this.train_dmp_offline = false;
+            
+            %% recursive estimation parameters
+            this.est_method = 'KF'; % {'KF', 'RLS', 'RLWR'}
             this.sigma_dmp_w = 1e2;
             this.sigma_noise = 8e-1;
-            this.train_dmp_offline = false;
+            this.lambda = 0.99;
+            % k_Ferr, defined at the end
             
             
             %% Reference model
@@ -156,15 +163,15 @@ classdef OL_1D_DMP_KF < handle
             
             
             %% Set up DMP model
-            this.canClockPtr = LinCanonicalClock(this.dmp_tau);
-            this.shapeAttrGatingPtr = ConstGatingFunction(1.0, 1.0);
-            this.goalAttrGatingPtr = ConstGatingFunction(1.0, 1.0);
-            this.dmp = DMP_VT(this.N_kernels, this.D_z, this.K_z/this.D_z, this.canClockPtr, this.shapeAttrGatingPtr, this.goalAttrGatingPtr, this.kernelStdScaling);
+            this.can_clock_ptr = LinCanonicalClock(this.dmp_tau);
+            this.shape_attrGating_ptr = ConstGatingFunction(1.0, 1.0);
+            this.goal_attrGating_ptr = ConstGatingFunction(1.0, 1.0);
+            this.dmp = DMP_VT(this.N_kernels, this.D_z, this.K_z/this.D_z, this.can_clock_ptr, this.shape_attrGating_ptr, this.goal_attrGating_ptr, this.kernel_std_scaling);
             
             %% Init log data struct
             this.log_data = struct('Time',[], ...,
                                   'y_dmp_data',[],'dy_dmp_data',[],'ddy_dmp_data',[],'x_data',[], 'w_dmp_data',[], ...
-                                  'P_lwr_data',[], ...
+                                  'P_w_data',[], ...
                                   'y_r_data',[],'dy_r_data',[],'ddy_r_data',[], 'u_r_data',[], 'F_c_r_data',[], ...
                                   'y_ref_data',[],'dy_ref_data',[],'ddy_ref_data',[], ...
                                   'y_h_data',[],'dy_h_data',[],'ddy_h_data',[], 'u_h_data',[], 'F_c_h_data',[],  ...
@@ -197,7 +204,7 @@ classdef OL_1D_DMP_KF < handle
                 this.dmp.w = zeros(size(this.dmp.w));
             end
 
-            this.canClockPtr.setTau(this.dmp_tau);
+            this.can_clock_ptr.setTau(this.dmp_tau);
             
         end
         
@@ -256,8 +263,8 @@ classdef OL_1D_DMP_KF < handle
             F_c1 = 0.0;
             F_c2 = 0.0;
 
-            P_lwr = this.sigma_dmp_w*ones(this.dmp.N_kernels,1);
-            Sigma_w = diag(P_lwr);
+            P_w = this.sigma_dmp_w*ones(this.dmp.N_kernels,1);
+            Sigma_w = diag(P_w);
 
             tau = this.tau_ref;
             dt = this.sim_timestep;
@@ -278,7 +285,7 @@ classdef OL_1D_DMP_KF < handle
                 Y_c = 0.0;
                 Z_c = 0.0; % 0.97*F_err;
                 [dy_dmp, dz] = this.dmp.getStatesDot(x, y_dmp, z, y0, g, Y_c, Z_c);
-                dx = this.canClockPtr.getPhaseDot(x);
+                dx = this.can_clock_ptr.getPhaseDot(x);
                 ddy_dmp = dz/this.dmp.get_v_scale();
 
 
@@ -318,7 +325,7 @@ classdef OL_1D_DMP_KF < handle
 
                 log_data.w_dmp_data = [log_data.w_dmp_data this.dmp.w];
 
-                log_data.P_lwr_data = [log_data.P_lwr_data P_lwr];
+                log_data.P_w_data = [log_data.P_w_data P_w];
 
                 log_data.F_c_r_d_data = [log_data.F_c_r_d_data F_c_r_d];
                 log_data.F_c_h_d_data = [log_data.F_c_h_d_data F_c_h_d];
@@ -364,18 +371,24 @@ classdef OL_1D_DMP_KF < handle
                 %% Force error
                 F_err_prev = F_err;
                 F_err = this.k_Ferr*(-F_c_r + F_c_r_d);
-                
 %                 this.sigma_noise = 0.1*abs(F_err-F_err_prev).^2;
 
 
-                %% ===========  DMP model online adaption  ===========  
-                Sigma_w = this.dmp.update_weights_with_KF(x, F_err, 0.0, 0.0, Sigma_w, this.sigma_noise);
-                P_lwr = diag(Sigma_w);
-                sn_a = 0.07;
-                this.sigma_noise = (1-sn_a)*this.sigma_noise + sn_a*1e-5;
-                
-                
+                %% ===========  DMP model online adaption  =========== 
+                if (strcmpi(this.est_method,'KF'))
+                    Sigma_w = this.dmp.update_weights_with_KF(x, F_err, 0.0, 0.0, Sigma_w, this.sigma_noise);
+                    sn_a = 0.07;
+                    this.sigma_noise = (1-sn_a)*this.sigma_noise + sn_a*1e-5;
+                elseif (strcmpi(this.est_method,'RLS'))
+                    Sigma_w = this.dmp.update_weights_with_RLS(x, F_err, 0.0, 0.0, Sigma_w, 0.98);
+                elseif (strcmpi(this.est_method,'RLWR'))
+                    Sigma_w = this.dmp.update_weights_with_RLWR(x, F_err, 0.0, 0.0, Sigma_w, 0.995);
+                else
+                    error('Unsopported estimation method: %s\n', this.est_method);
+                end
+                P_w = diag(Sigma_w);
 
+                
                 %%  ===========  Stopping criteria  ===========  
                 err_p = max(abs(g0-y_r));
                 if (err_p <= this.pos_tol_stop ...
@@ -521,7 +534,7 @@ classdef OL_1D_DMP_KF < handle
             ind = 1:5:N_kernels;
             figure;
             subplot(3,1,1);
-            plot(log_data.Time, log_data.P_lwr_data(ind,:), 'LineWidth', 1.5);
+            plot(log_data.Time, log_data.P_w_data(ind,:), 'LineWidth', 1.5);
             xlim([log_data.Time(1) log_data.Time(end)]);
             title('Increamental LWR - covariance evolution', 'FontSize',fontsize, 'Interpreter','latex');
             subplot(3,1,2);

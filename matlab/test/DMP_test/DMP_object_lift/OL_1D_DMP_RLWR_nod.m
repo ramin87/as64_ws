@@ -342,7 +342,8 @@ classdef OL_1D_DMP_RLWR_nod < handle
                 F_err = this.k_Ferr*(F_ext_r + w_r);
 
                 %% DMP model online adaption
-                P_lwr = this.dmp.update_weights_with_RLWR(x, F_err, 0.0, 0.0, P_lwr, this.lambda);
+                P_lwr = this.dmp.update_weights_with_RLWR(x, F_err, 0.0, 0.0, diag(P_lwr), this.lambda);
+                P_lwr = diag(P_lwr);
 
 
                 %% Stopping criteria
