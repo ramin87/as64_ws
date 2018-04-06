@@ -217,7 +217,7 @@ classdef OL_1D_DMP_KF < handle
             %% set initial values
             y0 = this.y0_ref;
             g0 = this.g_ref; 
-            g = g0; 
+            g = y0; 
             x = 0.0;
             dx = 0.0;
             t = 0.0;
@@ -331,19 +331,22 @@ classdef OL_1D_DMP_KF < handle
 
                 % Control applied by the human to track its reference
                 v_h = K_h*(y_ref-y_h) + D_h*dy_ref + M_h*ddy_ref;
+%                 a_g = this.sim_timestep*this.tau_ref/2; 
+%                 g = (1-a_g)*g + a_g*g0;
+%                 v_h = K_h*(g-y_h);
                 
                 % Nominal coupling force exerted on the human
-                F_c_h_d = this.calc_Fc_d(dy_h, M_h, D_h, v_h, M_o_h);
+                F_c_h_d = this.calc_Fc_d(dy_h, M_h, D_h, v_h, M_o_h, true);
                 
                 % Nominal coupling force exerted on the robot
-                F_c_r_d = this.calc_Fc_d(dy_r, M_r, D_r, v_r, M_o_r);
+                F_c_r_d = this.calc_Fc_d(dy_r, M_r, D_r, v_r, M_o_r, true);
                 % F_c_r_d = -M_o_r*grav;
 
                 % Control applied by the human to track its reference and compensate for coupling forces
                 u_h = v_h + F_c_h_d;
                  
                 % Actual coupling forces exerted on the robot and the human
-                [F_c_r, F_c_h, F_c_o] = this.calc_Fc(dy_r, M_r, D_r, v_r, dy_h, M_h, D_h, u_h, M_o);
+                [F_c_r, F_c_h, F_c_o] = this.calc_Fc(dy_r, M_r, D_r, v_r, dy_h, M_h, D_h, u_h, M_o, true);
                 
                 % Control applied by the robot to track its reference and compensate for coupling forces
                 u_r = v_r + F_c_r;
@@ -374,7 +377,7 @@ classdef OL_1D_DMP_KF < handle
                 
 
                 %%  ===========  Stopping criteria  ===========  
-                err_p = max(abs(g-y_r));
+                err_p = max(abs(g0-y_r));
                 if (err_p <= this.pos_tol_stop ...
                     && t>=tau && abs(dy_r)<this.vel_tol_stop && abs(dy_h)<this.vel_tol_stop)
                     break; 
@@ -533,18 +536,18 @@ classdef OL_1D_DMP_KF < handle
 
         end
 
-        function Fc_d = calc_Fc_d(this, dy, M, D, u, M_o)
+        function Fc_d = calc_Fc_d(this, dy, M, D, u, M_o, is_stiff)
 
-            A = [M 0; M_o -1];
+            A = [M (~is_stiff); M_o -1];
             b = [-D*dy+u; -M_o*this.grav];
             X = A\b;
             Fc_d = X(2);
                 
         end
         
-        function [F_c_r, F_c_h, F_c_o] = calc_Fc(this, dy_r, M_r, D_r, v_r, dy_h, M_h, D_h, u_h, M_o)
+        function [F_c_r, F_c_h, F_c_o] = calc_Fc(this, dy_r, M_r, D_r, v_r, dy_h, M_h, D_h, u_h, M_o, is_stiff)
             
-            A = [M_r 0 0; M_h 0 1; M_o -1 -1];
+            A = [M_r (~is_stiff) 0; M_h 0 1; M_o -1 -1];
             b = [-D_r*dy_r+v_r; -D_h*dy_h+u_h; -M_o*this.grav];
             X = A\b;
             % ddy = X(1);
