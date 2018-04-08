@@ -1,6 +1,8 @@
 clc;
-% close all;
+close all;
 clear;
+
+format compact;
 
 % m = OL_1D_DMP_RLWR_nod();
 % m = OL_1D_DMP_KF_nod();

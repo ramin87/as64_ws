@@ -120,10 +120,10 @@ classdef OL_1D_DMP_rup < handle
             
             %% Reference model
             this.y0_ref = 0.0;
-            this.g_ref = 0.6;
-            this.a6 = -5.0;
+            this.g_ref = 0.3;
+            this.a6 = 0.0;
             this.a7 = 0.0;
-            this.tau_ref = 2.5;
+            this.tau_ref = 0.8;
 
 
             %% Human model
@@ -140,8 +140,8 @@ classdef OL_1D_DMP_rup < handle
             
             %% Object model
             this.M_o = 10.0 + zero_tol;
-            this.M_o_r = 7.0;
-            this.M_o_h = 3.0;
+            this.M_o_r = 5.0;
+            this.M_o_h = 5.0;
             this.load_h_p_var = 0.0;
 
             this.k_Ferr = 1/this.M_h;
@@ -353,7 +353,7 @@ classdef OL_1D_DMP_rup < handle
                  
                 % Actual coupling forces exerted on the robot and the human
                 [F_c_r, F_c_h, F_c_o] = this.calc_Fc(dy_r, M_r, D_r, v_r, dy_h, M_h, D_h, u_h, M_o, true);
-                
+
                 % Control applied by the robot to track its reference and compensate for coupling forces
                 u_r = v_r + F_c_r;
 
@@ -365,8 +365,8 @@ classdef OL_1D_DMP_rup < handle
                 
                 % Object model dynamics
                 ddy_o = inv(M_o) * (F_c_o - w_o);
-
-
+                
+                
                 %% Force error
                 F_err_prev = F_err;
                 F_err = this.k_Ferr*(-F_c_r + F_c_r_d);

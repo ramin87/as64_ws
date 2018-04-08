@@ -123,12 +123,12 @@ classdef OL_2D_DMP_rup < handle
             %% Object model
             this.obj = struct('m',[], 'Iz',[], 'h',[], 'l',[], 'CoM',[]);
             this.obj.m = 10.0; % object mass
-            this.obj.Iz = 5.0; % object rotational mass in z axis
+            this.obj.Iz = 10.0; % object rotational mass in z axis
             this.obj.h = 0.15; % object height
             this.obj.l = 0.8; % object length
             this.obj.CoM = 0.4; % object's CoM (distance from its left end)
-            this.S0_o = [0.0; 0.0; -pi/4];
-            this.Sg_o = [0.0; 0.3; 0.0];
+            this.S0_o = [0.0; 0.0; 0.0];
+            this.Sg_o = [0.2; 0.5; 0.0];
             this.M_o = diag([this.obj.m; this.obj.m; this.obj.Iz]);
 
             
@@ -136,14 +136,14 @@ classdef OL_2D_DMP_rup < handle
 %             this.gp_ref = 0.995;
             this.a6 = 0.0;
             this.a7 = 0.0;
-            this.tau_ref = 0.8;
+            this.tau_ref = 1.5;
 
 
             %% Human model
             this.M_h = diag([15.0; 15.0; 7]);
             this.K_h = diag([500.0; 500.0; 75.0]);
             this.D_h = 2*sqrt(this.M_h.*this.K_h);
-            this.m_o_h_p = 0.5;
+            this.m_o_h_p = 0.0;
             this.load_h_p_var = 0.0;
             this.d_h_hat = this.obj.l - this.obj.CoM;
 
@@ -152,7 +152,7 @@ classdef OL_2D_DMP_rup < handle
             this.M_r = diag([20.0; 20.0; 15]);
             this.K_r = diag([750.0; 750.0; 100.0]);
             this.D_r = 2*sqrt(this.M_r.*this.K_r);
-            this.m_o_r_p = 0.5;  
+            this.m_o_r_p = 1.0;  
             this.d_r_hat = this.obj.CoM;
 
             this.k_Ferr = 1./diag(this.M_h);
@@ -538,12 +538,6 @@ classdef OL_2D_DMP_rup < handle
             U_h = zeros(3,1);
             F_c_h = zeros(3,1);
             
-            S_h
-            S_g_h
-            this.S0_o
-            this.Sg_o
-            pause
-            
             this.ref_model = cell(3,1);
             for i=1:3
                this.ref_model{i} = RefModel(S_h(i), S_g_h(i), this.tau_ref, this.a6, this.a7); 
@@ -591,7 +585,7 @@ classdef OL_2D_DMP_rup < handle
                 %% ===========  Get refernce trajectories  =================
 
                 %% get the human's model reference
-                ddS_ref = this.getRef(t);
+                [S_ref, dS_ref, ddS_ref] = this.getRef(t);
 
                 %% get the DMP's model reference
                 for i=1:3
@@ -602,12 +596,13 @@ classdef OL_2D_DMP_rup < handle
                 end
                 dx = this.can_clock_ptr.getPhaseDot(x);
                 
-                ddS_dmp(1) = 0.0;
-                ddS_dmp(3) = 0.0;
+%                 ddS_dmp(1) = 0.0;
+%                 ddS_dmp(3) = 0.0;
+                
+                pause
 
                 %% plot online
                 this.plotOnline(S_r, S_h, S_o, F_c_r, F_c_h, dt);
-                pause
 
                 %% ===========  data logging ===========  
 
@@ -655,32 +650,26 @@ classdef OL_2D_DMP_rup < handle
                 %% ===========  Robot and Human model simulation  ===========  
 
                 % Control applied by the robot to track its reference
-                v_r = K_r*(S_dmp-S_r) + D_r*dS_dmp + M_r*ddS_dmp;
+                V_r = K_r*(S_dmp-S_r) + D_r*dS_dmp + M_r*ddS_dmp;
 
                 % Control applied by the human to track its reference
-                v_h = K_h*(S_ref-S_h) + D_h*dS_ref + M_h*ddS_ref;
+                V_h = K_h*(S_ref-S_h) + D_h*dS_ref + M_h*ddS_ref;
                 
                 % Nominal coupling force exerted on the human
-                F_c_h_d = this.calc_Fc_d(dS_h, M_h, D_h, v_h, d_r_hat, dS_o, M_o_h, true);
+                F_c_h_d = this.calc_Fc_d(dS_h, M_h, D_h, V_h, d_r_hat, dS_o, M_o_h, true);
                 
                 % Nominal coupling force exerted on the robot
-                F_c_r_d = this.calc_Fc_d(dS_r, M_r, D_r, v_r, d_h_hat, dS_o, M_o_r, true);
+                F_c_r_d = this.calc_Fc_d(dS_r, M_r, D_r, V_r, d_h_hat, dS_o, M_o_r, true);
                 % F_c_r_d = -m_o_r*grav;
                 
-%                 d_r
-%                 d_h
-%                 F_c_r_d
-%                 F_c_h_d
-%                 pause
-
                 % Control applied by the human to track its reference and compensate for coupling forces
-                U_h = v_h + F_c_h_d .* (1 + (2*rand()-1)*diag(M_o_h));
+                U_h = V_h + F_c_h_d .* (1 + (2*rand()-1)*this.load_h_p_var*diag(M_o_h));
                  
                 % Actual coupling forces exerted on the robot and the human
-                [F_c_r, F_c_h, F_c_o, ddS] = this.calc_Fc(dS_r, M_r, D_r, v_r, d_r, dS_h, M_h, D_h, U_h, d_h, dS_o, M_o, true);
+                [F_c_r, F_c_h, F_c_o, ddS] = this.calc_Fc(dS_r, M_r, D_r, V_r, d_r, dS_h, M_h, D_h, U_h, d_h, dS_o, M_o, true);
                 
                 % Control applied by the robot to track its reference and compensate for coupling forces
-                U_r = v_r + F_c_r;
+                U_r = V_r + F_c_r;
 
                 % Robot model dynamics
                 ddS_r = inv(M_r) * ( - D_r*dS_r + U_r - F_c_r);
@@ -691,26 +680,13 @@ classdef OL_2D_DMP_rup < handle
                 % Object model dynamics
                 ddS_o = inv(M_o) * (F_c_o + w_o);
                 
-%                 ddS
-%                 ddS_o
-%  
-%                 S_h
-%                 S_ref
-%                 dS_ref
-%                 ddS_ref
-%                 pause
-
-%                 F_c_r
-%                 F_c_h
-%                 S_dmp
-%                 S_r
-%                 S_h
-%                 S_ref
-%                 pause
-
 
                 %% Force error
                 F_err_prev = F_err;
+                
+                F_c_r_d
+                F_c_r
+                
                 F_err = this.k_Ferr.*(-F_c_r + F_c_r_d);
 %                 this.sigma_noise = 0.1*abs(F_err-F_err_prev).^2;
 
@@ -734,7 +710,7 @@ classdef OL_2D_DMP_rup < handle
                 %%  ===========  Stopping criteria  ===========  
                 err_p = max(norm(S_g_h-S_h));
                 if (err_p <= this.pos_tol_stop ...
-                    && t>=tau && abs(dS_r)<this.vel_tol_stop && abs(dS_h)<this.vel_tol_stop)
+                    && t>=tau && norm(dS_r)<this.vel_tol_stop && norm(dS_h)<this.vel_tol_stop)
                     break; 
                 end
 
@@ -788,7 +764,7 @@ classdef OL_2D_DMP_rup < handle
             fontsize = 14;
             lineWidth = 1.4;
             
-            for k=2:2
+            for k=1:2
                 
                 figure;
                 subplot(3,1,1);
@@ -898,7 +874,7 @@ classdef OL_2D_DMP_rup < handle
 
         end
 
-        function Fc_d = calc_Fc_d(this, dS, M, D, u, d, dS_o, M_o, is_stiff)
+        function [Fc_d, ddS] = calc_Fc_d(this, dS, M, D, U, d, dS_o, M_o, is_stiff)
             
             m_o = M_o(1,1);
             w_o = [0; -m_o*this.grav; 0];
@@ -909,17 +885,18 @@ classdef OL_2D_DMP_rup < handle
             A = [M*this.gMat(-d) ,  (~is_stiff)*eye(3); 
                       M_o        ,     -this.gMat(d)' ];
                 
-            b = [-D*dS + u - M*dp_c;
+            b = [-D*dS + U - M*dp_c;
                        w_o         ];
                    
             X = A\b;
-            
+
+            ddS = X(1:3);
             Fc_d = X(4:6);
                 
         end
         
-        function [F_c_r, F_c_h, F_c_o, ddS_o] = calc_Fc(this, dS_r, M_r, D_r, v_r, d_r, dS_h, M_h, D_h, U_h, d_h, dS_o, M_o, is_stiff)
-            
+        function [F_c_r, F_c_h, F_c_o, ddS_o] = calc_Fc(this, dS_r, M_r, D_r, V_r, d_r, dS_h, M_h, D_h, U_h, d_h, dS_o, M_o, is_stiff)
+      
             m_o = M_o(1,1);
             w_o = [0; -m_o*this.grav; 0];
             
@@ -931,17 +908,17 @@ classdef OL_2D_DMP_rup < handle
                  M_h*this.gMat(-d_h) ,      zeros(3)      ,    eye(3); 
                         M_o          ,   -this.gMat(d_r)'  , -this.gMat(d_h)'];
              
-            b = [-D_r*dS_r + v_r - M_r*dp_c_r; 
+            b = [-D_r*dS_r + V_r - M_r*dp_c_r; 
                  -D_h*dS_h + U_h - M_h*dp_c_h; 
                              w_o            ];
                          
             X = A\b;
-            
+
             ddS_o = X(1:3);
             F_c_r = X(4:6);
             F_c_h = X(7:9);
             F_c_o = (this.gMat(d_r)'*F_c_r + this.gMat(d_h)'*F_c_h);
-            
+
         end
         
         function S2 = findPoseFromPose(this, S1, d)
@@ -993,7 +970,7 @@ classdef OL_2D_DMP_rup < handle
             S_ref = zeros(3,1);
             dS_ref = zeros(3,1);
             ddS_ref = zeros(3,1);
-            for i=2:2
+            for i=1:3
                 [y_ref, dy_ref, ddy_ref] = this.ref_model{i}.getRef(t);
                 S_ref(i) = y_ref;
                 dS_ref(i) = dy_ref;
