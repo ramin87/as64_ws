@@ -1,6 +1,6 @@
 function setMatlabPath()
 
-    MAIN_PATH = [pwd '/../../../utils/'];
+    MAIN_PATH = [pwd '/../../utils/'];
     
     addpath([pwd '/utils/']);
     

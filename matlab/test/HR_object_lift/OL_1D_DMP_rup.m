@@ -22,7 +22,9 @@ classdef OL_1D_DMP_rup < handle
         %% recursive estimation parameters
         est_method % {'KF', 'RLS', 'RLWR'}
         sigma_dmp_w % initial value of covariance matrix for dmp weights
-        sigma_noise % variance of noise in force error measurement
+        s_n_start % initial value of noise
+        s_n_end % final value of noise
+        s_n_a % rate of exponential convergence from s_n_start to end s_n_end
         lambda % forgetting factor for recursive training methods
         k_Ferr % gain applied to force error used to updata the dmp weights
 
@@ -45,7 +47,6 @@ classdef OL_1D_DMP_rup < handle
 
         %% Object Model
         M_o % object's mass
-        od_flag % true of we consider the object dynamics
         
         %% Object lifting params
         M_o_r % object load carried by the robot
@@ -110,7 +111,9 @@ classdef OL_1D_DMP_rup < handle
             %% recursive estimation parameters
             this.est_method = 'KF'; % {'KF', 'RLS', 'RLWR'}
             this.sigma_dmp_w = 1e2;
-            this.sigma_noise = 8e-1;
+            this.s_n_start = 8e-1; % initial value of noise
+            this.s_n_end = 2e-4; % final value of noise
+            this.s_n_a = 0.07; % rate of exponential convergence from s_n_start to end s_n_end
             this.lambda = 0.99;
             % k_Ferr, defined at the end
             
@@ -137,7 +140,6 @@ classdef OL_1D_DMP_rup < handle
             
             %% Object model
             this.M_o = 10.0 + zero_tol;
-            this.od_flag = true;
             this.M_o_r = 7.0;
             this.M_o_h = 3.0;
             this.load_h_p_var = 0.0;
@@ -236,8 +238,8 @@ classdef OL_1D_DMP_rup < handle
             dz = 0;
 
             w_o = this.M_o*this.grav;
-            F_c_h_d = M_o_r;
-            F_c_r_d = M_o_h;
+            F_c_h_d = 0;
+            F_c_r_d = 0;
 
             y_r = y0;
             dy_r = 0.0;
@@ -260,14 +262,13 @@ classdef OL_1D_DMP_rup < handle
             F_err = 0.0;
             F_err_mean = 0.0;
 
-            F_c1 = 0.0;
-            F_c2 = 0.0;
-
             P_w = this.sigma_dmp_w*ones(this.dmp.N_kernels,1);
             Sigma_w = diag(P_w);
 
             tau = this.tau_ref;
             dt = this.sim_timestep;
+            
+            sigma_noise = this.s_n_start;
 
             iters = 0;
 
@@ -284,10 +285,8 @@ classdef OL_1D_DMP_rup < handle
                 %% get the DMP's model reference
                 Y_c = 0.0;
                 Z_c = 0.0; % 0.97*F_err;
-                [dy_dmp, dz] = this.dmp.getStatesDot(x, y_dmp, z, y0, g, Y_c, Z_c);
+                [dy_dmp, ddy_dmp] = this.dmp.getStatesDot(x, y_dmp, dy_dmp, y0, g, Y_c, Z_c);
                 dx = this.can_clock_ptr.getPhaseDot(x);
-                ddy_dmp = dz/this.dmp.get_v_scale();
-
 
                 %% ===========  data logging ===========  
 
@@ -350,7 +349,7 @@ classdef OL_1D_DMP_rup < handle
                 % F_c_r_d = -M_o_r*grav;
 
                 % Control applied by the human to track its reference and compensate for coupling forces
-                u_h = v_h + F_c_h_d;
+                u_h = v_h + F_c_h_d * (1 + (2*rand()-1)*this.load_h_p_var);
                  
                 % Actual coupling forces exerted on the robot and the human
                 [F_c_r, F_c_h, F_c_o] = this.calc_Fc(dy_r, M_r, D_r, v_r, dy_h, M_h, D_h, u_h, M_o, true);
@@ -376,13 +375,12 @@ classdef OL_1D_DMP_rup < handle
 
                 %% ===========  DMP model online adaption  =========== 
                 if (strcmpi(this.est_method,'KF'))
-                    Sigma_w = this.dmp.update_weights_with_KF(x, F_err, 0.0, 0.0, Sigma_w, this.sigma_noise);
-                    sn_a = 0.07;
-                    this.sigma_noise = (1-sn_a)*this.sigma_noise + sn_a*1e-5;
+                    Sigma_w = this.dmp.update_weights_with_KF(x, F_err, 0.0, 0.0, Sigma_w, sigma_noise);
+                    sigma_noise = (1-this.s_n_a)*sigma_noise + this.s_n_a*this.s_n_end;
                 elseif (strcmpi(this.est_method,'RLS'))
-                    Sigma_w = this.dmp.update_weights_with_RLS(x, F_err, 0.0, 0.0, Sigma_w, 0.98);
+                    Sigma_w = this.dmp.update_weights_with_RLS(x, F_err, 0.0, 0.0, Sigma_w, this.lambda);
                 elseif (strcmpi(this.est_method,'RLWR'))
-                    Sigma_w = this.dmp.update_weights_with_RLWR(x, F_err, 0.0, 0.0, Sigma_w, 0.995);
+                    Sigma_w = this.dmp.update_weights_with_RLWR(x, F_err, 0.0, 0.0, Sigma_w, this.lambda);
                 else
                     error('Unsopported estimation method: %s\n', this.est_method);
                 end
@@ -408,7 +406,7 @@ classdef OL_1D_DMP_rup < handle
                 x = x + dx*dt;
 
                 y_dmp = y_dmp + dy_dmp*dt;
-                z = z + dz*dt;
+                dy_dmp = dy_dmp + ddy_dmp*dt;
 
                 y_r = y_r + dy_r*dt;
                 dy_r = dy_r + ddy_r*dt;
