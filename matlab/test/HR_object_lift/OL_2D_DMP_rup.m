@@ -40,6 +40,7 @@ classdef OL_2D_DMP_rup < handle
         K_h % stiffness  
         m_o_h_p % percent of the object load carried by the human
         load_h_p_var % variance in the load carried by the human
+        d_h % human's distance from object's CoM
         d_h_hat % initial estimate of human's distance from object's CoM
 
         %% Robot model
@@ -47,6 +48,7 @@ classdef OL_2D_DMP_rup < handle
         D_r % damping
         K_r % stiffness   
         m_o_r_p % object load carried by the robot
+        d_r % robot's distance from object's CoM
         d_r_hat % initial estimate of robot's distance from object's CoM
 
         %% Object Model
@@ -78,6 +80,57 @@ classdef OL_2D_DMP_rup < handle
         %% plot online
         pl_h % struct with plot handles
         pl_update_cycle % the timestep with which the plot is updated
+        
+        %% Simulation variables
+        t
+        dt
+        iters
+        
+        % =========== robot =========== 
+        d_r_norm
+        S_r
+        dS_r
+        ddS_r
+        U_r
+        F_c_r
+        F_c_r_d
+        M_o_r
+
+        % =========== dmp =========== 
+        S_dmp
+        dS_dmp
+        ddS_dmp
+        x
+        dx
+        F_err_prev
+        F_err
+        P_w
+        Sigma_w
+        sigma_noise
+
+        % =========== human =========== 
+        d_h_norm
+        S_h
+        S_g_h
+        dS_h
+        ddS_h
+        U_h
+        F_c_h
+        F_c_h_d
+        M_o_h
+
+        S_ref
+        dS_ref
+        ddS_ref
+
+        % =========== object =========== 
+        S_o
+        dS_o
+        ddS_o
+        F_c_o
+        w_o
+
+        plot_t
 
     end
 
@@ -122,14 +175,14 @@ classdef OL_2D_DMP_rup < handle
             % k_Ferr, defined at the end
             
             %% Object model
-            this.obj = struct('m',[], 'Iz',[], 'h',[], 'l',[], 'CoM',[]);
+            this.obj = struct('m',[], 'Iz',[], 'w',[], 'l',[], 'CoM',[]);
             this.obj.m = 10.0; % object mass
-            this.obj.Iz = 10.0; % object rotational mass in z axis
-            this.obj.h = 0.15; % object height
+            this.obj.w = 0.15; % object width
             this.obj.l = 0.8; % object length
             this.obj.CoM = 0.4; % object's CoM (distance from its left end)
-            this.S0_o = [0.0; 0.0; 0.0];
-            this.Sg_o = [0.2; 0.5; 0.0];
+            this.obj.Iz = this.obj.m*(this.obj.w^2 + this.obj.l^2)/12; % object moment of inertia around z
+            this.S0_o = [0.0; 0.0; -pi/5];
+            this.Sg_o = [0.3; 0.65; 0.0];
             this.M_o = diag([this.obj.m; this.obj.m; this.obj.Iz]);
 
             
@@ -141,8 +194,8 @@ classdef OL_2D_DMP_rup < handle
 
 
             %% Human model
-            this.M_h = diag([15.0; 15.0; 7]);
-            this.K_h = diag([500.0; 500.0; 75.0]);
+            this.M_h = diag([15.0; 15.0; 1.0]);
+            this.K_h = diag([250.0; 250.0; 25.0]);
             this.D_h = 2*sqrt(this.M_h.*this.K_h);
             this.m_o_h_p = 0.2;
             this.load_h_p_var = 0.0;
@@ -150,19 +203,22 @@ classdef OL_2D_DMP_rup < handle
 
             
             %% Robot model
-            this.M_r = diag([20.0; 20.0; 15]);
-            this.K_r = diag([750.0; 750.0; 100.0]);
+            this.M_r = diag([20.0; 20.0; 2.0]);
+            this.K_r = diag([400.0; 400.0; 40.0]);
             this.D_r = 2*sqrt(this.M_r.*this.K_r);
             this.m_o_r_p = 0.8; 
             this.d_r_hat = this.obj.CoM;
 
             this.k_Ferr = 1./diag(this.M_h);
             
+            this.k_Ferr(3) = 0.1/this.M_h(3,3);
+            
             %% Simulation params
             this.sim_timestep = 0.002;
             this.pos_tol_stop = 0.02;
             this.vel_tol_stop = 0.005;
             this.max_sim_time_p = 1.3;
+            this.pl_update_cycle = 0.015;
             
         end
         
@@ -210,8 +266,6 @@ classdef OL_2D_DMP_rup < handle
         %% Initializes the program's online object lifting plot
         function initOnlinePlot(this)
 
-            this.pl_update_cycle = 0.015;
-            
             ax = axes();
             
             % clear all previous graphics objects 
@@ -507,192 +561,124 @@ classdef OL_2D_DMP_rup < handle
             
         end
         
-        %% Run simulation
-        function simulation(this)
+        %% Initialize the simulation variables
+        function initSimVars(this)
             
             %% =========== set initial values ==============
-            
-            t = 0.0;
-            dt = this.sim_timestep;
-            iters = 0;
+            this.t = 0.0;
+            this.dt = this.sim_timestep;
+            this.iters = 0;
             
             % =========== robot =========== 
-            d_r_norm = this.obj.CoM; % distance of robot from object CoM
-            S_r = this.findPoseFromPose(this.S0_o, d_r_norm);
-            dS_r = zeros(3,1);
-            ddS_r = zeros(3,1);
-            U_r = zeros(3,1);
-            F_c_r = zeros(3,1);
-            F_c_r_d = zeros(3,1);
-            M_o_r = this. m_o_r_p*this.M_o;
+            this.d_r_norm = this.obj.CoM; % distance of robot from object CoM
+            this.S_r = this.findPoseFromPose(this.S0_o, this.d_r_norm);
+            this.dS_r = zeros(3,1);
+            this.ddS_r = zeros(3,1);
+            this.U_r = zeros(3,1);
+            this.F_c_r = zeros(3,1);
+            this.F_c_r_d = zeros(3,1);
+            this.M_o_r = this. m_o_r_p*this.M_o;
 
             % =========== dmp =========== 
-            S_dmp = S_r;
-            dS_dmp = zeros(3,1);
-            ddS_dmp = zeros(3,1);
-            x = 0.0;
-            dx = 0.0;
+            this.S_dmp = this.S_r;
+            this.dS_dmp = zeros(3,1);
+            this.ddS_dmp = zeros(3,1);
+            this.x = 0.0;
+            this.dx = 0.0;
             
-            F_err_prev = zeros(3,1);
-            F_err = zeros(3,1);
+            this.F_err_prev = zeros(3,1);
+            this.F_err = zeros(3,1);
 
-            P_w = this.sigma_dmp_w*ones(this.N_kernels,1);
-            Sigma_w = diag(P_w);
-            P_w = {P_w; P_w; P_w};
-            Sigma_w = {Sigma_w; Sigma_w; Sigma_w};
+            this.P_w = this.sigma_dmp_w*ones(this.N_kernels,1);
+            this.Sigma_w = diag(this.P_w);
+            this.P_w = {this.P_w; this.P_w; this.P_w};
+            this.Sigma_w = {this.Sigma_w; this.Sigma_w; this.Sigma_w};
             
-            sigma_noise = this.s_n_start;
+            this.sigma_noise = this.s_n_start;
 
             % =========== human =========== 
-            d_h_norm = this.obj.l - this.obj.CoM; % distance of human from object CoM
-            S_h = this.findPoseFromPose(this.S0_o, -d_h_norm);
-            S_g_h = this.findPoseFromPose(this.Sg_o, -d_h_norm); % human's goal pose
-            dS_h = zeros(3,1);
-            ddS_h = zeros(3,1);
-            U_h = zeros(3,1);
-            F_c_h = zeros(3,1);
-            F_c_h_d = zeros(3,1);
-            M_o_h = this. m_o_h_p*this.M_o;
+            this.d_h_norm = this.obj.l - this.obj.CoM; % distance of human from object CoM
+            this.S_h = this.findPoseFromPose(this.S0_o, -this.d_h_norm);
+            this.S_g_h = this.findPoseFromPose(this.Sg_o, -this.d_h_norm); % human's goal pose
+            this.dS_h = zeros(3,1);
+            this.ddS_h = zeros(3,1);
+            this.U_h = zeros(3,1);
+            this.F_c_h = zeros(3,1);
+            this.F_c_h_d = zeros(3,1);
+            this.M_o_h = this. m_o_h_p*this.M_o;
    
             % =========== human reference =========== 
             this.ref_model = cell(3,1);
             for i=1:3
-               this.ref_model{i} = RefModel(S_h(i), S_g_h(i), this.tau_ref, this.a6, this.a7); 
+               this.ref_model{i} = RefModel(this.S_h(i), this.S_g_h(i), this.tau_ref, this.a6, this.a7); 
             end
             
-            S_ref = S_h;
-            dS_ref = zeros(3,1);
-            ddS_ref = zeros(3,1);
+            this.S_ref = this.S_h;
+            this.dS_ref = zeros(3,1);
+            this.ddS_ref = zeros(3,1);
             
             % =========== object =========== 
-            S_o = this.S0_o;
-            dS_o = zeros(3,1);
-            ddS_o = zeros(3,1);
-            F_c_o = F_c_r+F_c_h;
-            w_o = [0; -this.obj.m*this.grav; 0];
+            this.S_o = this.S0_o;
+            this.dS_o = zeros(3,1);
+            this.ddS_o = zeros(3,1);
+            this.F_c_o = this.F_c_r + this.F_c_h;
+            this.w_o = [0; -this.obj.m*this.grav; 0];
 
-            plot_t = 0.0;
+            this.plot_t = 0.0;
+        end
+        
+        %% Run simulation
+        function simulation(this)
 
+            this.initSimVars();
+            
             %% =========== Simulation =========== 
             disp('Simulation...')
             tic
             while (true)
 
-                d_r = S_o(1:2) - S_r(1:2);
-                d_h = S_o(1:2) - S_h(1:2);
+                this.d_r = this.S_o(1:2) - this.S_r(1:2);
+                this.d_h = this.S_o(1:2) - this.S_h(1:2);
                 
-                this.d_r_hat = d_r;
-                this.d_h_hat = d_h;
+                this.d_r_hat = this.d_r;
+                this.d_h_hat = this.d_h;
                 
                 %% ===========  Get refernce trajectories  =================
 
                 % ===========  get the human's model reference ===========  
-                [S_ref, dS_ref, ddS_ref] = this.getHumanRef(t);
+                [this.S_ref, this.dS_ref, this.ddS_ref] = this.getHumanRef(this.t);
 
                 % ===========  get the robot's reference (DMP model) ===========  
                 Y_c = zeros(3,1);
                 Z_c = zeros(3,1); % 0.97*F_err;
-                [ddS_dmp, dx] = this.getRobotRef(x, S_dmp, dS_dmp, Y_c, Z_c);
+                [this.ddS_dmp, this.dx] = this.getRobotRef(this.x, this.S_dmp, this.dS_dmp, Y_c, Z_c);
+                
+                d_r_h = this.d_r - this.d_h;
+                S_dmp2 = this.S_ref - [d_r_h; 0];
+                dS_dmp2 = this.gMat(-d_r_h)*this.dS_ref;
+                ddS_dmp2 = this.gMat(-d_r_h)*this.ddS_ref + [d_r_h*this.dS_ref(3)^2; 0];
+                
+                this.S_dmp(3) = S_dmp2(3);
+                this.dS_dmp(3) = dS_dmp2(3);
+                this.ddS_dmp(3) = ddS_dmp2(3);
 
                 %% ===========  data logging ===========  
-
-                this.logData(t, x, ...
-                              S_dmp,dS_dmp,ddS_dmp, P_w, F_err, ...
-                              S_r,dS_r,ddS_r, U_r, F_c_r, F_c_r_d, ...
-                              S_h,dS_h,ddS_h, U_h, F_c_h, F_c_h_d, ...
-                              S_o,dS_o,ddS_o, F_c_o, ...
-                              S_ref,dS_ref,ddS_ref);
+                this.logData();
                           
-
                 %% ===========  Robot and Human model simulation  ===========  
-
-                % Control applied by the robot to track its reference
-                V_r = this.K_r*(S_dmp-S_r) + this.D_r*dS_dmp + this.M_r*ddS_dmp;
-
-                % Control applied by the human to track its reference
-                V_h = this.K_h*(S_ref-S_h) + this.D_h*dS_ref + this.M_h*ddS_ref;
-                
-                % Nominal coupling force exerted on the human
-                F_c_h_d = this.calc_Fc_d(dS_h, this.M_h, this.D_h, V_h, this.d_h_hat, dS_o, M_o_h, true);
-                
-                % Nominal coupling force exerted on the robot
-                F_c_r_d = this.calc_Fc_d(dS_r, this.M_r, this.D_r, V_r, this.d_r_hat, dS_o, M_o_r, true);
-                % F_c_r_d = -m_o_r*this.grav;
-                
-                % Control applied by the human to track its reference and compensate for coupling forces
-                U_h = V_h + F_c_h_d .* (1 + (2*rand()-1)*this.load_h_p_var*diag(M_o_h));
-                 
-                % Actual coupling forces exerted on the robot and the human
-                [F_c_r, F_c_h, F_c_o, ddS] = this.calc_Fc(dS_r, this.M_r, this.D_r, V_r, d_r, dS_h, this.M_h, this.D_h, U_h, d_h, dS_o, this.M_o, true);
-                
-                % Control applied by the robot to track its reference and compensate for coupling forces
-                U_r = V_r + F_c_r;
-
-                % Robot model dynamics
-                ddS_r = inv(this.M_r) * ( - this.D_r*dS_r + U_r - F_c_r);
-
-                % Human model dynamics
-                ddS_h = inv(this.M_h) * ( - this.D_h*dS_h + U_h - F_c_h); 
-                
-                % Object model dynamics
-                ddS_o = inv(this.M_o) * (F_c_o + w_o);
-                
-                
-                %% Force error
-                F_err_prev = F_err;
-                F_err = this.k_Ferr.*(-F_c_r + F_c_r_d);
-%                 this.sigma_noise = 0.1*abs(F_err-F_err_prev).^2;
-
+                this.calcDynamicEquations();
 
                 %% ===========  DMP model online adaption  =========== 
-                for i=1:3
-                    if (strcmpi(this.est_method,'KF'))
-                        Sigma_w{i} = this.dmp{i}.update_weights_with_KF(x, F_err(i), 0.0, 0.0, Sigma_w{i}, sigma_noise);
-                        sigma_noise = (1-this.s_n_a)*sigma_noise + this.s_n_a*this.s_n_end;
-                    elseif (strcmpi(this.est_method,'RLS'))
-                        Sigma_w{i} = this.dmp{i}.update_weights_with_RLS(x, F_err(i), 0.0, 0.0, Sigma_w{i}, this.lambda);
-                    elseif (strcmpi(this.est_method,'RLWR'))
-                        Sigma_w{i} = this.dmp{i}.update_weights_with_RLWR(x, F_err(i), 0.0, 0.0, Sigma_w{i}, this.lambda);
-                    else
-                        error('Unsopported estimation method: %s\n', this.est_method);
-                    end
-                    P_w{i} = diag(Sigma_w{i});
-                end
+                this.robotRefModelAdapt();
                 
                 %%  ===========  plot online  ===========  
-                if (plot_t >= this.pl_update_cycle)
-                    this.plotOnline(S_r, S_h, S_o, F_c_r, F_c_h, 0);
-                    plot_t = 0.0;
-                end
-
+                this.plotOnline();
                 
                 %%  ===========  Stopping criteria  ===========  
-                pos_err = max(norm(S_g_h-S_h));
-                if (this.stopSimulation(t, pos_err, dS_r, dS_h)), break; end
+                if (this.stopSimulation()), break; end
 
                 %%  ===========  Numerical integration  =========== 
-                iters = iters + 1;
-                
-                plot_t = plot_t + dt;
-                
-                t = t + dt;
-
-                x = x + dx*dt;
-
-                S_ref = S_ref + dS_ref*dt;
-                dS_ref = dS_ref + ddS_ref*dt;
-                
-                S_dmp = S_dmp + dS_dmp*dt;
-                dS_dmp = dS_dmp + ddS_dmp*dt;
-
-                S_r = S_r + dS_r*dt;
-                dS_r = dS_r + ddS_r*dt;
-
-                S_h = S_h + dS_h*dt;
-                dS_h = dS_h + ddS_h*dt;
-                
-                S_o = S_o + dS_o*dt;
-                dS_o = dS_o + ddS_o*dt;
+                this.numericalIntegration();
 
             end
             toc
@@ -717,7 +703,7 @@ classdef OL_2D_DMP_rup < handle
             fontsize = 14;
             lineWidth = 1.4;
             
-            for k=1:2
+            for k=1:3
                 
                 figure;
                 subplot(3,1,1);
@@ -945,26 +931,114 @@ classdef OL_2D_DMP_rup < handle
                 ddS_dmp(i) = ddy;
             end
             dx = this.can_clock_ptr.getPhaseDot(x);
-
-            ddS_dmp(3) = 0.0;
+            
+        end
+        
+        %% Robot model (DMP model) online adaption
+        function robotRefModelAdapt(this)
+            
+            % Force error
+            this.F_err_prev = this.F_err;
+            this.F_err = this.k_Ferr.*(-this.F_c_r + this.F_c_r_d);
+            % this.sigma_noise = 0.1*abs(F_err-F_err_prev).^2;
+            
+            % Model adaption
+            for i=1:3
+                if (strcmpi(this.est_method,'KF'))
+                    this.Sigma_w{i} = this.dmp{i}.update_weights_with_KF(this.x, this.F_err(i), 0.0, 0.0, this.Sigma_w{i}, this.sigma_noise);
+                    this.sigma_noise = (1-this.s_n_a)*this.sigma_noise + this.s_n_a*this.s_n_end;
+                elseif (strcmpi(this.est_method,'RLS'))
+                    this.Sigma_w{i} = this.dmp{i}.update_weights_with_RLS(this.x, this.F_err(i), 0.0, 0.0, this.Sigma_w{i}, this.lambda);
+                elseif (strcmpi(this.est_method,'RLWR'))
+                    this.Sigma_w{i} = this.dmp{i}.update_weights_with_RLWR(this.x, this.F_err(i), 0.0, 0.0, this.Sigma_w{i}, this.lambda);
+                else
+                    error('Unsopported estimation method: %s\n', this.est_method);
+                end
+                this.P_w{i} = diag(this.Sigma_w{i});
+            end
             
         end
         
         %% Checks whether the simulation stopping criteria are met
-        function stop_sim = stopSimulation(this, t, pos_err, dS_r, dS_h)
+        function stop_sim = stopSimulation(this)
+            
+            pos_err = max(norm(this.S_g_h-this.S_h));
             
             stop_sim = false;
                 
             if (pos_err <= this.pos_tol_stop ...
-                && t>=this.tau_ref && norm(dS_r)<this.vel_tol_stop && norm(dS_h)<this.vel_tol_stop)
+                && this.t>=this.tau_ref && norm(this.dS_r)<this.vel_tol_stop && norm(this.dS_h)<this.vel_tol_stop)
                 disp('****  Target reached  ****');
                 stop_sim = true;
             end
 
-            if (t>=this.max_sim_time_p*this.tau_ref)
+            if (this.t>=this.max_sim_time_p*this.tau_ref)
                 warning('Iteration limit reached. Stopping simulation...\n');
                 stop_sim = true;
             end
+            
+        end
+        
+        function calcDynamicEquations(this)
+            
+            % Control applied by the robot to track its reference
+            V_r = this.K_r*(this.S_dmp-this.S_r) + this.D_r*this.dS_dmp + this.M_r*this.ddS_dmp;
+
+            % Control applied by the human to track its reference
+            V_h = this.K_h*(this.S_ref-this.S_h) + this.D_h*this.dS_ref + this.M_h*this.ddS_ref;
+
+            % Nominal coupling force exerted on the human
+            this.F_c_h_d = this.calc_Fc_d(this.dS_h, this.M_h, this.D_h, V_h, this.d_h_hat, this.dS_o, this.M_o_h, true);
+
+            % Nominal coupling force exerted on the robot
+            this.F_c_r_d = this.calc_Fc_d(this.dS_r, this.M_r, this.D_r, V_r, this.d_r_hat, this.dS_o, this.M_o_r, true);
+            % F_c_r_d = -m_o_r*this.grav;
+
+            % Control applied by the human to track its reference and compensate for coupling forces
+            a_ff_h = (1 + (2*rand()-1)*this.load_h_p_var.*diag(this.M_o_h)); % feedforward gain (including noise)
+            this.U_h = V_h + this.F_c_h_d .*a_ff_h;
+
+            % Actual coupling forces exerted on the robot and the human
+            [this.F_c_r, this.F_c_h, this.F_c_o, ddS] = this.calc_Fc(this.dS_r, this.M_r, this.D_r, V_r, this.d_r, this.dS_h, this.M_h, this.D_h, this.U_h, this.d_h, this.dS_o, this.M_o, true);
+
+            % Control applied by the robot to track its reference and compensate for coupling forces
+            this.U_r = V_r + this.F_c_r;
+
+            % Robot model dynamics
+            this.ddS_r = inv(this.M_r) * ( - this.D_r*this.dS_r + this.U_r - this.F_c_r);
+
+            % Human model dynamics
+            this.ddS_h = inv(this.M_h) * ( - this.D_h*this.dS_h + this.U_h - this.F_c_h); 
+
+            % Object model dynamics
+            this.ddS_o = inv(this.M_o) * (this.F_c_o + this.w_o);
+            
+        end
+        
+        function numericalIntegration(this)
+            
+            this.iters = this.iters + 1;
+
+            this.plot_t = this.plot_t + this.dt;
+
+            this.t = this.t + this.dt;
+
+            this.x = this.x + this.dx*this.dt;
+
+            this.S_ref = this.S_ref + this.dS_ref*this.dt;
+            this.dS_ref = this.dS_ref + this.ddS_ref*this.dt;
+
+            this.S_dmp = this.S_dmp + this.dS_dmp*this.dt;
+            this.dS_dmp = this.dS_dmp + this.ddS_dmp*this.dt;
+
+            this.S_r = this.S_r + this.dS_r*this.dt;
+            this.dS_r = this.dS_r + this.ddS_r*this.dt;
+
+            this.S_h = this.S_h + this.dS_h*this.dt;
+            this.dS_h = this.dS_h + this.ddS_h*this.dt;
+
+            this.S_o = this.S_o + this.dS_o*this.dt;
+            this.dS_o = this.dS_o + this.ddS_o*this.dt;
             
         end
         
@@ -992,21 +1066,27 @@ classdef OL_2D_DMP_rup < handle
         end
         
         %% Updates the online object lifting plot
-        function plotOnline(this, S_r, S_h, S_o, F_c_r, F_c_h, pause_dt)
+        function plotOnline(this)
+
+            if (this.plot_t < this.pl_update_cycle)
+                return;
+            else
+                this.plot_t = 0.0; 
+            end
             
             %% ===== Caulculate robot, human and object poses =====
-            p_r = S_r(1:2);
-            theta_r = S_r(3);
+            p_r = this.S_r(1:2);
+            theta_r = this.S_r(3);
             robAx_x = p_r + this.rotz(theta_r)*[this.pl_h.ax_length; 0];
             robAx_y = p_r + this.rotz(theta_r)*[0; this.pl_h.ax_length];
             
-            p_h = S_h(1:2);
-            theta_h = S_h(3);
+            p_h = this.S_h(1:2);
+            theta_h = this.S_h(3);
             humAx_x = p_h + this.rotz(theta_h)*[this.pl_h.ax_length; 0];
             humAx_y = p_h + this.rotz(theta_h)*[0; this.pl_h.ax_length];
             
-            p_o = S_o(1:2);
-            theta_o = S_o(3);
+            p_o = this.S_o(1:2);
+            theta_o = this.S_o(3);
             p_o_left = p_o + this.rotz(theta_o)*[-this.obj.CoM; 0];
             p_o_right = p_o + this.rotz(theta_o)*[this.obj.l-this.obj.CoM; 0];
             objAx_x = p_o + this.rotz(theta_o)*[this.pl_h.ax_length; 0];
@@ -1067,70 +1147,65 @@ classdef OL_2D_DMP_rup < handle
             %% ================ Robot coupling Force arrow ================ 
             this.pl_h.Fc_r_quiv.XData = p_r(1);
             this.pl_h.Fc_r_quiv.YData = p_r(2);
-            this.pl_h.Fc_r_quiv.UData = F_c_r(1) * this.pl_h.Fc_scale;
-            this.pl_h.Fc_r_quiv.VData = F_c_r(2) * this.pl_h.Fc_scale;
+            this.pl_h.Fc_r_quiv.UData = this.F_c_r(1) * this.pl_h.Fc_scale;
+            this.pl_h.Fc_r_quiv.VData = this.F_c_r(2) * this.pl_h.Fc_scale;
             
-            this.pl_h.Fc_r_label.String = sprintf('F_{c,r} = [ %.1f,  %.1f,  %.1f]', F_c_r(1),F_c_r(2),F_c_r(3));
-            this.pl_h.Fc_r_arrow_text.Position = [p_r(1)+F_c_r(1)*this.pl_h.Fc_scale, p_r(2)+F_c_r(2)*this.pl_h.Fc_scale, 0];
+            this.pl_h.Fc_r_label.String = sprintf('F_{c,r} = [ %.1f,  %.1f,  %.1f]', this.F_c_r(1),this.F_c_r(2),this.F_c_r(3));
+            this.pl_h.Fc_r_arrow_text.Position = [p_r(1)+this.F_c_r(1)*this.pl_h.Fc_scale, p_r(2)+this.F_c_r(2)*this.pl_h.Fc_scale, 0];
             
             %% ================ Human coupling Force arrow ================ 
             this.pl_h.Fc_h_quiv.XData = p_h(1);
             this.pl_h.Fc_h_quiv.YData = p_h(2);
-            this.pl_h.Fc_h_quiv.UData = F_c_h(1) * this.pl_h.Fc_scale;
-            this.pl_h.Fc_h_quiv.VData = F_c_h(2) * this.pl_h.Fc_scale;
+            this.pl_h.Fc_h_quiv.UData = this.F_c_h(1) * this.pl_h.Fc_scale;
+            this.pl_h.Fc_h_quiv.VData = this.F_c_h(2) * this.pl_h.Fc_scale;
             
-            this.pl_h.Fc_h_label.String = sprintf('F_{c,h} = [ %.1f,  %.1f,  %.1f]', F_c_h(1),F_c_h(2),F_c_h(3));
-            this.pl_h.Fc_h_arrow_text.Position = [p_h(1)+F_c_h(1)*this.pl_h.Fc_scale, p_h(2)+F_c_h(2)*this.pl_h.Fc_scale, 0];
+            this.pl_h.Fc_h_label.String = sprintf('F_{c,h} = [ %.1f,  %.1f,  %.1f]', this.F_c_h(1),this.F_c_h(2),this.F_c_h(3));
+            this.pl_h.Fc_h_arrow_text.Position = [p_h(1)+this.F_c_h(1)*this.pl_h.Fc_scale, p_h(2)+this.F_c_h(2)*this.pl_h.Fc_scale, 0];
             
             %% ======== draw ========
             drawnow;
-            if (pause_dt),pause(pause_dt); end
+            % if (pause_dt),pause(pause_dt); end
 
         end
 
         %% Logs the simulation's current step data
-        function logData(this,t, x, ...
-                          S_dmp,dS_dmp,ddS_dmp, P_w, F_err, ...
-                          S_r,dS_r,ddS_r, U_r, F_c_r, F_c_r_d, ...
-                          S_h,dS_h,ddS_h, U_h, F_c_h, F_c_h_d, ...
-                          S_o,dS_o,ddS_o, F_c_o, ...
-                          S_ref,dS_ref,ddS_ref)
+        function logData(this)
             
-                this.log_data.Time = [this.log_data.Time t];
+                this.log_data.Time = [this.log_data.Time this.t];
 
-                this.log_data.x_data = [this.log_data.x_data x];
+                this.log_data.x_data = [this.log_data.x_data this.x];
 
-                this.log_data.S_dmp_data = [this.log_data.S_dmp_data S_dmp];
-                this.log_data.dS_dmp_data = [this.log_data.dS_dmp_data dS_dmp];   
-                this.log_data.ddS_dmp_data = [this.log_data.ddS_dmp_data ddS_dmp];
+                this.log_data.S_dmp_data = [this.log_data.S_dmp_data this.S_dmp];
+                this.log_data.dS_dmp_data = [this.log_data.dS_dmp_data this.dS_dmp];   
+                this.log_data.ddS_dmp_data = [this.log_data.ddS_dmp_data this.ddS_dmp];
                 for i=1:3
                     this.log_data.w_dmp_data{i} = [this.log_data.w_dmp_data{i} this.dmp{i}.w];
-                    this.log_data.P_w_data{i} = [this.log_data.P_w_data{i} P_w{i}];
+                    this.log_data.P_w_data{i} = [this.log_data.P_w_data{i} this.P_w{i}];
                 end
-                this.log_data.F_err_data = [this.log_data.F_err_data F_err];
+                this.log_data.F_err_data = [this.log_data.F_err_data this.F_err];
 
-                this.log_data.S_r_data = [this.log_data.S_r_data S_r];
-                this.log_data.dS_r_data = [this.log_data.dS_r_data dS_r];   
-                this.log_data.ddS_r_data = [this.log_data.ddS_r_data ddS_r];
-                this.log_data.U_r_data = [this.log_data.U_r_data U_r];
-                this.log_data.F_c_r_data = [this.log_data.F_c_r_data F_c_r];
-                this.log_data.F_c_r_d_data = [this.log_data.F_c_r_d_data F_c_r_d];
+                this.log_data.S_r_data = [this.log_data.S_r_data this.S_r];
+                this.log_data.dS_r_data = [this.log_data.dS_r_data this.dS_r];   
+                this.log_data.ddS_r_data = [this.log_data.ddS_r_data this.ddS_r];
+                this.log_data.U_r_data = [this.log_data.U_r_data this.U_r];
+                this.log_data.F_c_r_data = [this.log_data.F_c_r_data this.F_c_r];
+                this.log_data.F_c_r_d_data = [this.log_data.F_c_r_d_data this.F_c_r_d];
                 
-                this.log_data.S_h_data = [this.log_data.S_h_data S_h];
-                this.log_data.dS_h_data = [this.log_data.dS_h_data dS_h];   
-                this.log_data.ddS_h_data = [this.log_data.ddS_h_data ddS_h];
-                this.log_data.U_h_data = [this.log_data.U_h_data U_h];
-                this.log_data.F_c_h_data = [this.log_data.F_c_h_data F_c_h];
-                this.log_data.F_c_h_d_data = [this.log_data.F_c_h_d_data F_c_h_d];
+                this.log_data.S_h_data = [this.log_data.S_h_data this.S_h];
+                this.log_data.dS_h_data = [this.log_data.dS_h_data this.dS_h];   
+                this.log_data.ddS_h_data = [this.log_data.ddS_h_data this.ddS_h];
+                this.log_data.U_h_data = [this.log_data.U_h_data this.U_h];
+                this.log_data.F_c_h_data = [this.log_data.F_c_h_data this.F_c_h];
+                this.log_data.F_c_h_d_data = [this.log_data.F_c_h_d_data this.F_c_h_d];
                 
-                this.log_data.S_o_data = [this.log_data.S_o_data S_o];
-                this.log_data.dS_o_data = [this.log_data.dS_o_data dS_o];   
-                this.log_data.ddS_o_data = [this.log_data.ddS_o_data ddS_o];
-                this.log_data.F_c_o_data = [this.log_data.F_c_o_data F_c_o];
+                this.log_data.S_o_data = [this.log_data.S_o_data this.S_o];
+                this.log_data.dS_o_data = [this.log_data.dS_o_data this.dS_o];   
+                this.log_data.ddS_o_data = [this.log_data.ddS_o_data this.ddS_o];
+                this.log_data.F_c_o_data = [this.log_data.F_c_o_data this.F_c_o];
 
-                this.log_data.S_ref_data = [this.log_data.S_ref_data S_ref];
-                this.log_data.dS_ref_data = [this.log_data.dS_ref_data dS_ref];   
-                this.log_data.ddS_ref_data = [this.log_data.ddS_ref_data ddS_ref];
+                this.log_data.S_ref_data = [this.log_data.S_ref_data this.S_ref];
+                this.log_data.dS_ref_data = [this.log_data.dS_ref_data this.dS_ref];   
+                this.log_data.ddS_ref_data = [this.log_data.ddS_ref_data this.ddS_ref];
         end
     end
 end
