@@ -234,6 +234,7 @@ classdef OL_2D_DMP_rup < handle
             
             quiv_arrowHead_size = 0.3;
             
+            axis_lineStyle = '-';
             axis_width = 3.5;
             x_ax_color = [1 0 0];
             y_ax_color = [0 1 0];
@@ -295,7 +296,7 @@ classdef OL_2D_DMP_rup < handle
             % Object frame x-axis
             objXax = quiver(ax,0,0,0,0);
             objXax.Color = x_ax_color;
-        	objXax.LineStyle = '-';
+        	objXax.LineStyle = axis_lineStyle;
         	objXax.LineWidth = axis_width;    
         	objXax.AutoScale = 'off';
             objXax.MaxHeadSize = quiv_arrowHead_size;
@@ -303,7 +304,7 @@ classdef OL_2D_DMP_rup < handle
             % Object frame y-axis
             objYax = quiver(ax,0,0,0,0);
             objYax.Color = y_ax_color;
-        	objYax.LineStyle = '-';
+        	objYax.LineStyle = axis_lineStyle;
         	objYax.LineWidth = axis_width;    
         	objYax.AutoScale = 'off';
             objYax.MaxHeadSize = quiv_arrowHead_size;
@@ -327,7 +328,7 @@ classdef OL_2D_DMP_rup < handle
             % Robot frame x-axis
             robotXax = quiver(ax,0,0,0,0);
             robotXax.Color = x_ax_color;
-        	robotXax.LineStyle = '-';
+        	robotXax.LineStyle = axis_lineStyle;
         	robotXax.LineWidth = axis_width;    
         	robotXax.AutoScale = 'off';
             robotXax.MaxHeadSize = quiv_arrowHead_size;
@@ -335,7 +336,7 @@ classdef OL_2D_DMP_rup < handle
             % Robot frame y-axis
             robotYax = quiver(ax,0,0,0,0);
             robotYax.Color = y_ax_color;
-        	robotYax.LineStyle = '-';
+        	robotYax.LineStyle = axis_lineStyle;
         	robotYax.LineWidth = axis_width;    
         	robotYax.AutoScale = 'off';
             robotYax.MaxHeadSize = quiv_arrowHead_size;
@@ -359,7 +360,7 @@ classdef OL_2D_DMP_rup < handle
             % Human frame x-axis
             humanXax = quiver(ax,0,0,0,0);
             humanXax.Color = x_ax_color;
-        	humanXax.LineStyle = '-';
+        	humanXax.LineStyle = axis_lineStyle;
         	humanXax.LineWidth = axis_width;    
         	humanXax.AutoScale = 'off';
             humanXax.MaxHeadSize = quiv_arrowHead_size;
@@ -367,7 +368,7 @@ classdef OL_2D_DMP_rup < handle
             % Human frame y-axis
             humanYax = quiver(ax,0,0,0,0);
             humanYax.Color = y_ax_color;
-        	humanYax.LineStyle = '-';
+        	humanYax.LineStyle = axis_lineStyle;
         	humanYax.LineWidth = axis_width;    
         	humanYax.AutoScale = 'off';
             humanYax.MaxHeadSize = quiv_arrowHead_size;
@@ -443,7 +444,8 @@ classdef OL_2D_DMP_rup < handle
             Fc_r_quiv.MaxHeadSize = quiv_arrowHead_size;
             
             % Robot coupling Force text
-            Fc_r_text = text(ax, ax.XLim(1)+0.1 , ax.YLim(1)+0.2, 'F_{c,r}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
+            Fc_r_label = text(ax, ax.XLim(1)+0.1 , ax.YLim(1)+0.2, 'F_{c,r}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
+            Fc_r_arrow_text = text(ax, 0 , 0, 'F_{c,r}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
             
             %% =====================================================
             %% =============   Human coupling Force   ==============
@@ -458,7 +460,8 @@ classdef OL_2D_DMP_rup < handle
             Fc_h_quiv.MaxHeadSize = quiv_arrowHead_size;
             
             % Human coupling Force text
-            Fc_h_text = text(ax, ax.XLim(1)+0.1 , ax.YLim(1)+0.1, 'F_{c,h}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
+            Fc_h_label = text(ax, ax.XLim(1)+0.1 , ax.YLim(1)+0.1, 'F_{c,h}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
+            Fc_h_arrow_text = text(ax, 0 , 0, 'F_{c,h}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
             
             %% ==========================================================
             %% ==========================================================
@@ -467,7 +470,9 @@ classdef OL_2D_DMP_rup < handle
                                'objCenter',objCenter, 'objLine',objLine, 'objXax',objXax, 'objYax',objYax, 'objFrameTxt',objFrameTxt, ...
                                'robotCenter',robotCenter, 'robotXax',robotXax, 'robotYax',robotYax, 'robotFrameTxt',robotFrameTxt, ...
                                'humanCenter',humanCenter, 'humanXax',humanXax, 'humanYax',humanYax, 'humanFrameTxt',humanFrameTxt, ...
-                               'Fc_r_quiv',Fc_r_quiv, 'Fc_r_text',Fc_r_text, 'Fc_h_quiv',Fc_h_quiv, 'Fc_h_text',Fc_h_text, 'Fc_scale',Fc_scale, 'Fc_text_offset',Fc_text_offset);
+                               'Fc_r_quiv',Fc_r_quiv, 'Fc_r_label',Fc_r_label, 'Fc_h_quiv',Fc_h_quiv, 'Fc_h_label',Fc_h_label, ...
+                               'Fc_r_arrow_text',Fc_r_arrow_text, 'Fc_h_arrow_text',Fc_h_arrow_text, ...
+                               'Fc_scale',Fc_scale, 'Fc_text_offset',Fc_text_offset);
             
         end
             
@@ -596,13 +601,9 @@ classdef OL_2D_DMP_rup < handle
                 end
                 dx = this.can_clock_ptr.getPhaseDot(x);
                 
-%                 ddS_dmp(1) = 0.0;
-%                 ddS_dmp(3) = 0.0;
+                ddS_dmp(3) = 0.0;
                 
-                pause
-
-                %% plot online
-                this.plotOnline(S_r, S_h, S_o, F_c_r, F_c_h, dt);
+%                 pause
 
                 %% ===========  data logging ===========  
 
@@ -656,10 +657,10 @@ classdef OL_2D_DMP_rup < handle
                 V_h = K_h*(S_ref-S_h) + D_h*dS_ref + M_h*ddS_ref;
                 
                 % Nominal coupling force exerted on the human
-                F_c_h_d = this.calc_Fc_d(dS_h, M_h, D_h, V_h, d_r_hat, dS_o, M_o_h, true);
+                F_c_h_d = this.calc_Fc_d(dS_h, M_h, D_h, V_h, d_h_hat, dS_o, M_o_h, true);
                 
                 % Nominal coupling force exerted on the robot
-                F_c_r_d = this.calc_Fc_d(dS_r, M_r, D_r, V_r, d_h_hat, dS_o, M_o_r, true);
+                F_c_r_d = this.calc_Fc_d(dS_r, M_r, D_r, V_r, d_r_hat, dS_o, M_o_r, true);
                 % F_c_r_d = -m_o_r*grav;
                 
                 % Control applied by the human to track its reference and compensate for coupling forces
@@ -705,6 +706,9 @@ classdef OL_2D_DMP_rup < handle
                     end
                     P_w{i} = diag(Sigma_w{i});
                 end
+                
+                %%  ===========  plot online  ===========  
+                this.plotOnline(S_r, S_h, S_o, F_c_r, F_c_h, dt);
 
                 
                 %%  ===========  Stopping criteria  ===========  
@@ -918,7 +922,7 @@ classdef OL_2D_DMP_rup < handle
             F_c_r = X(4:6);
             F_c_h = X(7:9);
             F_c_o = (this.gMat(d_r)'*F_c_r + this.gMat(d_h)'*F_c_h);
-
+            
         end
         
         function S2 = findPoseFromPose(this, S1, d)
@@ -1072,8 +1076,8 @@ classdef OL_2D_DMP_rup < handle
             this.pl_h.Fc_r_quiv.UData = F_c_r(1) * this.pl_h.Fc_scale;
             this.pl_h.Fc_r_quiv.VData = F_c_r(2) * this.pl_h.Fc_scale;
             
-            % this.pl_h.Fc_r_text.Position = [p_r(1) p_r(2) 0] + this.pl_h.Fc_text_offset;
-            this.pl_h.Fc_r_text.String = sprintf('F_{c,r} = [ %.1f,  %.1f,  %.1f]', F_c_r(1),F_c_r(2),F_c_r(3));
+            this.pl_h.Fc_r_label.String = sprintf('F_{c,r} = [ %.1f,  %.1f,  %.1f]', F_c_r(1),F_c_r(2),F_c_r(3));
+            this.pl_h.Fc_r_arrow_text.Position = [p_r(1)+F_c_r(1)*this.pl_h.Fc_scale, p_r(2)+F_c_r(2)*this.pl_h.Fc_scale, 0];
             
             %% ================ Human coupling Force arrow ================ 
             this.pl_h.Fc_h_quiv.XData = p_h(1);
@@ -1081,8 +1085,8 @@ classdef OL_2D_DMP_rup < handle
             this.pl_h.Fc_h_quiv.UData = F_c_h(1) * this.pl_h.Fc_scale;
             this.pl_h.Fc_h_quiv.VData = F_c_h(2) * this.pl_h.Fc_scale;
             
-            % this.pl_h.Fc_h_text.Position = [p_h(1) p_h(2) 0] + this.pl_h.Fc_text_offset;
-            this.pl_h.Fc_h_text.String = sprintf('F_{c,h} = [ %.1f,  %.1f,  %.1f]', F_c_h(1),F_c_h(2),F_c_h(3));
+            this.pl_h.Fc_h_label.String = sprintf('F_{c,h} = [ %.1f,  %.1f,  %.1f]', F_c_h(1),F_c_h(2),F_c_h(3));
+            this.pl_h.Fc_h_arrow_text.Position = [p_h(1)+F_c_h(1)*this.pl_h.Fc_scale, p_h(2)+F_c_h(2)*this.pl_h.Fc_scale, 0];
             
             %% ======== draw ========
             drawnow;
