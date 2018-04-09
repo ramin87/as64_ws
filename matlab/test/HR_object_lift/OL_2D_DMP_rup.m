@@ -181,8 +181,8 @@ classdef OL_2D_DMP_rup < handle
             this.obj.l = 0.8; % object length
             this.obj.CoM = 0.4; % object's CoM (distance from its left end)
             this.obj.Iz = this.obj.m*(this.obj.w^2 + this.obj.l^2)/12; % object moment of inertia around z
-            this.S0_o = [0.0; 0.0; -pi/5];
-            this.Sg_o = [0.3; 0.65; 0.0];
+            this.S0_o = [0.0; 0.0; 0*-pi/5];
+            this.Sg_o = [0.3; 0.65; pi/5];
             this.M_o = diag([this.obj.m; this.obj.m; this.obj.Iz]);
 
             
@@ -288,9 +288,9 @@ classdef OL_2D_DMP_rup < handle
             ax_length = 0.2;
             
             frameText_offset = [-0.085 -0.065 0.0];
-            frame_label_fontsize = 15;
+            frame_label_fontsize = 18;
             frame_label_color = [0 0 0];
-            text_fontsize = 16;
+            text_fontsize = 20;
             text_interp = 'latex';
             
             quiv_arrowHead_size = 0.3;
@@ -316,7 +316,7 @@ classdef OL_2D_DMP_rup < handle
             Fc_lineStyle = '-';
             Fc_lineWidth = 2.0;
             Fc_text_offset = [-0.2 -0.2 0];
-            Fc_label_fontsize = 16;
+            Fc_label_fontsize = 20;
             Fc_text_color = [0 0 0];
             
             
@@ -380,7 +380,7 @@ classdef OL_2D_DMP_rup < handle
             objCenter.YData = [];
 
             % Object frame text
-            objFrameTxt = text(ax, 0.0 , 0.0, obj_frameTxt, 'FontSize', frame_label_fontsize, 'FontWeight', 'bold', 'Color', frame_label_color);
+            objFrameTxt = text(ax, 0.0 , 0.0, obj_frameTxt, 'FontSize', frame_label_fontsize, 'FontWeight', 'bold', 'Color', frame_label_color, 'Interpreter',text_interp);
             
             %% ======================================
             %% =============   Robot   ==============
@@ -412,7 +412,7 @@ classdef OL_2D_DMP_rup < handle
             robotCenter.YData = [];
             
             % Robot frame text
-            robotFrameTxt = text(ax, 0.0 , 0.0, robot_frameTxt, 'FontSize', frame_label_fontsize, 'FontWeight', 'bold', 'Color', frame_label_color);
+            robotFrameTxt = text(ax, 0.0 , 0.0, robot_frameTxt, 'FontSize', frame_label_fontsize, 'FontWeight', 'bold', 'Color', frame_label_color, 'Interpreter',text_interp);
             
             %% ======================================
             %% =============   Human   ==============
@@ -444,7 +444,7 @@ classdef OL_2D_DMP_rup < handle
             humanCenter.YData = [];
             
             % Human frame text
-            humanFrameTxt = text(ax, 0.0 , 0.0, human_frameTxt, 'FontSize', frame_label_fontsize, 'FontWeight', 'bold', 'Color', frame_label_color);
+            humanFrameTxt = text(ax, 0.0 , 0.0, human_frameTxt, 'FontSize', frame_label_fontsize, 'FontWeight', 'bold', 'Color', frame_label_color, 'Interpreter',text_interp);
     
             %% ===============================
             %% ========= Goal frame ==========
@@ -488,7 +488,7 @@ classdef OL_2D_DMP_rup < handle
             goalCenter.YData = p_g(2);
             
             % Goal frame text
-            goalFrameTxt = text(ax, 0.0 , 0.0, '\{Goal\}', 'FontSize', frame_label_fontsize, 'FontWeight', 'bold', 'Color', frame_label_color);
+            goalFrameTxt = text(ax, 0.0 , 0.0, '$\{Goal\}$', 'FontSize', frame_label_fontsize, 'FontWeight', 'bold', 'Color', frame_label_color, 'Interpreter',text_interp);
             goalFrameTxt.Position = [p_g(1) p_g(2) 0] + frameText_offset;
             
             
@@ -505,8 +505,11 @@ classdef OL_2D_DMP_rup < handle
             Fc_r_quiv.MaxHeadSize = quiv_arrowHead_size;
             
             % Robot coupling Force text
-            Fc_r_label = text(ax, ax.XLim(1)+0.1 , ax.YLim(1)+0.2, 'F_{c,r}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
-            Fc_r_arrow_text = text(ax, 0 , 0, 'F_{c,r}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
+            Fc_r_label = text(ax, ax.XLim(1)+0.1 , ax.YLim(1)+0.23, '$F_{c,r}$', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color, 'Interpreter',text_interp);
+            Fc_r_arrow_text = text(ax, 0 , 0, '$F_{c,r}$', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color, 'Interpreter',text_interp);
+            
+            % Robot coupling Force error
+            Fc_err_label = text(ax, ax.XLim(1)+0.1 , ax.YLim(1)+0.36, '$\tilde{F}_{c,r}$', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color, 'Interpreter',text_interp);
             
             %% =====================================================
             %% =============   Human coupling Force   ==============
@@ -521,8 +524,8 @@ classdef OL_2D_DMP_rup < handle
             Fc_h_quiv.MaxHeadSize = quiv_arrowHead_size;
             
             % Human coupling Force text
-            Fc_h_label = text(ax, ax.XLim(1)+0.1 , ax.YLim(1)+0.1, 'F_{c,h}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
-            Fc_h_arrow_text = text(ax, 0 , 0, 'F_{c,h}', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color);
+            Fc_h_label = text(ax, ax.XLim(1)+0.1 , ax.YLim(1)+0.1, '$F_{c,h}$', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color, 'Interpreter',text_interp);
+            Fc_h_arrow_text = text(ax, 0 , 0, '$F_{c,h}$', 'FontSize', Fc_label_fontsize, 'FontWeight', 'normal', 'Color', Fc_text_color, 'Interpreter',text_interp);
             
             %% ==========================================================
             %% ==========================================================
@@ -532,9 +535,114 @@ classdef OL_2D_DMP_rup < handle
                                'robotCenter',robotCenter, 'robotXax',robotXax, 'robotYax',robotYax, 'robotFrameTxt',robotFrameTxt, ...
                                'humanCenter',humanCenter, 'humanXax',humanXax, 'humanYax',humanYax, 'humanFrameTxt',humanFrameTxt, ...
                                'Fc_r_quiv',Fc_r_quiv, 'Fc_r_label',Fc_r_label, 'Fc_h_quiv',Fc_h_quiv, 'Fc_h_label',Fc_h_label, ...
-                               'Fc_r_arrow_text',Fc_r_arrow_text, 'Fc_h_arrow_text',Fc_h_arrow_text, ...
+                               'Fc_r_arrow_text',Fc_r_arrow_text, 'Fc_h_arrow_text',Fc_h_arrow_text, 'Fc_err_label',Fc_err_label, ...
                                'Fc_scale',Fc_scale, 'Fc_text_offset',Fc_text_offset);
             
+        end
+        
+        %% Updates the online object lifting plot
+        function plotOnline(this)
+
+            if (this.plot_t < this.pl_update_cycle)
+                return;
+            else
+                this.plot_t = 0.0; 
+            end
+            
+            %% ===== Caulculate robot, human and object poses =====
+            p_r = this.S_r(1:2);
+            theta_r = this.S_r(3);
+            robAx_x = p_r + this.rotz(theta_r)*[this.pl_h.ax_length; 0];
+            robAx_y = p_r + this.rotz(theta_r)*[0; this.pl_h.ax_length];
+            
+            p_h = this.S_h(1:2);
+            theta_h = this.S_h(3);
+            humAx_x = p_h + this.rotz(theta_h)*[this.pl_h.ax_length; 0];
+            humAx_y = p_h + this.rotz(theta_h)*[0; this.pl_h.ax_length];
+            
+            p_o = this.S_o(1:2);
+            theta_o = this.S_o(3);
+            p_o_left = p_o + this.rotz(theta_o)*[-this.obj.CoM; 0];
+            p_o_right = p_o + this.rotz(theta_o)*[this.obj.l-this.obj.CoM; 0];
+            objAx_x = p_o + this.rotz(theta_o)*[this.pl_h.ax_length; 0];
+            objAx_y = p_o + this.rotz(theta_o)*[0; this.pl_h.ax_length];
+            
+            %% ================ Object ================
+            this.pl_h.objLine.XData = [p_o_left(1) p_o_right(1)];
+            this.pl_h.objLine.YData = [p_o_left(2) p_o_right(2)];
+            
+            this.pl_h.objXax.XData = p_o(1);
+            this.pl_h.objXax.YData = p_o(2);
+            this.pl_h.objXax.UData = objAx_x(1) - p_o(1);
+            this.pl_h.objXax.VData = objAx_x(2) - p_o(2);
+            
+            this.pl_h.objYax.XData = p_o(1);
+            this.pl_h.objYax.YData = p_o(2);
+            this.pl_h.objYax.UData = objAx_y(1) - p_o(1);
+            this.pl_h.objYax.VData = objAx_y(2) - p_o(2);
+            
+            this.pl_h.objCenter.XData = p_o(1);
+            this.pl_h.objCenter.YData = p_o(2);
+            
+            this.pl_h.objFrameTxt.Position = [p_o(1) p_o(2) 0] + this.pl_h.frameText_offset;
+
+            
+            %% ================ Robot ================           
+            this.pl_h.robotXax.XData = p_r(1);
+            this.pl_h.robotXax.YData = p_r(2);
+            this.pl_h.robotXax.UData = robAx_x(1) - p_r(1);
+            this.pl_h.robotXax.VData = robAx_x(2) - p_r(2);
+            
+            this.pl_h.robotYax.XData = p_r(1);
+            this.pl_h.robotYax.YData = p_r(2);
+            this.pl_h.robotYax.UData = robAx_y(1) - p_r(1);
+            this.pl_h.robotYax.VData = robAx_y(2) - p_r(2);
+            
+            this.pl_h.robotCenter.XData = p_r(1);
+            this.pl_h.robotCenter.YData = p_r(2);
+           
+            this.pl_h.robotFrameTxt.Position = [p_r(1) p_r(2) 0] + this.pl_h.frameText_offset;
+            
+            %% ================ Human ================          
+            this.pl_h.humanXax.XData = p_h(1);
+            this.pl_h.humanXax.YData = p_h(2);
+            this.pl_h.humanXax.UData = humAx_x(1) - p_h(1);
+            this.pl_h.humanXax.VData = humAx_x(2) - p_h(2);
+            
+            this.pl_h.humanYax.XData = p_h(1);
+            this.pl_h.humanYax.YData = p_h(2);
+            this.pl_h.humanYax.UData = humAx_y(1) - p_h(1);
+            this.pl_h.humanYax.VData = humAx_y(2) - p_h(2);
+            
+            this.pl_h.humanCenter.XData = p_h(1);
+            this.pl_h.humanCenter.YData = p_h(2);
+            
+            this.pl_h.humanFrameTxt.Position = [p_h(1) p_h(2) 0] + this.pl_h.frameText_offset;
+            
+            %% ================ Robot coupling Force arrow ================ 
+            this.pl_h.Fc_r_quiv.XData = p_r(1);
+            this.pl_h.Fc_r_quiv.YData = p_r(2);
+            this.pl_h.Fc_r_quiv.UData = this.F_c_r(1) * this.pl_h.Fc_scale;
+            this.pl_h.Fc_r_quiv.VData = this.F_c_r(2) * this.pl_h.Fc_scale;
+            
+            this.pl_h.Fc_r_label.String = sprintf('$F_{c,r} = [ %.1f,  %.1f,  %.1f]$', this.F_c_r(1),this.F_c_r(2),this.F_c_r(3));
+            this.pl_h.Fc_r_arrow_text.Position = [p_r(1)+this.F_c_r(1)*this.pl_h.Fc_scale, p_r(2)+this.F_c_r(2)*this.pl_h.Fc_scale, 0];
+            
+            this.pl_h.Fc_err_label.String = sprintf('$\\tilde{F}_{c,r} = [ %.2f,  %.2f,  %.2f]$', this.F_err(1),this.F_err(2),this.F_err(3));
+            
+            %% ================ Human coupling Force arrow ================ 
+            this.pl_h.Fc_h_quiv.XData = p_h(1);
+            this.pl_h.Fc_h_quiv.YData = p_h(2);
+            this.pl_h.Fc_h_quiv.UData = this.F_c_h(1) * this.pl_h.Fc_scale;
+            this.pl_h.Fc_h_quiv.VData = this.F_c_h(2) * this.pl_h.Fc_scale;
+            
+            this.pl_h.Fc_h_label.String = sprintf('$F_{c,h} = [ %.1f,  %.1f,  %.1f]$', this.F_c_h(1),this.F_c_h(2),this.F_c_h(3));
+            this.pl_h.Fc_h_arrow_text.Position = [p_h(1)+this.F_c_h(1)*this.pl_h.Fc_scale, p_h(2)+this.F_c_h(2)*this.pl_h.Fc_scale, 0];
+            
+            %% ======== draw ========
+            drawnow;
+            % if (pause_dt),pause(pause_dt); end
+
         end
             
         %% Train the dmp model
@@ -669,7 +777,7 @@ classdef OL_2D_DMP_rup < handle
                 this.calcDynamicEquations();
 
                 %% ===========  DMP model online adaption  =========== 
-                this.robotRefModelAdapt();
+                this.updateRobotRefModel();
                 
                 %%  ===========  plot online  ===========  
                 this.plotOnline();
@@ -679,6 +787,8 @@ classdef OL_2D_DMP_rup < handle
 
                 %%  ===========  Numerical integration  =========== 
                 this.numericalIntegration();
+
+%                 pause
 
             end
             toc
@@ -822,8 +932,8 @@ classdef OL_2D_DMP_rup < handle
             dtheta_o = dS_o(3);
             dp_c = [d*dtheta_o^2; 0];
             
-            A = [M*this.gMat(-d) ,  (~is_stiff)*eye(3); 
-                      M_o        ,     -this.gMat(d)' ];
+            A = [M*this.gMat(-d) ,  -(~is_stiff)*eye(3); 
+                      M_o        ,     this.gMat(d)' ];
                 
             b = [-D*dS + U - M*dp_c;
                        w_o         ];
@@ -845,9 +955,9 @@ classdef OL_2D_DMP_rup < handle
             dp_c_r = [d_r*dtheta_o^2; 0];
             dp_c_h = [d_h*dtheta_o^2; 0];
             
-            A = [M_r*this.gMat(-d_r) , (~is_stiff)*eye(3) ,   zeros(3); 
-                 M_h*this.gMat(-d_h) ,      zeros(3)      ,    eye(3); 
-                        M_o          ,   -this.gMat(d_r)'  , -this.gMat(d_h)'];
+            A = [M_r*this.gMat(-d_r) , -(~is_stiff)*eye(3) ,   zeros(3); 
+                 M_h*this.gMat(-d_h) ,      zeros(3)      ,    -eye(3); 
+                        M_o          ,    this.gMat(d_r)'  ,  this.gMat(d_h)'];
              
             b = [-D_r*dS_r + V_r - M_r*dp_c_r; 
                  -D_h*dS_h + U_h - M_h*dp_c_h; 
@@ -858,7 +968,7 @@ classdef OL_2D_DMP_rup < handle
             ddS_o = X(1:3);
             F_c_r = X(4:6);
             F_c_h = X(7:9);
-            F_c_o = (this.gMat(d_r)'*F_c_r + this.gMat(d_h)'*F_c_h);
+            F_c_o = -(this.gMat(d_r)'*F_c_r + this.gMat(d_h)'*F_c_h);
             
         end
         
@@ -935,11 +1045,12 @@ classdef OL_2D_DMP_rup < handle
         end
         
         %% Robot model (DMP model) online adaption
-        function robotRefModelAdapt(this)
+        function updateRobotRefModel(this)
             
             % Force error
             this.F_err_prev = this.F_err;
-            this.F_err = this.k_Ferr.*(-this.F_c_r + this.F_c_r_d);
+            this.F_err = this.k_Ferr.*(this.F_c_r - this.F_c_r_d);
+%             this.F_err(3) = -this.F_err(3);
             % this.sigma_noise = 0.1*abs(F_err-F_err_prev).^2;
             
             % Model adaption
@@ -996,19 +1107,19 @@ classdef OL_2D_DMP_rup < handle
 
             % Control applied by the human to track its reference and compensate for coupling forces
             a_ff_h = (1 + (2*rand()-1)*this.load_h_p_var.*diag(this.M_o_h)); % feedforward gain (including noise)
-            this.U_h = V_h + this.F_c_h_d .*a_ff_h;
+            this.U_h = V_h - this.F_c_h_d .*a_ff_h;
 
             % Actual coupling forces exerted on the robot and the human
             [this.F_c_r, this.F_c_h, this.F_c_o, ddS] = this.calc_Fc(this.dS_r, this.M_r, this.D_r, V_r, this.d_r, this.dS_h, this.M_h, this.D_h, this.U_h, this.d_h, this.dS_o, this.M_o, true);
 
             % Control applied by the robot to track its reference and compensate for coupling forces
-            this.U_r = V_r + this.F_c_r;
+            this.U_r = V_r - this.F_c_r;
 
             % Robot model dynamics
-            this.ddS_r = inv(this.M_r) * ( - this.D_r*this.dS_r + this.U_r - this.F_c_r);
+            this.ddS_r = inv(this.M_r) * ( - this.D_r*this.dS_r + this.U_r + this.F_c_r);
 
             % Human model dynamics
-            this.ddS_h = inv(this.M_h) * ( - this.D_h*this.dS_h + this.U_h - this.F_c_h); 
+            this.ddS_h = inv(this.M_h) * ( - this.D_h*this.dS_h + this.U_h + this.F_c_h); 
 
             % Object model dynamics
             this.ddS_o = inv(this.M_o) * (this.F_c_o + this.w_o);
@@ -1064,109 +1175,6 @@ classdef OL_2D_DMP_rup < handle
             Rz = [cos(theta) -sin(theta); sin(theta) cos(theta)];
             
         end
-        
-        %% Updates the online object lifting plot
-        function plotOnline(this)
-
-            if (this.plot_t < this.pl_update_cycle)
-                return;
-            else
-                this.plot_t = 0.0; 
-            end
-            
-            %% ===== Caulculate robot, human and object poses =====
-            p_r = this.S_r(1:2);
-            theta_r = this.S_r(3);
-            robAx_x = p_r + this.rotz(theta_r)*[this.pl_h.ax_length; 0];
-            robAx_y = p_r + this.rotz(theta_r)*[0; this.pl_h.ax_length];
-            
-            p_h = this.S_h(1:2);
-            theta_h = this.S_h(3);
-            humAx_x = p_h + this.rotz(theta_h)*[this.pl_h.ax_length; 0];
-            humAx_y = p_h + this.rotz(theta_h)*[0; this.pl_h.ax_length];
-            
-            p_o = this.S_o(1:2);
-            theta_o = this.S_o(3);
-            p_o_left = p_o + this.rotz(theta_o)*[-this.obj.CoM; 0];
-            p_o_right = p_o + this.rotz(theta_o)*[this.obj.l-this.obj.CoM; 0];
-            objAx_x = p_o + this.rotz(theta_o)*[this.pl_h.ax_length; 0];
-            objAx_y = p_o + this.rotz(theta_o)*[0; this.pl_h.ax_length];
-            
-            %% ================ Object ================
-            this.pl_h.objLine.XData = [p_o_left(1) p_o_right(1)];
-            this.pl_h.objLine.YData = [p_o_left(2) p_o_right(2)];
-            
-            this.pl_h.objXax.XData = p_o(1);
-            this.pl_h.objXax.YData = p_o(2);
-            this.pl_h.objXax.UData = objAx_x(1) - p_o(1);
-            this.pl_h.objXax.VData = objAx_x(2) - p_o(2);
-            
-            this.pl_h.objYax.XData = p_o(1);
-            this.pl_h.objYax.YData = p_o(2);
-            this.pl_h.objYax.UData = objAx_y(1) - p_o(1);
-            this.pl_h.objYax.VData = objAx_y(2) - p_o(2);
-            
-            this.pl_h.objCenter.XData = p_o(1);
-            this.pl_h.objCenter.YData = p_o(2);
-            
-            this.pl_h.objFrameTxt.Position = [p_o(1) p_o(2) 0] + this.pl_h.frameText_offset;
-
-            
-            %% ================ Robot ================           
-            this.pl_h.robotXax.XData = p_r(1);
-            this.pl_h.robotXax.YData = p_r(2);
-            this.pl_h.robotXax.UData = robAx_x(1) - p_r(1);
-            this.pl_h.robotXax.VData = robAx_x(2) - p_r(2);
-            
-            this.pl_h.robotYax.XData = p_r(1);
-            this.pl_h.robotYax.YData = p_r(2);
-            this.pl_h.robotYax.UData = robAx_y(1) - p_r(1);
-            this.pl_h.robotYax.VData = robAx_y(2) - p_r(2);
-            
-            this.pl_h.robotCenter.XData = p_r(1);
-            this.pl_h.robotCenter.YData = p_r(2);
-           
-            this.pl_h.robotFrameTxt.Position = [p_r(1) p_r(2) 0] + this.pl_h.frameText_offset;
-            
-            %% ================ Human ================          
-            this.pl_h.humanXax.XData = p_h(1);
-            this.pl_h.humanXax.YData = p_h(2);
-            this.pl_h.humanXax.UData = humAx_x(1) - p_h(1);
-            this.pl_h.humanXax.VData = humAx_x(2) - p_h(2);
-            
-            this.pl_h.humanYax.XData = p_h(1);
-            this.pl_h.humanYax.YData = p_h(2);
-            this.pl_h.humanYax.UData = humAx_y(1) - p_h(1);
-            this.pl_h.humanYax.VData = humAx_y(2) - p_h(2);
-            
-            this.pl_h.humanCenter.XData = p_h(1);
-            this.pl_h.humanCenter.YData = p_h(2);
-            
-            this.pl_h.humanFrameTxt.Position = [p_h(1) p_h(2) 0] + this.pl_h.frameText_offset;
-            
-            %% ================ Robot coupling Force arrow ================ 
-            this.pl_h.Fc_r_quiv.XData = p_r(1);
-            this.pl_h.Fc_r_quiv.YData = p_r(2);
-            this.pl_h.Fc_r_quiv.UData = this.F_c_r(1) * this.pl_h.Fc_scale;
-            this.pl_h.Fc_r_quiv.VData = this.F_c_r(2) * this.pl_h.Fc_scale;
-            
-            this.pl_h.Fc_r_label.String = sprintf('F_{c,r} = [ %.1f,  %.1f,  %.1f]', this.F_c_r(1),this.F_c_r(2),this.F_c_r(3));
-            this.pl_h.Fc_r_arrow_text.Position = [p_r(1)+this.F_c_r(1)*this.pl_h.Fc_scale, p_r(2)+this.F_c_r(2)*this.pl_h.Fc_scale, 0];
-            
-            %% ================ Human coupling Force arrow ================ 
-            this.pl_h.Fc_h_quiv.XData = p_h(1);
-            this.pl_h.Fc_h_quiv.YData = p_h(2);
-            this.pl_h.Fc_h_quiv.UData = this.F_c_h(1) * this.pl_h.Fc_scale;
-            this.pl_h.Fc_h_quiv.VData = this.F_c_h(2) * this.pl_h.Fc_scale;
-            
-            this.pl_h.Fc_h_label.String = sprintf('F_{c,h} = [ %.1f,  %.1f,  %.1f]', this.F_c_h(1),this.F_c_h(2),this.F_c_h(3));
-            this.pl_h.Fc_h_arrow_text.Position = [p_h(1)+this.F_c_h(1)*this.pl_h.Fc_scale, p_h(2)+this.F_c_h(2)*this.pl_h.Fc_scale, 0];
-            
-            %% ======== draw ========
-            drawnow;
-            % if (pause_dt),pause(pause_dt); end
-
-        end
 
         %% Logs the simulation's current step data
         function logData(this)
@@ -1207,5 +1215,7 @@ classdef OL_2D_DMP_rup < handle
                 this.log_data.dS_ref_data = [this.log_data.dS_ref_data this.dS_ref];   
                 this.log_data.ddS_ref_data = [this.log_data.ddS_ref_data this.ddS_ref];
         end
+        
     end
+    
 end
