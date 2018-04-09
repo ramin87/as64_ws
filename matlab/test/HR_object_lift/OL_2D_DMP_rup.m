@@ -158,7 +158,7 @@ classdef OL_2D_DMP_rup < handle
         function initProgramArguments(this)
             
             %% DMP parameters
-            this.D_z = [50.0; 50.0; 20.0];
+            this.D_z = [50.0; 50.0; 2.0];
             this.K_z = [0.0; 0.0; 0.0];
             this.dmp_tau = 10; % 10 sec
             this.N_kernels = 50 * this.dmp_tau;
@@ -168,10 +168,10 @@ classdef OL_2D_DMP_rup < handle
             
             %% recursive estimation parameters
             this.est_method = 'KF'; % {'KF', 'RLS', 'RLWR'}
-            this.sigma_dmp_w = 1e2;
-            this.s_n_start = 8e-1; % initial value of noise
-            this.s_n_end = 2e-4; % final value of noise
-            this.s_n_a = 0.07; % rate of exponential convergence from s_n_start to end s_n_end
+            this.sigma_dmp_w = [1e2; 1e2; 1e2];
+            this.s_n_start = [2.5; 2.5; 2.5]*1e-3; % initial value of noise
+            this.s_n_end = 0.1*[0.8; 0.8; 0.8]*1e-6; % final value of noise
+            this.s_n_a = 0.02; % rate of exponential convergence from s_n_start to end s_n_end
             this.lambda = 0.99;
             % k_Ferr, defined at the end
             
@@ -182,8 +182,8 @@ classdef OL_2D_DMP_rup < handle
             this.obj.l = 0.8; % object length
             this.obj.CoM = 0.4; % object's CoM (distance from its left end)
             this.obj.Iz = this.obj.m*(this.obj.w^2 + this.obj.l^2)/12; % object moment of inertia around z
-            this.S0_o = [0.0; 0.0; 0.0];
-            this.Sg_o = [0.3; 0.65; pi/5];
+            this.S0_o = [0.0; 0.0; -pi/5];
+            this.Sg_o = [0.3; 0.65; 0.0];
             this.M_o = diag([this.obj.m; this.obj.m; this.obj.Iz]);
 
             
@@ -212,13 +212,13 @@ classdef OL_2D_DMP_rup < handle
 
             this.k_Ferr = 1./diag(this.M_h);
             
-%             this.k_Ferr(3) = 0.2/this.M_h(3,3);
+            this.k_Ferr(3) = 0.05/this.M_h(3,3);
             
             %% Simulation params
-            this.sim_timestep = 0.001;
+            this.sim_timestep = 0.002;
             this.pos_tol_stop = 0.02;
             this.vel_tol_stop = 0.005;
-            this.max_sim_time_p = 1.3;
+            this.max_sim_time_p = 1.5;
             this.pl_update_cycle = 0.02;
             this.pause_on_plot_update = false;
             
@@ -779,65 +779,66 @@ classdef OL_2D_DMP_rup < handle
         %% Train the dmp model
         function trainModel(this)
             
-            if (this.train_dmp_offline)
-                trainParamsName = {'lambda', 'P_cov'};
-                trainParamsValue = {this.lambda, this.sigma_dmp_w};
-                disp('DMP training...')
-                tic
-                for i=1:3
-                    this.dmp{i}.setTrainingParams(this.train_method, trainParamsName, trainParamsValue);
-                    this.dmp{i}.trainMulti(this.Time_data{i}, this.Y_data{i}, this.dY_data{i}, this.ddY_data{i});   
-                end
-                toc
-            else
-                disp('No training. Initializing DMP with zero weights...')
-                for i=1:3
-                    this.dmp{i}.w = zeros(size(this.dmp{i}.w));
-                end
-            end
-
-            this.can_clock_ptr.setTau(this.dmp_tau);
+%             if (this.train_dmp_offline)
+%                 trainParamsName = {'lambda', 'P_cov'};
+%                 trainParamsValue = {this.lambda, this.sigma_dmp_w};
+%                 disp('DMP training...')
+%                 tic
+%                 for i=1:3
+%                     this.dmp{i}.setTrainingParams(this.train_method, trainParamsName, trainParamsValue);
+%                     this.dmp{i}.trainMulti(this.Time_data{i}, this.Y_data{i}, this.dY_data{i}, this.ddY_data{i});   
+%                 end
+%                 toc
+%             else
+%                 disp('No training. Initializing DMP with zero weights...')
+%                 for i=1:3
+%                     this.dmp{i}.w = zeros(size(this.dmp{i}.w));
+%                 end
+%             end
+% 
+%             this.can_clock_ptr.setTau(this.dmp_tau);
             
         end
         
         %% Logs the simulation's current step data
         function logData(this)
             
-                this.log_data.Time = [this.log_data.Time this.t];
+            this.log_data.Time = [this.log_data.Time this.t];
 
-                this.log_data.x_data = [this.log_data.x_data this.x];
+            this.log_data.x_data = [this.log_data.x_data this.x];
 
-                this.log_data.S_dmp_data = [this.log_data.S_dmp_data this.S_dmp];
-                this.log_data.dS_dmp_data = [this.log_data.dS_dmp_data this.dS_dmp];   
-                this.log_data.ddS_dmp_data = [this.log_data.ddS_dmp_data this.ddS_dmp];
-                for i=1:3
-                    this.log_data.w_dmp_data{i} = [this.log_data.w_dmp_data{i} this.dmp{i}.w];
-                    this.log_data.P_w_data{i} = [this.log_data.P_w_data{i} this.P_w{i}];
-                end
-                this.log_data.F_err_data = [this.log_data.F_err_data this.F_err];
+            this.log_data.S_dmp_data = [this.log_data.S_dmp_data this.S_dmp];
+            this.log_data.dS_dmp_data = [this.log_data.dS_dmp_data this.dS_dmp];   
+            this.log_data.ddS_dmp_data = [this.log_data.ddS_dmp_data this.ddS_dmp];
+            for i=1:3
+                this.log_data.w_dmp_data{i} = [this.log_data.w_dmp_data{i} this.dmp{i}.w];
+                this.log_data.P_w_data{i} = [this.log_data.P_w_data{i} this.P_w{i}];
+            end
+            this.log_data.F_err_data = [this.log_data.F_err_data this.F_err];
 
-                this.log_data.S_r_data = [this.log_data.S_r_data this.S_r];
-                this.log_data.dS_r_data = [this.log_data.dS_r_data this.dS_r];   
-                this.log_data.ddS_r_data = [this.log_data.ddS_r_data this.ddS_r];
-                this.log_data.U_r_data = [this.log_data.U_r_data this.U_r];
-                this.log_data.F_c_r_data = [this.log_data.F_c_r_data this.F_c_r];
-                this.log_data.F_c_r_d_data = [this.log_data.F_c_r_d_data this.F_c_r_d];
-                
-                this.log_data.S_h_data = [this.log_data.S_h_data this.S_h];
-                this.log_data.dS_h_data = [this.log_data.dS_h_data this.dS_h];   
-                this.log_data.ddS_h_data = [this.log_data.ddS_h_data this.ddS_h];
-                this.log_data.U_h_data = [this.log_data.U_h_data this.U_h];
-                this.log_data.F_c_h_data = [this.log_data.F_c_h_data this.F_c_h];
-                this.log_data.F_c_h_d_data = [this.log_data.F_c_h_d_data this.F_c_h_d];
-                
-                this.log_data.S_o_data = [this.log_data.S_o_data this.S_o];
-                this.log_data.dS_o_data = [this.log_data.dS_o_data this.dS_o];   
-                this.log_data.ddS_o_data = [this.log_data.ddS_o_data this.ddS_o];
-                this.log_data.F_c_o_data = [this.log_data.F_c_o_data this.F_c_o];
+            this.log_data.S_r_data = [this.log_data.S_r_data this.S_r];
+            this.log_data.dS_r_data = [this.log_data.dS_r_data this.dS_r];   
+            this.log_data.ddS_r_data = [this.log_data.ddS_r_data this.ddS_r];
+            this.log_data.U_r_data = [this.log_data.U_r_data this.U_r];
+            this.log_data.F_c_r_data = [this.log_data.F_c_r_data this.F_c_r];
+            this.log_data.F_c_r_d_data = [this.log_data.F_c_r_d_data this.F_c_r_d];
 
-                this.log_data.S_ref_data = [this.log_data.S_ref_data this.S_ref];
-                this.log_data.dS_ref_data = [this.log_data.dS_ref_data this.dS_ref];   
-                this.log_data.ddS_ref_data = [this.log_data.ddS_ref_data this.ddS_ref];
+            this.log_data.S_h_data = [this.log_data.S_h_data this.S_h];
+            this.log_data.dS_h_data = [this.log_data.dS_h_data this.dS_h];   
+            this.log_data.ddS_h_data = [this.log_data.ddS_h_data this.ddS_h];
+            this.log_data.U_h_data = [this.log_data.U_h_data this.U_h];
+            this.log_data.F_c_h_data = [this.log_data.F_c_h_data this.F_c_h];
+            this.log_data.F_c_h_d_data = [this.log_data.F_c_h_d_data this.F_c_h_d];
+
+            this.log_data.S_o_data = [this.log_data.S_o_data this.S_o];
+            this.log_data.dS_o_data = [this.log_data.dS_o_data this.dS_o];   
+            this.log_data.ddS_o_data = [this.log_data.ddS_o_data this.ddS_o];
+            this.log_data.F_c_o_data = [this.log_data.F_c_o_data this.F_c_o];
+
+            this.log_data.S_ref_data = [this.log_data.S_ref_data this.S_ref];
+            this.log_data.dS_ref_data = [this.log_data.dS_ref_data this.dS_ref];   
+            this.log_data.ddS_ref_data = [this.log_data.ddS_ref_data this.ddS_ref];
+            
         end
         
         %% Initialize the simulation variables
@@ -868,10 +869,12 @@ classdef OL_2D_DMP_rup < handle
             this.F_err_prev = zeros(3,1);
             this.F_err = zeros(3,1);
 
-            this.P_w = this.sigma_dmp_w*ones(this.N_kernels,1);
-            this.Sigma_w = diag(this.P_w);
-            this.P_w = {this.P_w; this.P_w; this.P_w};
-            this.Sigma_w = {this.Sigma_w; this.Sigma_w; this.Sigma_w};
+            this.P_w = cell(3,1);
+            this.Sigma_w = cell(3,1);
+            for i=1:3
+                this.P_w{i} = this.sigma_dmp_w(i)*ones(this.N_kernels,1);
+                this.Sigma_w{i} = diag(this.P_w{i});
+            end
             
             this.sigma_noise = this.s_n_start;
 
@@ -1018,38 +1021,6 @@ classdef OL_2D_DMP_rup < handle
         %% Returns the human's reference trajectory
         function [S_ref, dS_ref, ddS_ref] = getHumanRef(this, t)
             
-%             a = -log(this.gp_ref);
-%             S_g_err = (1-exp(-a*t/this.tau_ref))*(S_g-S_ref);
-%             
-%             K_ref = 50;
-%             D_ref = 10;
-%             ddS_ref = -K_ref*S_g_err - D_ref*dS_ref;
-
-%             T = 0:this.sim_timestep:this.tau_ref;
-%             Y_ref = zeros(3,length(T));
-%             dY_ref = zeros(3,length(T));
-%             ddY_ref = zeros(3,length(T));
-%             for i=1:length(T)
-%                 for k=1:3
-%                     [y_ref, dy_ref, ddy_ref] = this.ref_model{k}.getRef(T(i));
-%                     Y_ref(k,i) = y_ref;
-%                     dY_ref(k,i) = dy_ref;
-%                     ddY_ref(k,i) = ddy_ref;
-%                 end
-%             end
-%             
-%             for i=1:3
-%                 figure
-%                 subplot(3,1,1);
-%                 plot(T,Y_ref(i,:));
-%                 subplot(3,1,2);
-%                 plot(T,dY_ref(i,:));
-%                 subplot(3,1,3);
-%                 plot(T,ddY_ref(i,:));
-%             end
-%                 
-%             error('stop')
-            
             S_ref = zeros(3,1);
             dS_ref = zeros(3,1);
             ddS_ref = zeros(3,1);
@@ -1059,7 +1030,6 @@ classdef OL_2D_DMP_rup < handle
                 dS_ref(i) = dy_ref;
                 ddS_ref(i) = ddy_ref;
             end
-            
             
         end
         
@@ -1086,7 +1056,7 @@ classdef OL_2D_DMP_rup < handle
             % Model adaption
             for i=1:3
                 if (strcmpi(this.est_method,'KF'))
-                    this.Sigma_w{i} = this.dmp{i}.update_weights_with_KF(this.x, this.F_err(i), 0.0, 0.0, this.Sigma_w{i}, this.sigma_noise);
+                    this.Sigma_w{i} = this.dmp{i}.update_weights_with_KF(this.x, this.F_err(i), 0.0, 0.0, this.Sigma_w{i}, this.sigma_noise(i));
                     this.sigma_noise = (1-this.s_n_a)*this.sigma_noise + this.s_n_a*this.s_n_end;
                 elseif (strcmpi(this.est_method,'RLS'))
                     this.Sigma_w{i} = this.dmp{i}.update_weights_with_RLS(this.x, this.F_err(i), 0.0, 0.0, this.Sigma_w{i}, this.lambda);
