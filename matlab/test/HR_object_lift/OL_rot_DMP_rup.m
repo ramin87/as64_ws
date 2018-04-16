@@ -4,7 +4,7 @@
 %  DMP_rup: DMP with recursive update method
 %
 
-classdef OL_2D_DMP_rup < handle
+classdef OL_rot_DMP_rup < handle
     properties
         %% DMP parameters
         dmp % dmp model
@@ -61,7 +61,6 @@ classdef OL_2D_DMP_rup < handle
         pos_tol_stop % position error tolerance to stop the simulation
         vel_tol_stop % minimum velocity to stop the simulation
         max_sim_time_p % maximum simulation time as percentage of the reference trajectory time
-        orient_ctrl_type % {'0: equal to human ref', '1: DMP', '2: spring-damper'}
         
         %% Training data
         Ts % sampling time
@@ -137,12 +136,12 @@ classdef OL_2D_DMP_rup < handle
 
     methods
         %% constructor
-        function this = OL_2D_DMP_rup()
+        function this = OL_rot_DMP_rup()
             
             setMatlabPath();
             this.init();
             
-            disp(['Object lift - 2D - DMP with ' this.est_method ' update - with object dynamics']);
+            disp(['Object lift - rot - DMP with ' this.est_method ' update - with object dynamics']);
             
         end
 
@@ -170,16 +169,16 @@ classdef OL_2D_DMP_rup < handle
             this.est_method = 'KF'; % {'KF', 'RLS', 'RLWR'}
             this.sigma_dmp_w = [1e2; 1e2; 1e2];
             this.s_n_start = [2.5; 2.5; 2.5]*1e-3; % initial value of noise
-            this.s_n_end = 0.1*[0.4; 0.4; 0.4]*1e-6; % final value of noise
+            this.s_n_end = 0.1*[0.8; 0.8; 0.8]*1e-6; % final value of noise
             this.s_n_a = 0.02; % rate of exponential convergence from s_n_start to end s_n_end
             this.lambda = 0.99;
             % k_Ferr, defined at the end
             
             %% Object model
             this.obj = struct('m',[], 'Iz',[], 'w',[], 'l',[], 'CoM',[]);
-            this.obj.m = 10.0; % object mass
-            this.obj.w = 0.15; % object width
-            this.obj.l = 0.8; % object length
+            this.obj.m = 0.0; % object mass
+            this.obj.w = 0.0; % object width
+            this.obj.l = 0.0; % object length
             this.obj.CoM = 0.4; % object's CoM (distance from its left end)
             this.obj.Iz = this.obj.m*(this.obj.w^2 + this.obj.l^2)/12; % object moment of inertia around z
             this.S0_o = [0.0; 0.0; -pi/5];
@@ -203,24 +202,23 @@ classdef OL_2D_DMP_rup < handle
 
             
             %% Robot model
-            this.M_r = diag([20.0; 20.0; 1.0]);
-            this.K_r = diag([400.0; 400.0; 50.0]);
+            this.M_r = diag([20.0; 20.0; 3.0]);
+            this.K_r = diag([400.0; 400.0; 40.0]);
             this.D_r = 2*sqrt(this.M_r.*this.K_r);
             this.m_o_r_p = 0.7; 
             this.d_r_hat = this.obj.CoM;
 
             this.k_Ferr = 1./diag(this.M_h);
             
-            this.k_Ferr(3) = 0.05/this.M_h(3,3);
+%             this.k_Ferr(3) = 0.05/this.M_h(3,3);
             
             %% Simulation params
             this.sim_timestep = 0.002;
             this.pos_tol_stop = 0.02;
             this.vel_tol_stop = 0.005;
             this.max_sim_time_p = 1.5;
-            this.pl_update_cycle = 0.02;
-            this.pause_on_plot_update = false;
-            this.orient_ctrl_type = 2; 
+            this.pl_update_cycle = 0.002;
+            this.pause_on_plot_update = true;
             
         end
         
@@ -935,19 +933,14 @@ classdef OL_2D_DMP_rup < handle
                 Z_c = zeros(3,1); % 0.97*F_err;
                 [this.ddS_dmp, this.dx] = this.getRobotRef(this.x, this.S_dmp, this.dS_dmp, Y_c, Z_c);
                 
-                if (this.orient_ctrl_type == 0)
-                    d_h_r = this.d_h - this.d_r;
-                    S_dmp2 = this.S_ref + [d_h_r; 0];
-                    dS_dmp2 = this.gMat(d_h_r)*this.dS_ref;
-                    ddS_dmp2 = this.gMat(d_h_r)*this.ddS_ref - [d_h_r*this.dS_ref(3)^2; 0];
-                    this.S_dmp(3) = S_dmp2(3);
-                    this.dS_dmp(3) = dS_dmp2(3);
-                    this.ddS_dmp(3) = ddS_dmp2(3);
-                elseif (this.orient_ctrl_type == 2)
-                    this.S_dmp(3) = 0;
-                    this.dS_dmp(3) = 0;
-                    this.ddS_dmp(3) = 0;
-                end
+                d_h_r = this.d_h - this.d_r;
+                S_dmp2 = this.S_ref + [d_h_r; 0];
+                dS_dmp2 = this.gMat(d_h_r)*this.dS_ref;
+                ddS_dmp2 = this.gMat(d_h_r)*this.ddS_ref - [d_h_r*this.dS_ref(3)^2; 0];
+                
+%                 this.S_dmp(3) = S_dmp2(3);
+%                 this.dS_dmp(3) = dS_dmp2(3);
+%                 this.ddS_dmp(3) = ddS_dmp2(3);
 
                 %% ===========  data logging ===========  
                 this.logData();

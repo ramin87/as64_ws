@@ -123,7 +123,7 @@ classdef OL_1D_DMP_rup < handle
             this.g_ref = 0.3;
             this.a6 = 0.0;
             this.a7 = 0.0;
-            this.tau_ref = 0.8;
+            this.tau_ref = 1.0;
 
 
             %% Human model
@@ -140,8 +140,8 @@ classdef OL_1D_DMP_rup < handle
             
             %% Object model
             this.M_o = 10.0 + zero_tol;
-            this.M_o_r = 5.0;
-            this.M_o_h = 5.0;
+            this.M_o_r = 7.0;
+            this.M_o_h = 3.0;
             this.load_h_p_var = 0.0;
 
             this.k_Ferr = 1/this.M_h;
@@ -284,7 +284,7 @@ classdef OL_1D_DMP_rup < handle
 
                 %% get the DMP's model reference
                 Y_c = 0.0;
-                Z_c = 0.0; % 0.97*F_err;
+                Z_c = 0.0; %0.75*F_err; % ;
                 [dy_dmp, ddy_dmp] = this.dmp.getStatesDot(x, y_dmp, dy_dmp, y0, g, Y_c, Z_c);
                 dx = this.can_clock_ptr.getPhaseDot(x);
 
@@ -333,7 +333,7 @@ classdef OL_1D_DMP_rup < handle
                 %% ===========  Robot and Human model simulation  ===========  
 
                 % Control applied by the robot to track its reference
-                v_r = K_r*(y_dmp-y_r) + D_r*dy_dmp + M_r*ddy_dmp;
+                v_r = K_r*(y_dmp-y_r) + D_r*dy_dmp + M_r*ddy_dmp; % 16.5*F_err;
 
                 % Control applied by the human to track its reference
                 v_h = K_h*(y_ref-y_h) + D_h*dy_ref + M_h*ddy_ref;
